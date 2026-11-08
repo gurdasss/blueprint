@@ -53,11 +53,14 @@ def loads(text: str) -> Any:
     return json.loads(text, parse_float=RawFloat, object_pairs_hook=_pairs)
 
 
-def load(path: Path) -> Any:
-    data = path.read_bytes()
+def loads_bytes(data: bytes) -> Any:
     if data.startswith(b"\xef\xbb\xbf"):
         data = data[3:]
     return loads(data.decode("utf-8"))
+
+
+def load(path: Path) -> Any:
+    return loads_bytes(path.read_bytes())
 
 
 def _number(value: float) -> str:

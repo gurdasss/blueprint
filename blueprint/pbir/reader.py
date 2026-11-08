@@ -39,6 +39,7 @@ class Document:
     path: Path  # relative to the .Report folder
     data: Any
     schema: schemas.Resolution | None
+    raw: bytes = b""  # file contents as read; the writer refuses to overwrite if they changed
 
 
 @dataclass
@@ -90,8 +91,9 @@ class _Reader:
         return sorted(p.name for p in full.iterdir() if p.is_dir()) if full.is_dir() else []
 
     def load(self, rel: Path) -> Document:
+        raw = (self.dir / rel).read_bytes()
         try:
-            data = jsonfmt.load(self.dir / rel)
+            data = jsonfmt.loads_bytes(raw)
         except ValueError as exc:
             raise ReportFormatError(f"{rel}: invalid JSON: {exc}") from exc
         res = None
@@ -108,7 +110,7 @@ class _Reader:
             self.versions.setdefault(ref.name, set()).add(label)
         elif url is not None:
             self.warnings.append(f"{rel}: unrecognised $schema {url!r}")
-        doc = Document(rel, data, res)
+        doc = Document(rel, data, res, raw)
         self.src.documents[rel] = doc
         return doc
 
