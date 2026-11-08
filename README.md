@@ -1,0 +1,624 @@
+# Blueprint
+
+**Declarative, deterministic Power BI report layouts.** Write a short YAML file, get a
+PBIP report whose pages are built and aligned to your organisation's design guidelines —
+no dragging, no nudging, no eyeballing.
+
+```bash
+bp apply pages/sales-overview.yaml --report ./SalesReport.Report
+```
+
+> **Status: pre-alpha.** Nothing here is stable. The PBIR schema sections below are
+> deliberately marked as unverified — see [Learning the PBIP format](#learning-the-pbip-format).
+> Do not point this at a report you care about. Work on copies, under version control.
+
+---
+
+## Contents
+
+- [Why this exists](#why-this-exists)
+- [What Blueprint does and does not do](#what-blueprint-does-and-does-not-do)
+- [Design principles](#design-principles)
+- [Install](#install)
+- [Quick start](#quick-start)
+- [Page specs](#page-specs)
+- [Guidelines and layering](#guidelines-and-layering)
+- [The manifest](#the-manifest)
+- [Project structure](#project-structure)
+- [Learning the PBIP format](#learning-the-pbip-format)
+- [Fixtures and testing](#fixtures-and-testing)
+- [Version compatibility](#version-compatibility)
+- [Roadmap](#roadmap)
+- [Non-goals](#non-goals)
+- [Using this with client work](#using-this-with-client-work)
+- [License](#license)
+
+---
+
+## Why this exists
+
+Two things are true about Power BI report development:
+
+1. **A large share of the work is mechanical.** Placing visuals, aligning them, matching
+   sizes, applying the palette, getting margins consistent across pages. It takes hours
+   and produces nothing anyone values.
+2. **Design guidelines get ignored.** Not out of malice — following a style document by
+   hand, under deadline, across several developers, simply doesn't hold. Reviewers end up
+   policing consistency manually, report by report, team by team.
+
+Blueprint attacks both by moving layout from *a thing a human does in a GUI* to *a thing
+a program does from a spec*. Guidelines stop being a document people are asked to
+remember and become configuration the generator enforces. Consistency becomes the
+default rather than the exception.
+
+A secondary benefit, arguably the bigger one: **report changes become reviewable.** A
+page spec is a short text file. It diffs. It goes in a pull request. Reviewing
+"added a page with four visuals bound to these measures" is tractable in a way that
+reviewing a binary report file is not.
+
+### Where this sits
+
+Blueprint handles **report layout only**. It is designed to sit alongside, not replace:
+
+| Concern | Tool |
+|---|---|
+| Semantic model — tables, columns, measures, relationships, DAX | [Power BI Modeling MCP server](https://github.com/microsoft/powerbi-modeling-mcp) |
+| Report layout, page structure, visual placement, guideline conformance | **Blueprint** (this tool) |
+| Live reload of a running Power BI Desktop instance | Power BI Desktop Bridge |
+
+An AI agent driving this stack calls the Modeling MCP for the model and `bp` for the
+report. Neither one writes PBIR JSON by hand.
+
+---
+
+## What Blueprint does and does not do
+
+**Does:**
+
+- Create pages from a declarative spec
+- Place visuals according to named layouts (`standard-4-up`, `kpi-row-plus-detail`, …)
+- Snap existing visuals to a grid and normalise their sizes (`bp fmt`)
+- Enforce palette, margins, title placement and page density from a guidelines file
+- Validate a report against guidelines without changing it (`bp check`)
+- Emit a manifest mapping visual IDs to types, pages, titles and field bindings
+- Support several guideline sets so different teams or clients can share one tool
+
+**Does not:**
+
+- Replace Power BI Desktop. You will still open it to verify, and for the last stretch of
+  formatting this tool doesn't cover.
+- Touch the semantic model. No measures, no DAX, no relationships.
+- Move content between pages on its own. It will *warn* that a page is over budget.
+  Deciding what to do about that is a human's job (see [Design principles](#design-principles)).
+- Guess. Where the spec is ambiguous, Blueprint errors rather than inventing a layout.
+
+---
+
+## Design principles
+
+**1. Deterministic.** The same spec plus the same guidelines produces byte-identical
+output. No model in the generation path, no randomness, no token cost. An LLM may *write*
+the spec; it never writes the PBIR.
+
+**2. Generate loosely, validate strictly.** Producing files is one job; guaranteeing they
+conform is another. The validator is a separate, dumb, deterministic pass. It is also
+available on its own (`bp check`) so it can run in CI over reports Blueprint didn't build.
+
+**3. Idempotent.** `bp fmt` run twice must produce no diff on the second run. This is a
+test, not an aspiration — see `tests/test_idempotence.py`.
+
+**4. Never destroy, never silently relocate.** Irreversible or surprising operations are
+refused, not performed. A formatter that reformats a file is useful; one that moves code
+into a different file is hated. Blueprint warns and exits non-zero instead.
+
+**5. Config over code.** Grid size, margins, palette, density budgets and layout
+definitions live in data, not in Python. The guidelines will change next quarter; that
+must not mean a code change.
+
+**6. Escape hatches are mandatory.** Someone will deliberately place a visual off-grid for
+a good reason. `blueprint: ignore` on a visual must be honoured, or the tool gets switched
+off permanently.
+
+---
+
+## Install
+
+Built and tested on **WSL2 (Ubuntu) + Python 3.12**.
+
+```bash
+git clone https://github.com/<you>/blueprint.git
+cd blueprint
+
+python3.12 -m venv .venv
+source .venv/bin/activate
+
+pip install -e ".[dev]"
+```
+
+Verify:
+
+```bash
+bp --version
+pytest
+```
+
+Blueprint reads and writes files on disk. It does not need Power BI Desktop installed, and
+it does not need Windows. Desktop is only required to *look* at the result, and to run the
+Desktop Bridge for live reload.
+
+---
+
+## Quick start
+
+Against one of the bundled fixtures, so you can't break anything real:
+
+```bash
+# 1. Copy a fixture so the original stays pristine
+cp -r fixtures/01-blank-report /tmp/demo
+cd /tmp/demo && git init && git add -A && git commit -m "baseline" && cd -
+
+# 2. Look at what's there
+bp inspect --report /tmp/demo/Demo.Report
+
+# 3. Check it against the example guidelines (expect failures)
+bp check --report /tmp/demo/Demo.Report --guidelines guidelines/example.yaml
+
+# 4. Build a page from a spec
+bp apply examples/sales-overview.yaml \
+        --report /tmp/demo/Demo.Report \
+        --guidelines guidelines/example.yaml
+
+# 5. See exactly what changed
+cd /tmp/demo && git diff --stat
+```
+
+Then open the report in Power BI Desktop and look at it.
+
+### Commands
+
+| Command | What it does |
+|---|---|
+| `bp inspect` | Print the report's pages, visuals, IDs and positions. Read-only. |
+| `bp check` | Validate against guidelines. Read-only. Non-zero exit on violations. |
+| `bp fmt` | Snap existing visuals to grid, normalise sizes. Idempotent. |
+| `bp apply <spec>` | Create or update pages from a page spec. |
+| `bp manifest` | (Re)generate the manifest from the report's current state. |
+
+`--dry-run` is available on every mutating command and prints the planned file writes
+without performing them.
+
+---
+
+## Page specs
+
+A page spec is the input a human — or an AI agent — writes. It describes *intent*, not
+geometry.
+
+```yaml
+# examples/sales-overview.yaml
+page: Sales Overview
+layout: standard-4-up
+
+visuals:
+  - type: header
+    title: Sales Overview
+
+  - type: kpi-row
+    slots:
+      values:
+        - "[Total Sales]"
+        - "[Gross Margin %]"
+        - "[Orders]"
+
+  - type: pie
+    title: Sales by Category
+    slots:
+      category: "Product[Category]"
+      value: "[Total Sales]"
+
+  - type: column
+    title: Sales by Geography
+    slots:
+      # an ordered list makes this a drill-down path
+      category:
+        - "Geography[Country]"
+        - "Geography[State]"
+        - "Geography[City]"
+      value: "[Total Sales]"
+
+  - type: table
+    blueprint: ignore          # hand-placed on purpose; leave it alone
+```
+
+### Typed slots
+
+Each visual type declares the slots it accepts and what each slot takes — a dimension
+column, a measure, or an ordered list for drill-down. Blueprint validates bindings
+*before* writing anything, so a measure in a category slot is an error from `bp`, not a
+confusing result in Desktop.
+
+```yaml
+# blueprint/visuals/pie.yaml  (slot contract, not the template)
+type: pie
+slots:
+  category: { accepts: column,  required: true,  ordered: false }
+  value:    { accepts: measure, required: true }
+  legend:   { accepts: column,  required: false }
+  tooltips: { accepts: [column, measure], required: false, multiple: true }
+```
+
+> **Draft.** The slot vocabulary per visual type has to be harvested from real PBIR files,
+> one visual type at a time. See [Learning the PBIP format](#learning-the-pbip-format).
+> Expect this schema to change.
+
+### Layouts
+
+A layout maps an ordered list of visuals to positions. Layouts are data:
+
+```yaml
+# guidelines/layouts/standard-4-up.yaml
+name: standard-4-up
+canvas: { width: 1280, height: 720 }
+regions:
+  - { role: header,  x: 16,  y: 16,  w: 1248, h: 64 }
+  - { role: kpi-row, x: 16,  y: 96,  w: 1248, h: 120 }
+  - { role: main,    x: 16,  y: 232, w: 616,  h: 472 }
+  - { role: main,    x: 648, y: 232, w: 616,  h: 472 }
+```
+
+Visuals fill regions in declaration order. Running out of regions is an error, not a
+reflow.
+
+---
+
+## Guidelines and layering
+
+The whole point of a guidelines file is that the rules outlive any one report and can
+differ per team or per client, without forking the tool.
+
+Resolution order, later overriding earlier:
+
+```
+1. built-in defaults          blueprint/defaults.yaml       (ships with the tool)
+2. organisation guidelines    guidelines/<name>.yaml         (yours, usually private)
+3. per-report overrides       <report>/.blueprint.yaml       (committed with the report)
+4. command-line flags         --grid 8
+```
+
+```yaml
+# guidelines/example.yaml
+version: 1
+name: Example Corp Reporting Standard
+
+grid:
+  size: 8
+  snap: true
+
+canvas:
+  width: 1280
+  height: 720
+  margin: 16
+  gutter: 32
+
+palette:
+  categorical: ["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"]
+  background: "#FFFFFF"
+  text: "#333333"
+  enforce: strict        # strict | warn | off
+
+typography:
+  title:    { font: Segoe UI, size: 18, weight: semibold }
+  subtitle: { font: Segoe UI, size: 12 }
+
+page:
+  require_title: true
+  title_region: header
+  max_visuals: 6
+  density_policy: strict   # named policy implemented in code, not an if-statement here
+
+layouts:
+  search_path: ["guidelines/layouts"]
+  default: standard-4-up
+```
+
+### Multi-tenant notes
+
+- The tool is generic; **guideline files are the tenant-specific part.** Keep yours out of
+  the public repo. `guidelines/example.yaml` exists so strangers can run the tool, and is
+  entirely invented.
+- `guidelines/` is gitignored except for `example.yaml` and `layouts/`.
+- Select a tenant with `--guidelines <path>` or `BLUEPRINT_GUIDELINES=<path>`.
+- Never put conditional logic in a guidelines file. When a rule needs branching, implement
+  it in Python as a *named policy* and let the config select it (`density_policy: strict`).
+  Config files that grow `if` statements become bad programming languages.
+
+---
+
+## The manifest
+
+`manifest.json` is the handoff artifact between the layout half of the stack and the
+semantic-model half. Without it, an agent has to re-derive the report structure by reading
+PBIR on every turn.
+
+```json
+{
+  "blueprint_version": "0.1.0",
+  "guidelines": { "name": "Example Corp Reporting Standard", "version": 1 },
+  "pbir_schema": "<as read from the report>",
+  "generated_at": "2026-11-09T04:00:00Z",
+  "pages": [
+    {
+      "id": "<page id>",
+      "name": "Sales Overview",
+      "layout": "standard-4-up",
+      "visuals": [
+        {
+          "id": "<visual id>",
+          "type": "pie",
+          "title": "Sales by Category",
+          "region": "main",
+          "position": { "x": 16, "y": 232, "w": 616, "h": 472 },
+          "slots": {
+            "category": "Product[Category]",
+            "value": "[Total Sales]"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+It is **generated, never hand-edited**, and `bp manifest` can rebuild it from the report at
+any time.
+
+---
+
+## Project structure
+
+```
+blueprint/
+├── README.md
+├── pyproject.toml
+├── blueprint/
+│   ├── __init__.py
+│   ├── cli.py                  # argparse entry points: inspect/check/fmt/apply/manifest
+│   ├── defaults.yaml           # built-in guideline defaults (layer 1)
+│   │
+│   ├── pbir/                   # everything that knows the on-disk format
+│   │   ├── __init__.py
+│   │   ├── reader.py           # report dir -> in-memory model
+│   │   ├── writer.py           # in-memory model -> report dir (atomic)
+│   │   ├── registry.py         # the page/visual registry files (see note below)
+│   │   ├── ids.py              # id generation, matching the format Desktop uses
+│   │   └── schema.md           # NOTES on the real format. Filled by the diff study.
+│   │
+│   ├── model.py                # Report / Page / Visual / Slot dataclasses
+│   ├── spec.py                 # page spec parsing + validation
+│   ├── guidelines.py           # layered config resolution
+│   ├── layouts.py              # named layout -> regions
+│   ├── slots.py                # slot contracts per visual type
+│   ├── render.py               # template + params -> files
+│   ├── validate.py             # guideline checks (used by `check` and after `apply`)
+│   ├── policies.py             # named policies the config selects (e.g. density)
+│   └── manifest.py
+│
+├── templates/                  # harvested, parameterised PBIR fragments
+│   ├── page/
+│   └── visuals/
+│       ├── card/
+│       ├── pie/
+│       ├── column/
+│       └── table/
+│
+├── guidelines/
+│   ├── example.yaml            # invented; committed so the tool is runnable
+│   ├── layouts/
+│   └── .gitignore              # ignore everything except example.yaml + layouts/
+│
+├── examples/
+│   └── sales-overview.yaml
+│
+├── fixtures/                   # synthetic PBIP reports, built from scratch
+│   ├── 01-blank-report/
+│   ├── 02-one-page-one-card/
+│   ├── 03-four-visuals-off-grid/
+│   └── README.md               # how each was made, so they can be rebuilt
+│
+└── tests/
+    ├── test_reader.py
+    ├── test_idempotence.py     # fmt twice == fmt once
+    ├── test_validate.py
+    ├── test_apply_golden.py    # golden-file comparison per fixture
+    └── test_spec_errors.py
+```
+
+**`pbir/` is the only package that knows the file format.** Everything above it works on
+the in-memory model. When Microsoft changes PBIR, the blast radius is one directory.
+
+---
+
+## Learning the PBIP format
+
+**This section is the actual first task, and it is research, not coding.** The PBIP/PBIR
+schema below is *not* documented here from memory, because guessing at it would produce a
+tool that silently writes invalid files. Establish it empirically and record what you find
+in `blueprint/pbir/schema.md`.
+
+### Protocol
+
+For each question, run the experiment and write down the answer *before* writing code.
+Predict the result first — a prediction you record and then check is worth more than one
+you form afterwards.
+
+```bash
+# Set up a sandbox
+cp -r <a report> /tmp/probe && cd /tmp/probe
+git init && git add -A && git commit -m "baseline"
+```
+
+Then, one change at a time in Power BI Desktop → save → `git status && git diff`.
+
+### Questions to answer
+
+| # | Question | Experiment |
+|---|---|---|
+| 1 | What does a report directory contain at rest? | `tree` a freshly saved PBIP |
+| 2 | What files appear when you add **one blank page**? | add page, save, diff |
+| 3 | **Which existing file gets modified?** | same diff — look for a file listing pages and their order |
+| 4 | What is the ID format, and is it validated? | read the real IDs; do not assume `uuid4` is acceptable |
+| 5 | Is page order stored in a registry or implied by folder names? | reorder pages in Desktop, save, diff |
+| 6 | What files appear when you add **one card**? | add card, save, diff |
+| 7 | Where does a visual's position and size live? | move and resize it, save, diff |
+| 8 | Where does the visual title live? | set a title, save, diff |
+| 9 | What does a **field binding** look like? | bind one measure, save, diff |
+| 10 | What do the field wells look like for pie / column / table? | one visual type at a time |
+| 11 | How is a drill-down path represented? | add three levels to a category slot, save, diff |
+| 12 | Is there a schema version string anywhere? | grep the report for `schema`/`version` |
+| 13 | Does Desktop reformat or reorder JSON on save? | save twice without changes, diff |
+| 14 | Can arbitrary custom metadata survive a round trip? | add a key by hand, open and save in Desktop, diff |
+
+Question 3 is the one that will cost you an evening if you skip it: creating a page folder
+is almost certainly not enough to make the page appear.
+
+Question 13 matters for golden-file tests: if Desktop normalises JSON differently from
+your writer, every save will churn the diff.
+
+Question 14 decides whether tagging-in-Desktop is viable at all. If custom keys are
+stripped, the CLI-first approach in this README is the only workable one — which is why it
+is the design here.
+
+### Recording findings
+
+`blueprint/pbir/schema.md` is a living document. Suggested shape per entry:
+
+```markdown
+## Pages
+
+**Verified 2026-11-09, PBIR schema <x>, Desktop <version>.**
+
+- A page lives at `definition/pages/<page-id>/page.json`.
+- Pages are registered in `definition/pages/pages.json`, which holds an ordered
+  `pageOrder` array and `activePageName`.
+- Creating the folder without updating `pages.json` leaves the page invisible.
+
+_Evidence: `git diff` after adding one blank page — see `docs/probes/02-add-page.diff`._
+```
+
+Commit the raw diffs under `docs/probes/`. They are your evidence, and they are how you
+tell what changed when a Desktop update breaks something.
+
+---
+
+## Fixtures and testing
+
+Fixtures are **synthetic PBIP reports built from scratch**, committed to the repo. They
+exist so that:
+
+1. You can develop the entire tool at home, with no work files involved — ever.
+2. Anyone who clones the repo can actually run it, which is what makes this a project
+   rather than a script.
+3. Schema drift surfaces as a failing test rather than as a surprise in a demo.
+
+| Fixture | Contents | Exercises |
+|---|---|---|
+| `01-blank-report` | one empty page | reader, page creation, registry update |
+| `02-one-page-one-card` | one card, bound to a trivial measure | slots, bindings, manifest |
+| `03-four-visuals-off-grid` | four visuals, deliberately misaligned | `fmt`, idempotence, `check` |
+| `04-over-budget-page` | more visuals than `max_visuals` | density policy, warn-not-act |
+| `05-ignore-marked` | one visual with `blueprint: ignore` | escape hatch |
+
+`fixtures/README.md` records how each one was produced, so they can be rebuilt against a
+newer PBIR schema.
+
+**Golden-file tests.** For each fixture, `tests/test_apply_golden.py` runs a spec and
+compares the output tree byte-for-byte against a committed expected tree. When Microsoft
+changes the format, these fail loudly and the diff tells you exactly what moved.
+
+**The idempotence test is not optional.** `fmt` twice must equal `fmt` once. It is the
+cheapest guard against a formatter that churns diffs forever.
+
+---
+
+## Version compatibility
+
+Three things version independently, and the manifest records all three:
+
+| Thing | Where it's declared | Why it matters |
+|---|---|---|
+| Blueprint | `blueprint.__version__` | behaviour changes between releases |
+| Guidelines | `version:` in the guidelines file | the standard evolves; old reports were built to old rules |
+| PBIR schema | read from the report | Microsoft changes the format |
+
+Policy:
+
+- Blueprint refuses to write to a report whose PBIR schema it does not recognise, unless
+  `--force-schema` is passed. Silently writing to an unknown format is how reports get
+  corrupted.
+- `bp check` reports which guideline version a report was built against versus which one is
+  being applied, so "this was compliant last quarter" is answerable.
+- Guideline files are versioned and additive. Renaming a key is a major version bump.
+
+---
+
+## Roadmap
+
+**v0.1 — read and align.** No generation at all.
+`bp inspect` and `bp fmt` on existing reports: snap to grid, normalise sizes. Idempotence
+test passing. This version de-risks everything else — if reading PBIR, changing a position,
+writing it back and reloading in Desktop doesn't work cleanly, nothing above it matters.
+
+**v0.2 — validate.** `bp check` against a guidelines file. Useful on its own: it can run
+over reports nobody generated and tell a reviewer what's off-standard.
+
+**v0.3 — generate.** `bp apply` creates pages and places visuals from a spec, for three or
+four visual types. Manifest emitted. No field bindings yet.
+
+**v0.4 — bind.** Typed slots, measures and columns, drill-down paths. This is where the
+tool becomes genuinely end-to-end with the Modeling MCP.
+
+**Later, in no particular order.** Conditional formatting. Bookmarks. More visual types.
+Theme file generation. A `bp new` scaffold. CI action for `bp check`.
+
+**Deliberately unscheduled:** an interactive wizard. The declarative spec is the primary
+interface; a prompt-driven shell on top is a convenience, and conveniences come after the
+thing works.
+
+---
+
+## Non-goals
+
+- **No semantic model work.** That is the Modeling MCP's job.
+- **No LLM in the generation path.** The tool must be deterministic and free to run.
+- **No automatic content relocation.** Warn, exit non-zero, let a human decide.
+- **No conditionals in config.** Named policies in code, selected by config.
+- **No premature abstraction.** `create_page()` and `create_visual()` stay as separate
+  concrete functions until the duplication is real and understood.
+- **Not a Power BI replacement.** Desktop remains the place you look at the result.
+
+---
+
+## Using this with client work
+
+This repository is generic tooling. It contains no organisation's guidelines, no client
+data, no report files from any engagement, and it never should.
+
+If you use Blueprint in a workplace:
+
+- **Keep the guideline file internal.** It is configuration, which is exactly why it can
+  live somewhere else. `guidelines/example.yaml` here is invented.
+- **Never commit real report files, measure names, table names or data** — fixtures are
+  built from scratch for this reason.
+- **Go through your organisation's approval process** for both cloning the repo onto a work
+  machine and running it against real reports. Even code you wrote yourself is third-party
+  software once it is on a public host.
+- **Don't carry files in either direction** outside those processes.
+- **Check your employment agreement before publishing.** IP assignment clauses are often
+  broad enough to cover work related to the employer's business regardless of whose machine
+  it was written on. Ask, and get the answer in writing, before rather than after.
+
+---
+
+## License
+
+MIT. See [LICENSE](LICENSE).
