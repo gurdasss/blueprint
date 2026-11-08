@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `model`, and `bp inspect`. Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
+Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `pbir/writer`, `model`, `plan`, `guidelines`, `grid`, `bp inspect` and `bp fmt`. Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
 
 ## Commands
 
@@ -17,17 +17,20 @@ pytest                                   # all tests
 pytest tests/test_reader.py::test_sample_report   # one test
 ruff check .
 bp inspect --report samples/retail-analysis       # accepts .Report dir, .pbip, or a parent dir
+bp fmt --report <copy> --dry-run                  # never run fmt on samples/ itself; copy it first
 python scripts/vendor_schemas.py <$schema URL>    # vendor a schema + its $refs into blueprint/pbir/schemas/
 ```
 
 ## Architecture
 
-- **Only `blueprint/pbir/` knows the on-disk format.** `pbir/reader.py` builds `model.Report/Page/Visual`. Every model object carries an opaque `source` (a `reader.Document` holding the parsed JSON). The writer will patch those documents in place rather than regenerate them, so properties Blueprint doesn't model survive untouched.
+- **Only `blueprint/pbir/` knows the on-disk format.** `pbir/reader.py` builds `model.Report/Page/Visual`. Every model object carries an opaque `source` (a `reader.Document` holding the parsed JSON). The writer patches those documents in place rather than regenerate them, so properties Blueprint doesn't model survive untouched.
 - **`pbir/jsonfmt.py` is the only way to read or write PBIR JSON.** It reproduces Desktop's output byte for byte (CRLF, 2-space indent, no trailing newline, raw non-ASCII) and keeps each float's original text via `RawFloat`. Using the stdlib `json` to write will change every file.
 - **`pbir/schemas.py`** validates against the vendored Microsoft schemas. Desktop writes minor versions that haven't been published yet (the sample has visualContainer 2.14.0, newest published is 2.13.0). So resolution picks the nearest vendored version with the same major and swaps the `$schema` const. A different major version is unknown.
 - **`pbir/schema.md` is the source of truth for format facts.** Each fact is marked verified (and how) or open. Don't write code that relies on an open item. Settle it with a Desktop probe and record the result first.
 - **Blueprint's own metadata goes in `annotations`** (e.g. `blueprint.ignore`). Desktop ignores annotations, and the schemas reject unknown keys.
-- Commands live in `blueprint/commands/`, one module each. `cli.py` only parses arguments. Mutating commands will return a Plan (file ops + warnings) that `--dry-run` prints and the writer applies atomically.
+- Commands live in `blueprint/commands/`, one module each. `cli.py` only parses arguments. A mutating command changes the model, calls `writer.plan_writes(report)` to get a `plan.Plan` (file writes + warnings), then either prints it (`--dry-run`) or calls `writer.apply`. The writer schema-validates every changed document, refuses files that changed on disk since they were read, writes temp files before renaming any of them into place, and keeps file permissions.
+- The writer owns only `position.x/y/width/height` so far. To make Blueprint own another field, extend `writer._visual_write`. Never regenerate a whole document.
+- `grid.py` snaps each of a visual's four edges to the nearest grid line, rounding halves up. It skips `blueprint.ignore` visuals silently. It skips, with a warning, pages with no fixed size (`DeprecatedDynamic`) and grouped visuals (group-relative positioning is unverified).
 
 ## Design rules (from README; load-bearing)
 
