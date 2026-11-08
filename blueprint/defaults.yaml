@@ -1,0 +1,8 @@
+# Layer 1: built-in defaults. Organisation guidelines, per-report overrides and
+# command-line flags are layered on top (later wins). See README "Guidelines and layering".
+version: 1
+name: Blueprint defaults
+
+grid:
+  size: 8
+  snap: true
