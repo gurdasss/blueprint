@@ -1,0 +1,133 @@
+import json
+import shutil
+from pathlib import Path
+
+import pytest
+
+from blueprint import guidelines
+from blueprint.cli import main
+from blueprint.pbir import jsonfmt, theme
+from blueprint.pbir.reader import read_report
+
+ROOT = Path(__file__).resolve().parent.parent
+GUIDE = ROOT / "guidelines" / "example.yaml"
+
+
+def _rules(tmp_path: Path, body: str) -> guidelines.Guidelines:
+    f = tmp_path / "g.yaml"
+    f.write_text(body)
+    return guidelines.load(f)
+
+
+@pytest.fixture
+def report(tmp_path: Path) -> Path:
+    shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
+    return tmp_path / "proj" / "Fixture.Report"
+
+
+# --- build -----------------------------------------------------------------------------
+
+
+def test_example_guidelines_theme():
+    doc, notes = theme.build(guidelines.load(GUIDE))
+    assert doc == {
+        "name": "Example Corp Reporting Standard",
+        "dataColors": ["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"],
+        "foreground": "#333333",
+        "background": "#FFFFFF",
+        "textClasses": {"callout": {"color": "#333333"},
+                        "title": {"fontFace": "Segoe UI Semibold", "fontSize": 18, "color": "#333333"},
+                        "header": {"color": "#333333"}, "label": {"color": "#333333"}},
+    }
+    assert notes == ["typography.subtitle: no theme text class for it; visuals are still checked"]
+
+
+def test_typography_only_and_first_choice_notes(tmp_path: Path):
+    doc, notes = theme.build(_rules(tmp_path, "name: T\ntypography:\n  callout: {font: [DIN, Arial], size: [28, 32], bold: true}\n"))
+    assert doc == {"name": "T", "textClasses": {"callout": {"fontFace": "DIN", "fontSize": 28}}}
+    assert any("first allowed font, 'DIN'" in n for n in notes)
+    assert any("first allowed size, 28pt" in n for n in notes)
+    assert any("bold: not expressible" in n for n in notes)
+
+
+def test_nothing_to_theme_is_an_error(tmp_path: Path):
+    with pytest.raises(theme.ThemeError, match="nothing to put in a theme"):
+        theme.build(_rules(tmp_path, "grid: {size: 8}\n"))
+
+
+# --- report.json ------------------------------------------------------------------------
+
+
+def test_with_theme_on_a_new_report_mirrors_desktop(blank_fixture: Path):
+    doc = jsonfmt.load(blank_fixture / "definition/report.json")
+    out = theme.with_theme(doc, replace=False)
+    custom = out["themeCollection"]["customTheme"]
+    assert custom == {"name": "blueprint-theme.json",
+                      "reportVersionAtImport": doc["themeCollection"]["baseTheme"]["reportVersionAtImport"],
+                      "type": "RegisteredResources"}
+    assert out["resourcePackages"][0] == {"name": "RegisteredResources", "type": "RegisteredResources",
+                                          "items": [{"name": "blueprint-theme.json", "path": "blueprint-theme.json",
+                                                     "type": "CustomTheme"}]}
+    assert out["resourcePackages"][1] == doc["resourcePackages"][0]  # base theme package untouched
+    assert theme.with_theme(out, replace=False) == out  # idempotent
+
+
+def test_resource_packages_inserted_before_settings_when_absent():
+    doc = {"$schema": "x", "themeCollection": {}, "objects": {}, "settings": {"a": True}}
+    assert list(theme.with_theme(doc, replace=False)) == ["$schema", "themeCollection", "objects",
+                                                          "resourcePackages", "settings"]
+
+
+def test_existing_custom_theme_needs_replace_and_keeps_its_item():
+    doc = {"themeCollection": {"customTheme": {"name": "Bloom1.json", "type": "RegisteredResources"}},
+           "resourcePackages": [{"name": "RegisteredResources", "type": "RegisteredResources",
+                                 "items": [{"name": "Bloom1.json", "path": "Bloom1.json", "type": "CustomTheme"},
+                                           {"name": "logo.png", "path": "logo.png", "type": "Image"}]}]}
+    with pytest.raises(theme.ThemeError, match="already uses custom theme 'Bloom1.json'"):
+        theme.with_theme(doc, replace=False)
+    out = theme.with_theme(doc, replace=True)
+    assert out["themeCollection"]["customTheme"]["name"] == "blueprint-theme.json"
+    # Sorted by name, case-insensitively, as Desktop listed them (probe 03); the old item is kept.
+    assert [i["name"] for i in out["resourcePackages"][0]["items"]] == ["Bloom1.json", "blueprint-theme.json",
+                                                                       "logo.png"]
+
+
+# --- command ----------------------------------------------------------------------------
+
+
+def _snapshot(root: Path) -> dict[str, bytes]:
+    return {p.relative_to(root).as_posix(): p.read_bytes() for p in sorted(root.rglob("*")) if p.is_file()}
+
+
+def test_theme_clears_theme_findings_and_is_idempotent(report: Path, capsys):
+    check = ["check", "--report", str(report), "--guidelines", str(GUIDE), "--json"]
+    main(check)
+    before = json.loads(capsys.readouterr().out)["findings"]
+    assert any(f["rule"] in ("palette", "typography") and f["page"] is None for f in before)
+
+    assert main(["theme", "--report", str(report), "--guidelines", str(GUIDE)]) == 0
+    capsys.readouterr()
+    main(check)
+    after = json.loads(capsys.readouterr().out)["findings"]
+    assert [f for f in after if f["rule"] in ("palette", "typography")] == []
+
+    once = _snapshot(report)
+    capsys.readouterr()
+    assert main(["theme", "--report", str(report), "--guidelines", str(GUIDE)]) == 0
+    assert "No changes." in capsys.readouterr().out
+    assert _snapshot(report) == once
+    [base, custom] = read_report(report).themes
+    assert (base.name, custom.name, custom.missing) == ("Fluent2-CY26SU10", "blueprint-theme.json", False)
+
+
+def test_dry_run_and_stale_file_write_nothing(report: Path, capsys):
+    before = _snapshot(report)
+    assert main(["theme", "--report", str(report), "--guidelines", str(GUIDE), "--dry-run"]) == 0
+    assert "A StaticResources/RegisteredResources/blueprint-theme.json" in capsys.readouterr().out
+    assert _snapshot(report) == before
+
+
+def test_written_theme_file_is_desktop_formatted(report: Path):
+    main(["theme", "--report", str(report), "--guidelines", str(GUIDE)])
+    raw = (report / theme.REL_PATH).read_bytes()
+    assert b"\r\n" in raw and not raw.endswith(b"\n") and jsonfmt.dump_bytes(jsonfmt.loads_bytes(raw)) == raw

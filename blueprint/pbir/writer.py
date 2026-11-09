@@ -99,6 +99,17 @@ def add_create(plan: Plan, rel: Path, data: dict, note: str) -> None:
     plan.writes.append(FileWrite(rel, None, jsonfmt.dump_bytes(data), (note,)))
 
 
+def add_file(plan: Plan, rel: Path, data: bytes, note: str) -> None:
+    """Create or replace a non-PBIR file Blueprint owns (e.g. its theme), inside the report.
+    ``apply`` still refuses if the file changed on disk after the plan was made."""
+    if rel.is_absolute() or ".." in rel.parts:
+        raise WriteError(f"{rel}: must be a path inside the report folder")
+    target = plan.root / rel
+    before = target.read_bytes() if target.exists() else None
+    if before != data:
+        plan.writes.append(FileWrite(rel, before, data, (note,)))
+
+
 def _fmt(v: float | None) -> str:
     if v is None:
         return "-"

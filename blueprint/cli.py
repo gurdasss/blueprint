@@ -12,11 +12,13 @@ from blueprint.commands import check as check_cmd
 from blueprint.commands import fmt as fmt_cmd
 from blueprint.commands import inspect as inspect_cmd
 from blueprint.commands import manifest as manifest_cmd
+from blueprint.commands import theme as theme_cmd
 from blueprint.guidelines import GuidelinesError
 from blueprint.layouts import LayoutError
 from blueprint.pbir.reader import ReportFormatError
 from blueprint.pbir.registry import RegistryError
 from blueprint.pbir.semantic import ModelError
+from blueprint.pbir.theme import ThemeError
 from blueprint.pbir.writer import WriteError
 from blueprint.spec import SpecError
 
@@ -56,6 +58,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true", help="print the planned write; change nothing")
     p.set_defaults(func=manifest_cmd.run)
 
+    p = sub.add_parser("theme", help="write a custom theme from the guidelines and use it")
+    p.add_argument("--report", type=Path, required=True, help=REPORT_HELP)
+    p.add_argument("--guidelines", type=Path, help="guidelines file (default: $BLUEPRINT_GUIDELINES)")
+    p.add_argument("--replace-theme", action="store_true",
+                   help="switch away from the report's existing custom theme (its file is kept)")
+    p.add_argument("--dry-run", action="store_true", help="print the planned writes; change nothing")
+    p.add_argument("--force-schema", action="store_true",
+                   help="write even when a file's schema major version is unknown")
+    p.set_defaults(func=theme_cmd.run)
+
     p = sub.add_parser("fmt", help="snap visuals to the grid (idempotent)")
     p.add_argument("--report", type=Path, required=True, help=REPORT_HELP)
     p.add_argument("--guidelines", type=Path, help="guidelines file (default: $BLUEPRINT_GUIDELINES)")
@@ -72,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         return args.func(args)
     except (ReportFormatError, GuidelinesError, WriteError, SpecError, LayoutError, ModelError,
-            RegistryError, apply_cmd.ApplyError) as exc:
+            RegistryError, ThemeError, apply_cmd.ApplyError) as exc:
         print(f"bp: error: {exc}", file=sys.stderr)
         return 2
 
