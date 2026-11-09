@@ -1,0 +1,6 @@
+# Spec type `header`: a textbox holding the visual's `title` as its text. Textbox structure
+# verified in the sample and probe 03 (paragraphs -> textRuns -> value/textStyle).
+type: header
+visual_type: textbox
+region: header
+slots: {}

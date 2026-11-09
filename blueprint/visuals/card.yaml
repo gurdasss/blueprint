@@ -1,0 +1,7 @@
+# Slot contract for spec type `card`. Verified in probe 04 (pbir/schema.md "Creating pages and
+# visuals"): Desktop's current card is visualType `cardVisual`, its field in query role `Data`.
+type: card
+visual_type: cardVisual
+region: main
+slots:
+  value: { role: Data, accepts: measure, required: true }

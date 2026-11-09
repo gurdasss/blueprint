@@ -1,0 +1,22 @@
+# Example page spec. Fields refer to the invented model in fixtures/02-card-and-chart
+# (table Sales: Country, Region, Amount; measure [Total Amount]).
+page: Sales Overview
+layout: standard-4-up
+
+visuals:
+  - type: header
+    title: Sales Overview
+
+  - type: card
+    title: Total
+    slots:
+      value: "[Total Amount]"
+
+  - type: column
+    title: Sales by Geography
+    slots:
+      # an ordered list makes this a drill-down path
+      category:
+        - "Sales[Country]"
+        - "Sales[Region]"
+      value: "[Total Amount]"
