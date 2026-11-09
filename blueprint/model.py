@@ -42,6 +42,9 @@ class Theme:
     name: str
     layer: str  # "base" | "custom"; custom overrides base
     missing: bool  # referenced, but its file couldn't be found
+    # Built-in (SharedResources) themes may be referenced without an embedded file; Desktop
+    # loads them from its own install (probe 03 phase 2). Custom themes must be embedded.
+    builtin: bool = False
     data_colors: tuple[str, ...] = ()  # uppercase hex
     foreground: str | None = None
     background: str | None = None

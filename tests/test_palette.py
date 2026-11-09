@@ -134,3 +134,15 @@ def test_palette_config_rejected(tmp_path: Path, body: str, match: str):
         guidelines.load(f)
 
 
+
+
+def test_builtin_theme_without_file_is_a_note_not_a_finding(tmp_path: Path):
+    # Probe 03 phase 2: Desktop's theme "Update" references a SharedResources base theme
+    # without embedding the file.
+    rd = make_report(tmp_path / "r", {"p": []})
+    add_theme(rd, "base", "Fluent2-CY26SU10", None, folder="BaseThemes")
+    add_theme(rd, "custom", "Good", GOOD_THEME, package="RegisteredResources", folder="themes")
+    found, notes = _palette_findings(tmp_path, rd)
+    assert found == []
+    assert ("built-in base theme 'Fluent2-CY26SU10' isn't embedded in the report; "
+            "its colours can't be checked") in notes

@@ -157,7 +157,7 @@ def effective_theme(themes: list[Theme]) -> Theme | None:
         return None
     eff = found[0]
     for t in found[1:]:
-        eff = Theme(t.name, t.layer, False, t.data_colors or eff.data_colors,
+        eff = Theme(t.name, t.layer, False, t.builtin, t.data_colors or eff.data_colors,
                     t.foreground or eff.foreground, t.background or eff.background)
     return eff
 
@@ -165,7 +165,10 @@ def effective_theme(themes: list[Theme]) -> Theme | None:
 def _check_palette(report: Report, rules: Guidelines, c: _Collector) -> None:
     pal = rules.palette
     for t in report.themes:
-        if t.missing:
+        if t.missing and t.builtin:
+            c.result.notes.append(f"built-in {t.layer} theme {t.name!r} isn't embedded in the report; "
+                                  "its colours can't be checked")
+        elif t.missing:
             c.add("palette", f"{t.layer} theme {t.name!r} is referenced but its file is missing; "
                              "theme colours can't be checked")
     theme = effective_theme(report.themes)

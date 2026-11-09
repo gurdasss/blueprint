@@ -75,8 +75,11 @@ def colors_in(doc: Any) -> list[ColorUse]:
     return out
 
 
-def theme_refs(report_doc: dict) -> list[tuple[str, str, Path | None]]:
-    """(layer, theme name, file path relative to the .Report folder or None if unresolvable)."""
+BUILTIN_THEME_TYPE = "SharedResources"
+
+
+def theme_refs(report_doc: dict) -> list[tuple[str, str, str | None, Path | None]]:
+    """(layer, theme name, resource type, file path relative to the .Report folder or None)."""
     collection = report_doc.get("themeCollection") or {}
     packages = report_doc.get("resourcePackages") or []
     out = []
@@ -94,7 +97,7 @@ def theme_refs(report_doc: dict) -> list[tuple[str, str, Path | None]]:
                     candidate = Path("StaticResources") / str(pkg.get("name", ptype)) / str(item["path"])
                     if _inside_report(candidate):
                         path = candidate
-        out.append((layer, name, path))
+        out.append((layer, name, ptype, path))
     return out
 
 
@@ -103,7 +106,7 @@ def _inside_report(rel: Path) -> bool:
     return not rel.is_absolute() and ".." not in rel.parts and not rel.drive
 
 
-def theme_from(layer: str, name: str, data: Any) -> Theme:
+def theme_from(layer: str, name: str, data: Any, builtin: bool = False) -> Theme:
     def hexes(v: Any) -> tuple[str, ...]:
         return tuple(c.upper() for c in v if isinstance(c, str)) if isinstance(v, list) else ()
 
@@ -111,5 +114,5 @@ def theme_from(layer: str, name: str, data: Any) -> Theme:
         return v.upper() if isinstance(v, str) and HEX.match(v) else None
 
     data = data if isinstance(data, dict) else {}
-    return Theme(name, layer, False, hexes(data.get("dataColors")),
+    return Theme(name, layer, False, builtin, hexes(data.get("dataColors")),
                  one(data.get("foreground")), one(data.get("background")))

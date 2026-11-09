@@ -179,17 +179,18 @@ class _Reader:
 
     def read_themes(self, report_doc: dict) -> list[Theme]:
         themes = []
-        for layer, name, rel in formatting.theme_refs(report_doc):
+        for layer, name, ptype, rel in formatting.theme_refs(report_doc):
+            builtin = ptype == formatting.BUILTIN_THEME_TYPE
             if rel is None or not self.exists(rel):
-                themes.append(Theme(name, layer, missing=True))
+                themes.append(Theme(name, layer, missing=True, builtin=builtin))
                 continue
             try:
                 data = self.load(rel).data
             except ReportFormatError as exc:
                 self.warnings.append(f"{rel}: theme file unreadable: {exc}")
-                themes.append(Theme(name, layer, missing=True))
+                themes.append(Theme(name, layer, missing=True, builtin=builtin))
                 continue
-            themes.append(formatting.theme_from(layer, name, data))
+            themes.append(formatting.theme_from(layer, name, data, builtin))
         return themes
 
     def read_page(self, rel_dir: Path) -> Page | None:
