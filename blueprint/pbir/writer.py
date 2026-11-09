@@ -138,8 +138,11 @@ def _check_schema(doc: Document, data: dict, *, force_schema: bool) -> None:
     # those files, and refusing to touch them would stop Blueprint every time Desktop updates.
     # The baseline is the file as read from disk, not the in-memory document, so an in-memory
     # edit that breaks the schema is still caught.
+    after = schemas.validate(data, res)
+    if not after:
+        return  # the common case: one validation, no need to look at the original
     before = set(schemas.validate(jsonfmt.loads_bytes(doc.raw), res)) if doc.raw else set()
-    introduced = [e for e in schemas.validate(data, res) if e not in before]
+    introduced = [e for e in after if e not in before]
     if introduced:
         detail = "\n  ".join(introduced[:10])
         raise WriteError(f"{doc.path}: this change would introduce schema errors:\n  {detail}")

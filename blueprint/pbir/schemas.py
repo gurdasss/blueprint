@@ -120,13 +120,32 @@ def _retrieve(uri: str) -> Resource:
 
 
 @cache
+def _registry() -> Registry:
+    """Every vendored schema, loaded once, under its file URL and its $id.
+
+    Lookups are then in-memory. Retrieving on demand re-read and re-parsed the (large,
+    heavily cross-referenced) schema files on every lookup, which made validation about 40 ms
+    per document and dominated `check` and `fmt` on large reports (stress audit).
+    """
+    resources = []
+    for path in sorted(SCHEMA_DIR.rglob("*.json")):
+        contents = json.loads(path.read_text(encoding="utf-8"))
+        resource = Resource.from_contents(contents, default_specification=DRAFT7)
+        file_url = PUBLIC_ROOT + path.relative_to(SCHEMA_DIR).as_posix()
+        resources.append((file_url, resource))
+        if isinstance(contents, dict) and isinstance(contents.get("$id"), str) and contents["$id"] != file_url:
+            resources.append((contents["$id"], resource))
+    registry: Registry = Registry(retrieve=_retrieve)  # type: ignore[call-arg]  # fallback only
+    return registry.with_resources(resources).crawl()
+
+
+@cache
 def _validator(ref: SchemaRef) -> Draft7Validator:
     schema = json.loads(ref.path.read_text(encoding="utf-8"))
     # Resolve relative $refs against the file's URL, not its $id, so the
     # schema-embedded/schema.embedded naming quirk can't send lookups astray.
     schema = {**schema, "$id": ref.url}
-    registry: Registry = Registry(retrieve=_retrieve)  # type: ignore[call-arg]
-    return Draft7Validator(schema, registry=registry)
+    return Draft7Validator(schema, registry=_registry())
 
 
 def validate(doc: Any, resolution: Resolution) -> list[str]:
