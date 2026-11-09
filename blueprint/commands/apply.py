@@ -76,10 +76,15 @@ def _find_page(report: Report, name: str) -> Page | None:
     return pages[0] if pages else None
 
 
+# Desktop renumbers z and tabOrder in steps of 1000 when it saves a page (probe 05: 0, 1, 2
+# became 0, 1000, 2000), so Blueprint writes them that way to avoid a rewrite on the first save.
+STEP = 1000
+
+
 def _next(page: Page | None, key: str) -> int:
     values = [v.source.data.get("position", {}).get(key) for v in (page.visuals if page else [])]
     nums = [int(x) for x in values if isinstance(x, (int, float)) and not isinstance(x, bool)]
-    return max(nums, default=-1) + 1
+    return (max(nums) // STEP + 1) * STEP if nums else 0
 
 
 def build_plan(args: argparse.Namespace) -> Plan:
@@ -154,7 +159,7 @@ def build_plan(args: argparse.Namespace) -> Plan:
         writer.add_create(plan, PAGES / pid / "visuals" / vid / "visual.json", doc,
                           f"new {vs.type} {vs.id!r} in region {p.region.role} at "
                           f"{rect.x},{rect.y} {rect.width}x{rect.height}")
-        z, tab = z + 1, tab + 1
+        z, tab = z + STEP, tab + STEP
         for other in hand_placed:
             if _intersects(rect, other.rect):
                 plan.warnings.append(f"{vs.id}: overlaps hand-placed visual {other.name} "

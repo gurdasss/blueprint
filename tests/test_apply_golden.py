@@ -193,3 +193,12 @@ def test_no_layout_and_by_connection_are_errors(tmp_path: Path, capsys):
     write(rd / "definition.pbir", {"version": "4.0", "datasetReference": {"byConnection": {"connectionString": "x"}}})
     assert _apply(rd) == 2
     assert "report uses byConnection" in capsys.readouterr().err
+
+
+def test_z_and_tab_order_follow_desktops_1000_steps(tmp_path: Path):
+    # Probe 05: Desktop renumbers z/tabOrder as 0, 1000, 2000 on save; matching it avoids churn.
+    report = _copy_fixture(tmp_path)
+    _apply(report)
+    page = next(p for p in read_report(report).pages if p.spec_page)
+    got = sorted((v.source.data["position"]["z"], v.source.data["position"]["tabOrder"]) for v in page.visuals)
+    assert got == [(0, 0), (1000, 1000), (2000, 2000)]
