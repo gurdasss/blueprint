@@ -5,10 +5,13 @@ overwrites only the fields Blueprint owns, and re-serialises it with ``jsonfmt``
 ``jsonfmt`` round-trips Desktop's output byte for byte, everything else in the file stays
 exactly as it was.
 
-Fields owned so far: visual ``position.x/y/width/height`` (``z`` and ``tabOrder`` are kept).
+Fields owned in existing visuals: ``position.x/y/width/height`` (``z`` and ``tabOrder`` are
+kept) and the title text (only when the model sets one). ``add_modify`` and ``add_create`` let a
+command patch other documents (e.g. the page registry) or create new ones.
 
 Safety checks, all made before anything is written:
-- every changed document must pass schema validation;
+- a changed document must not gain schema errors; a created one must validate exactly;
+- creating never overwrites: the target must not exist when the plan is made or applied;
 - documents whose schema major version is unknown are refused unless ``force_schema``;
 - ``apply`` refuses when a file on disk no longer matches what was read.
 """
@@ -19,8 +22,8 @@ import os
 from pathlib import Path
 
 from blueprint.model import Report, Visual
-from blueprint.pbir import jsonfmt, schemas
-from blueprint.pbir.reader import Document
+from blueprint.pbir import jsonfmt, render, schemas
+from blueprint.pbir.reader import NAME_RE, Document, _title
 from blueprint.plan import FileWrite, Plan
 
 
@@ -32,6 +35,8 @@ def plan_writes(report: Report, *, force_schema: bool = False) -> Plan:
     plan = Plan(root=report.root)
     for page in report.pages:
         for visual in page.visuals:
+            if visual.source is None:
+                continue  # not on disk yet; created through add_create
             write = _visual_write(visual, force_schema=force_schema)
             if write is not None:
                 plan.writes.append(write)
@@ -52,14 +57,45 @@ def _visual_write(visual: Visual, *, force_schema: bool) -> FileWrite | None:
         if old is None or float(old) != float(new):
             new_pos[key] = new
             changes.append(f"{key} {_fmt(old)} -> {_fmt(new)}")
+    data = {**doc.data, "position": new_pos}
+    current_title = _title(doc.data.get("visual") or {})
+    if visual.title is not None and visual.title != current_title:
+        data = render.with_title(data, visual.title)
+        changes.append(f"title {current_title!r} -> {visual.title!r}")
     if not changes:
         return None
-    data = {**doc.data, "position": new_pos}
     _check_schema(doc, data, force_schema=force_schema)
     after = jsonfmt.dump_bytes(data)
     if after == doc.raw:
         return None
     return FileWrite(doc.path, doc.raw, after, (f"{visual.name}: " + ", ".join(changes),))
+
+
+def add_modify(plan: Plan, doc: Document, data: dict, note: str, *, force_schema: bool = False) -> None:
+    """Replace an existing document's content, subject to the same schema checks as visuals."""
+    _check_schema(doc, data, force_schema=force_schema)
+    after = jsonfmt.dump_bytes(data)
+    if after != doc.raw:
+        plan.writes.append(FileWrite(doc.path, doc.raw, after, (note,)))
+
+
+def add_create(plan: Plan, rel: Path, data: dict, note: str) -> None:
+    """Add a new document. It must declare a vendored schema and validate *exactly* (no older
+    approximation), its folder names must be names Desktop accepts, and nothing may exist at
+    ``rel`` already."""
+    for part in rel.parent.parts[2:]:  # definition/pages/<page>/visuals/<visual>
+        if part not in ("visuals",) and not NAME_RE.match(part):
+            raise WriteError(f"{rel}: {part!r} is not a name Desktop accepts")
+    if (plan.root / rel).exists() or any(w.path == rel for w in plan.writes):
+        raise WriteError(f"{rel}: already exists; refusing to overwrite")
+    ref = schemas.parse_url(data.get("$schema", "")) if isinstance(data.get("$schema"), str) else None
+    res = schemas.resolve(ref) if ref else None
+    if res is None or not res.exact:
+        raise WriteError(f"{rel}: new documents must declare an exactly vendored schema")
+    errors = schemas.validate(data, res)
+    if errors:
+        raise WriteError(f"{rel}: would create a schema-invalid file:\n  " + "\n  ".join(errors[:10]))
+    plan.writes.append(FileWrite(rel, None, jsonfmt.dump_bytes(data), (note,)))
 
 
 def _fmt(v: float | None) -> str:

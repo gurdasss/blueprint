@@ -122,3 +122,38 @@ def test_change_that_adds_a_new_error_is_still_refused_on_newer_minor(tmp_path: 
     v.rect = Rect(0, 0, 64, 64)
     with pytest.raises(writer.WriteError, match="would introduce schema errors"):
         writer.plan_writes(r)
+
+
+def test_add_create_validates_exactly_and_never_overwrites(tmp_path: Path):
+    from blueprint.pbir import render
+    from blueprint.plan import Plan
+    rd = make_report(tmp_path, {"p": [visual("v1")]})
+    plan = Plan(root=rd)
+    good = render.visual("aaaaaaaaaaaaaaaaaaaa", "cardVisual", Rect(0, 0, 8, 8), 0, 0, "card-1")
+    writer.add_create(plan, Path("definition/pages/p/visuals/aaaaaaaaaaaaaaaaaaaa/visual.json"), good, "new")
+    with pytest.raises(writer.WriteError, match="already exists"):  # in this plan
+        writer.add_create(plan, Path("definition/pages/p/visuals/aaaaaaaaaaaaaaaaaaaa/visual.json"), good, "x")
+    with pytest.raises(writer.WriteError, match="already exists"):  # on disk
+        writer.add_create(plan, Path("definition/pages/p/visuals/v1/visual.json"), good, "x")
+    with pytest.raises(writer.WriteError, match="schema-invalid"):
+        writer.add_create(plan, Path("definition/pages/p/visuals/bbbbbbbbbbbbbbbbbbbb/visual.json"),
+                          {**good, "bogus": 1}, "x")
+    with pytest.raises(writer.WriteError, match="exactly vendored schema"):
+        writer.add_create(plan, Path("definition/pages/p/visuals/cccccccccccccccccccc/visual.json"),
+                          {**good, "$schema": f"{S}/visualContainer/2.99.0/schema.json"}, "x")
+    with pytest.raises(writer.WriteError, match="not a name Desktop accepts"):
+        writer.add_create(plan, Path("definition/pages/p/visuals/bad name/visual.json"), good, "x")
+    writer.apply(plan)
+    assert read_report(rd).page("p").visuals[0].spec_id == "card-1"
+
+
+def test_title_is_owned_only_when_the_model_sets_one(tmp_path: Path):
+    title = {"title": [{"properties": {"text": {"expr": {"Literal": {"Value": "'Old'"}}}}}]}
+    v = visual("v1")
+    v["visual"]["visualContainerObjects"] = title
+    r = read_report(make_report(tmp_path, {"p": [v]}))
+    assert writer.plan_writes(r).empty  # fmt never sets titles
+    r.page("p").visuals[0].title = "New"
+    [w] = writer.plan_writes(r).writes
+    assert w.changes == ("v1: title 'Old' -> 'New'",)
+    assert b"'New'" in w.after and b"'Old'" not in w.after
