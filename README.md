@@ -154,7 +154,7 @@ Against one of the bundled fixtures, so you can't break anything real:
 
 ```bash
 # 1. Copy a fixture so the original stays pristine
-cp -r fixtures/01-blank-report /tmp/demo
+cp -r fixtures/02-card-and-chart /tmp/demo
 cd /tmp/demo && git init && git add -A && git commit -m "baseline" && cd -
 
 # 2. Look at what's there

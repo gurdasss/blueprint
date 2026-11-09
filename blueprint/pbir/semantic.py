@@ -73,10 +73,12 @@ def parse_table(text: str, source: str = "<tmdl>") -> tuple[str, set[str], set[s
 
 
 def load(model_dir: Path) -> SemanticModel:
+    if not (model_dir / "definition").is_dir():
+        raise ModelError(f"{model_dir}: no definition folder (is it a TMDL semantic model?)")
     tables_dir = model_dir / "definition" / "tables"
-    if not tables_dir.is_dir():
-        raise ModelError(f"{model_dir}: no definition/tables folder (is it a TMDL semantic model?)")
     model = SemanticModel()
+    if not tables_dir.is_dir():
+        return model  # a new report's model has no tables yet (fixtures/01-blank-report)
     for f in sorted(tables_dir.glob("*.tmdl")):
         table, columns, measures = parse_table(f.read_text(encoding="utf-8-sig"), f.name)
         model.tables[table] = columns

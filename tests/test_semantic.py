@@ -13,6 +13,11 @@ def test_fixture_model():
     assert m.measure_table("Total Amount") == "Sales"
 
 
+def test_blank_fixture_model_is_empty_not_an_error():
+    m = semantic.load(ROOT / "fixtures/01-blank-report/Fixture.SemanticModel")
+    assert (m.tables, m.measures) == ({}, {})
+
+
 def test_parse_table_names_and_members():
     text = ("table 'Sales Data'\n\tlineageTag: x\n\n"
             "\tmeasure 'Gross %' = DIVIDE(1, 2)\n\t\tformatString: 0\n"
