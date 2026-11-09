@@ -1,0 +1,361 @@
+"""Replay every Desktop probe built on fixture 02 (05-15) and test Blueprint against what Desktop
+actually wrote, from several angles.
+
+Each evidence file (docs/probes/NN-*.diff, written by scripts/probe_evidence.py) holds one
+`######## <step>` section per commit after the probe's baseline. Applying the sections in order
+to a copy of fixtures/02-card-and-chart rebuilds the report exactly as it stood after each step:
+Desktop's own saves ("01 open and save", …) and the Blueprint runs between them ("blueprint: …").
+
+Angles, each over every probe or step it applies to:
+
+- format: every JSON file round-trips through jsonfmt byte for byte, and `bp check` finds no
+  format errors;
+- reading: no reader warnings, and every field projection Desktop wrote is read (none dropped);
+- model: every bound field resolves against the probe's own semantic model;
+- rendering: for each Desktop-made visual of a type Blueprint ships, rendering the same bindings
+  gives Desktop's queryState (drill `active` state aside), in Desktop's role order;
+- what the user saw: fonts, theme defaults and well contents the user reported;
+- Desktop saves: Blueprint's annotations survive every one, and re-applying the specs afterwards
+  changes nothing;
+- fmt: idempotent on every probe, moves only positions, and `check` passes its grid;
+- theme: `bp theme` reproduces the theme file Desktop accepted, byte for byte.
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import shutil
+import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+
+import pytest
+
+from blueprint import guidelines, manifest
+from blueprint.cli import main
+from blueprint.commands import check as check_cmd
+from blueprint.model import Rect
+from blueprint.pbir import formatting, jsonfmt, render, semantic
+from blueprint.pbir.reader import read_report
+from blueprint.slots import contracts
+from blueprint.validate import check_report, effective_theme, theme_font
+
+ROOT = Path(__file__).resolve().parent.parent
+PROBES = ROOT / "docs" / "probes"
+FIXTURE = ROOT / "fixtures" / "02-card-and-chart"
+GUIDE = ROOT / "guidelines" / "example.yaml"
+REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+# Probes whose report Blueprint built and Desktop then opened and saved.
+ACCEPTANCE = [5, 6, 9, 14]
+
+pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git to apply the evidence")
+
+
+@dataclass(frozen=True)
+class Step:
+    probe: int
+    index: int
+    name: str
+    root: Path  # the project folder (Fixture.pbip, Fixture.Report, Fixture.SemanticModel, …)
+
+    @property
+    def by_desktop(self) -> bool:
+        return self.name[:2].isdigit()
+
+    @property
+    def report(self) -> Path:
+        return self.root / "Fixture.Report"
+
+    def __str__(self) -> str:
+        return f"{self.probe:02d}/{self.name}"
+
+
+def _evidence(probe: int) -> Path:
+    [path] = PROBES.glob(f"{probe:02d}-*.diff")
+    return path
+
+
+def _sections(path: Path) -> list[tuple[str, bytes]]:
+    parts = re.split(rb"^######## (.*)$", path.read_bytes(), flags=re.MULTILINE)
+    return [(parts[i].decode().strip(), parts[i + 1]) for i in range(1, len(parts), 2)]
+
+
+@pytest.fixture(scope="session")
+def replays(tmp_path_factory) -> dict[int, list[Step]]:
+    """Every probe, rebuilt step by step; each step's state in its own folder."""
+    out: dict[int, list[Step]] = {}
+    for probe in REPLAYED:
+        work = tmp_path_factory.mktemp(f"probe{probe:02d}") / "work"
+        shutil.copytree(FIXTURE, work)
+        subprocess.run(["git", "init", "-q", str(work)], check=True)
+        steps = []
+        for i, (name, patch) in enumerate(_sections(_evidence(probe))):
+            if patch.strip(b"\r\n"):
+                done = subprocess.run(["git", "-C", str(work), "apply", "--whitespace=nowarn", "-"],
+                                      input=patch, capture_output=True, check=False)
+                assert done.returncode == 0, f"probe {probe} step {name!r}: {done.stderr.decode()}"
+            snap = work.parent / f"{i:02d}"
+            shutil.copytree(work, snap, ignore=shutil.ignore_patterns(".git"))
+            steps.append(Step(probe, i, name, snap))
+        out[probe] = steps
+    return out
+
+
+def _last(replays, probe: int) -> Step:
+    return replays[probe][-1]
+
+
+def _all_steps(replays) -> list[Step]:
+    return [s for probe in REPLAYED for s in replays[probe]]
+
+
+def _visual_docs(report: Path) -> list[dict]:
+    return [jsonfmt.load(f) for f in sorted(report.glob("definition/pages/*/visuals/*/visual.json"))]
+
+
+def _copy(step: Step, tmp_path: Path) -> Path:
+    dest = tmp_path / "proj"
+    shutil.copytree(step.root, dest)
+    return dest
+
+
+def test_every_probe_replays(replays):
+    for probe in REPLAYED:
+        steps = replays[probe]
+        assert steps, f"probe {probe}: no steps in {_evidence(probe).name}"
+        assert any(s.by_desktop for s in steps), f"probe {probe}: no Desktop save recorded"
+
+
+# --- format --------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("probe", REPLAYED)
+def test_every_json_file_round_trips_byte_for_byte(replays, probe):
+    for step in replays[probe]:
+        for f in sorted(step.report.rglob("*.json")):
+            if f.name == manifest.FILE:
+                continue  # Blueprint's own file, not PBIR
+            data = f.read_bytes()
+            assert jsonfmt.dump_bytes(jsonfmt.loads_bytes(data)) == data, f"{step}: {f.relative_to(step.root)}"
+
+
+@pytest.mark.parametrize("probe", REPLAYED)
+def test_no_format_errors(replays, probe):
+    for step in replays[probe]:
+        args = argparse.Namespace(report=step.report, grid=None, guidelines=GUIDE)
+        _, _, result = check_cmd.run_check(args)
+        errors = [f.message for f in result.findings if f.rule == "format" and f.severity == "error"]
+        assert errors == [], str(step)
+
+
+# --- reading -------------------------------------------------------------------------------
+
+
+def _projection_count(doc: dict) -> dict[str, int]:
+    state = ((doc.get("visual") or {}).get("query") or {}).get("queryState") or {}
+    return {role: len(entry.get("projections") or []) for role, entry in state.items()}
+
+
+@pytest.mark.parametrize("probe", REPLAYED)
+def test_every_projection_is_read(replays, probe):
+    for step in replays[probe]:
+        report = read_report(step.report)
+        assert report.warnings == [], str(step)
+        for page in report.pages:
+            for v in page.visuals:
+                read = {role: len(fs) for role, fs in v.fields.items()}
+                assert read == _projection_count(v.source.data), f"{step}: {v.visual_type} {v.name}"
+
+
+# --- model ---------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("probe", REPLAYED)
+def test_bound_fields_resolve_against_the_probes_model(replays, probe):
+    for step in replays[probe]:
+        report = read_report(step.report)
+        pbir = report.source.documents[Path("definition.pbir")].data
+        model = semantic.load(semantic.model_dir_for(report.root, pbir))
+        for page in report.pages:
+            for v in page.visuals:
+                for fields in v.fields.values():
+                    for f in fields:
+                        if f.kind == "measure":
+                            assert model.measure_table(f.name) == f.table, f"{step}: {f}"
+                        else:  # column, aggregation, date_level: all over a model column
+                            model.check_column(f.table, f.name)
+
+
+# --- rendering -----------------------------------------------------------------------------
+
+
+def _without_active(state: dict) -> dict:
+    """``state`` with each ``active`` value blanked: its value is drill view state (probes 11, 12),
+    but whether a projection carries it at all is Desktop's convention (Category roles only)."""
+    return {role: {**entry, "projections": [{k: (None if k == "active" else v) for k, v in p.items()}
+                                            for p in entry["projections"]]}
+            for role, entry in state.items()}
+
+
+def _desktop_visuals(replays):
+    """(step, visual) for every visual Desktop itself created or changed, of a type Blueprint ships,
+    bound only to fields a spec can express."""
+    shipped = {c.visual_type: c for c in contracts().values()}
+    seen = set()
+    for step in _all_steps(replays):
+        if not step.by_desktop:
+            continue
+        for page in read_report(step.report).pages:
+            for v in page.visuals:
+                doc = v.source.data
+                if v.visual_type not in shipped or v.spec_id is not None or not v.fields:
+                    continue
+                if any(f.kind not in ("measure", "column") for fs in v.fields.values() for f in fs):
+                    continue
+                key = jsonfmt.dumps(doc["visual"]["query"]["queryState"])
+                if key not in seen:
+                    seen.add(key)
+                    yield step, v, shipped[v.visual_type]
+
+
+def test_rendering_desktops_bindings_gives_desktops_query(replays):
+    checked = 0
+    for step, v, contract in _desktop_visuals(replays):
+        desktop = v.source.data["visual"]["query"]["queryState"]
+        assert list(desktop) == sorted(desktop), f"{step}: Desktop's roles not alphabetical"
+        roles = {s.role for s in contract.slots.values()}
+        assert set(desktop) <= roles, f"{step}: {v.visual_type} role(s) {set(desktop) - roles} have no slot"
+        # reversed: a spec may list slots in any order, and Desktop's order must still come out
+        bindings = {role: [render.Binding(f.kind, f.table, f.name) for f in fs]
+                    for role, fs in reversed(list(v.fields.items()))}
+        ours = render.visual("x", v.visual_type, Rect(0, 0, 10, 10), 0, 0, "s", "r",
+                             bindings=bindings)["visual"]["query"]["queryState"]
+        assert list(ours) == list(desktop), str(step)
+        assert _without_active(ours) == _without_active(desktop), f"{step}: {v.visual_type}"
+        checked += 1
+    # card + column (fixture), pie/table/kpi (08), kpi with target (10), pie drill + details (11),
+    # line, line + legend, bar drill (12): at least one per shipped chart type.
+    assert checked >= 10
+
+
+# --- what the user saw ---------------------------------------------------------------------
+
+
+def _slots(step: Step, visual_type: str) -> list[dict]:
+    m = manifest.build(read_report(step.report), guidelines.load(GUIDE), "2026-01-01T00:00:00Z")
+    return [v["slots"] for p in m["pages"] for v in p["visuals"]
+            if v["visual_type"] == visual_type and not v["managed"]]
+
+
+def test_07_card_fonts_as_the_user_set_them(replays):
+    card = next(d for d in _visual_docs(_last(replays, 7).report) if d["visual"]["visualType"] == "cardVisual")
+    fonts = {(f.role, f.family, f.size, f.bold) for f in formatting.fonts_in(card["visual"])}
+    assert fonts == {("title", None, 16.0, None), ("callout", "Arial", 28.0, True), ("card_label", None, 14.0, None)}
+    # step 01: Desktop showed Segoe UI Semibold 21 and Segoe UI 12 from the base theme
+    [base] = read_report(replays[7][0].report).themes
+    assert theme_font(base, "callout") == formatting.TextClass("Segoe UI Semibold", 21.0)
+    assert theme_font(base, "card_label") == formatting.TextClass("Segoe UI", 12.0)
+
+
+def test_wells_as_the_user_saw_them(replays):
+    # 08: KPI Value/Trend axis, pie Legend/Values, table Columns after the reorder
+    assert _slots(_last(replays, 8), "kpi") == [{"Indicator": "[Total Amount]", "TrendLine": "Sales[Country]"}]
+    assert _slots(_last(replays, 8), "tableEx") == [{"Values": ["Sales[Country]", "Sales[Region]", "[Total Amount]"]}]
+    # 10: the target swapped for a column became "Sum of Amount"
+    assert _slots(_last(replays, 10), "kpi") == [{"Goal": "Sum(Sales[Amount])", "Indicator": "[Total Amount]",
+                                                   "TrendLine": "Sales[Country]"}]
+    # 11: Region moved from the Legend drill-down into Details
+    assert _slots(_last(replays, 11), "pieChart") == [{"Category": "Sales[Country]", "Series": "Sales[Region]",
+                                                        "Y": "[Total Amount]"}]
+    # 13: the date hierarchy's four levels, and Average/Count
+    assert _slots(_last(replays, 13), "lineChart") == [{"Category": [f"Sales[Order Date].{lv}" for lv in
+                                                                     ("Year", "Quarter", "Month", "Day")],
+                                                        "Y": "[Total Amount]"}]
+    assert _slots(_last(replays, 13), "tableEx") == [{"Values": ["Sales[Country]", "Average(Sales[Amount])",
+                                                                 "Count(Sales[Region])"]}]
+
+
+def test_15_theme_defaults_as_the_user_saw_them(replays):
+    theme = effective_theme(read_report(_last(replays, 15).report).themes)
+    assert theme_font(theme, "callout") == formatting.TextClass("Segoe UI Light", 32.0)
+    assert theme_font(theme, "card_label") == formatting.TextClass("Arial", 14.0)
+
+
+# --- Desktop saves of Blueprint's output ---------------------------------------------------
+
+
+def _managed(step: Step) -> set[tuple[str, str]]:
+    return {(p.name, v.name) for p in read_report(step.report).pages for v in p.visuals if v.spec_id}
+
+
+@pytest.mark.parametrize("probe", ACCEPTANCE)
+def test_blueprint_annotations_survive_every_desktop_save(replays, probe):
+    built: set[tuple[str, str]] = set()
+    for step in replays[probe]:
+        now = _managed(step)
+        if step.by_desktop:
+            assert built <= now, f"{step}: lost {built - now}"
+        built |= now
+    assert built, f"probe {probe}: Blueprint built nothing"
+
+
+@pytest.mark.parametrize(("probe", "specs"), [
+    (9, [ROOT / "examples" / "sales-mix.yaml"]),
+    (14, ["specs/dates-and-bars.yaml", "specs/pies-and-lines.yaml"]),
+])
+def test_reapply_after_desktop_saved_changes_nothing(replays, probe, specs, tmp_path, capsys):
+    proj = _copy(_last(replays, probe), tmp_path)
+    for spec in specs:
+        path = spec if isinstance(spec, Path) else proj / spec
+        capsys.readouterr()
+        assert main(["apply", str(path), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+        assert capsys.readouterr().out.strip().startswith("No changes."), f"{probe}: {spec}"
+    names = {name for _, name in _managed(_last(replays, probe))}
+    found = check_report(read_report(proj / "Fixture.Report"), guidelines.load(GUIDE)).findings
+    assert [f for f in found if f.visual in names] == []
+
+
+# --- fmt -----------------------------------------------------------------------------------
+
+
+def _without_positions(report: Path) -> dict[str, object]:
+    out = {}
+    for f in sorted(report.rglob("*.json")):
+        if f.name == manifest.FILE:
+            continue
+        doc = jsonfmt.load(f)
+        if isinstance(doc, dict) and "position" in doc:
+            doc = {k: v for k, v in doc.items() if k != "position"}
+        out[f.relative_to(report).as_posix()] = doc
+    return out
+
+
+@pytest.mark.parametrize("probe", REPLAYED)
+def test_fmt_only_moves_is_idempotent_and_passes_check(replays, probe, tmp_path, capsys):
+    proj = _copy(_last(replays, probe), tmp_path)
+    report = proj / "Fixture.Report"
+    before = _without_positions(report)
+    assert main(["fmt", "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+    assert _without_positions(report) == before, "fmt changed something other than position"
+    capsys.readouterr()
+    assert main(["fmt", "--report", str(proj), "--guidelines", str(GUIDE), "--dry-run"]) == 0
+    assert capsys.readouterr().out.startswith("No changes."), "fmt is not idempotent"
+    found = check_report(read_report(report), guidelines.load(GUIDE)).findings
+    assert [f.message for f in found if f.rule == "grid"] == []
+
+
+# --- theme ---------------------------------------------------------------------------------
+
+THEME = Path("StaticResources") / "RegisteredResources" / "blueprint-theme.json"
+
+
+def test_15_bp_theme_reproduces_the_accepted_theme(replays, tmp_path):
+    last = _last(replays, 15)
+    proj = shutil.copytree(FIXTURE, tmp_path / "proj")
+    guide = tmp_path / "g.yaml"
+    # the probe's own guidelines, plus the label entry it added by hand (now written by bp theme)
+    guide.write_text((last.root / "probe-guidelines.yaml").read_text()
+                     + "  card_label: { font: Arial, size: 14 }\n")
+    assert main(["theme", "--report", str(proj), "--guidelines", str(guide)]) == 0
+    assert (proj / "Fixture.Report" / THEME).read_bytes() == (last.report / THEME).read_bytes()
