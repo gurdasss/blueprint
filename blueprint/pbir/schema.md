@@ -40,6 +40,11 @@ git repo, opened, browsed, and saved. Desktop modified exactly two files:
   adds a default setting that was missing from the older file. Expect similar one-off
   upgrades the first time Desktop saves an older report.
 
+Probe 02's first save (no edits) rewrote, by mtime, every report- and model-level file
+(`.pbip`, `.platform`, `definition.pbir`, `report.json`, `pages.json`, all TMDL,
+`.pbi/*`), but **no `page.json` or `visual.json`**. Only `pages.json` and `report.json`
+changed in content. So Desktop rewrites per-page and per-visual files only when they change.
+
 Both rewritten files still use CRLF line endings with no trailing newline. `jsonfmt`
 round-trips both byte for byte, and both validate. **New keys go in Desktop's own
 order, not at the end:** in probe 01, `settings` was inserted *before* an existing
