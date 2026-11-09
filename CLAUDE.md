@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `pbir/writer`, `model`, `plan`, `guidelines`, `policies`, `grid`, `validate`, `pbir/formatting`, `bp inspect`, `bp fmt` and `bp check` (including the palette and typography rules). Foundation for `bp apply` (v0.3): `spec`, `slots` (+ `blueprint/visuals/*.yaml`), `layouts`, `pbir/ids`, `pbir/registry`. Still to come: visual templates/render, the writer's create path, the `apply` command, and a Desktop probe of Blueprint-created output. Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
+Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `pbir/writer`, `model`, `plan`, `guidelines`, `policies`, `grid`, `validate`, `pbir/formatting`, `bp inspect`, `bp fmt` and `bp check` (including the palette and typography rules). `bp apply` (v0.3): `spec`, `slots` (+ `blueprint/visuals/*.yaml`), `layouts`, `pbir/semantic`, `pbir/ids`, `pbir/registry`, `pbir/render`, `writer.add_create`/`add_modify`. Pending: probe 05 (does Desktop accept Blueprint-created pages and visuals as written?). Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
 
 ## Commands
 
@@ -19,6 +19,8 @@ ruff check .
 bp inspect --report samples/retail-analysis       # accepts .Report dir, .pbip, or a parent dir
 bp fmt --report <copy> --dry-run                  # never run fmt on samples/ itself; copy it first
 bp check --report samples/retail-analysis --guidelines guidelines/example.yaml   # exit 0 clean, 1 errors, 2 unreadable
+bp apply examples/sales-overview.yaml --report <copy of fixtures/02-card-and-chart> --guidelines guidelines/example.yaml
+BLUEPRINT_UPDATE_GOLDEN=1 pytest tests/test_apply_golden.py   # regenerate apply's golden output after an intended change
 python scripts/vendor_schemas.py <$schema URL>    # vendor a schema + its $refs into blueprint/pbir/schemas/
 ```
 
@@ -49,6 +51,8 @@ python scripts/vendor_schemas.py <$schema URL>    # vendor a schema + its $refs 
 - **Specs → placement:** `spec.parse` returns typed `PageSpec`/`VisualSpec`/`FieldRef`. Field syntax: `Table[Column]` is a column and `[Name]` is a measure. Every problem is collected with its location. Visual types are YAML contracts in `blueprint/visuals/`. Only ship a type whose PBIR shape a probe has verified, and cite the probe in the YAML. `layouts.place` fills regions of the matching role in declaration order. Running out of regions is a `LayoutError`, never a reflow.
 - `layouts.search_path` entries resolve relative to the guidelines file that declares them (`guidelines._anchor`), not the current directory.
 - New object names come from `pbir/ids.py`: 20 hex characters derived from a stable key (never random), so output is deterministic. `pbir/registry.py` is the only code that changes `pages.json` `pageOrder`. The page folder and the registry must change together.
+
+- **`bp apply`** (`commands/apply.py`) finds the pages and visuals it created by the `blueprint.page` and `blueprint.visual` annotations. On a re-run it updates only position and title. A page-size mismatch, or a changed type or binding, is an error. A visual dropped from the spec is kept, with a warning. It never touches hand-placed or ignored visuals, and never deletes. Bindings resolve against the TMDL model (`pbir/semantic.py`, read-only) before anything is written. New documents come from `pbir/render.py`, the minimal shapes from probe 04, and must validate exactly (`writer.add_create`).
 
 ## Test data
 
