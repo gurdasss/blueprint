@@ -635,6 +635,25 @@ Data pane (Create hierarchy on Country, renamed Geography, then Region added):
   On save Desktop changed no query (`test_21_desktop_kept_every_query_blueprint_wrote`), kept the
   annotations, and only added `filterConfig` and raised `$schema` to 2.14.0 on the bar and line
   charts (as in probes 17, 19); the slicer, matrix and column chart files weren't rewritten.
+- **Chart variants and the Dropdown slicer, as candidate shapes (probe 22,**
+  `scripts/probe_chart_variants.py`; evidence `docs/probes/22-chart-variants.diff`). Blueprint wrote
+  each candidate as a verified sibling's query under another `visualType`, and Desktop opened them:
+
+  | Spec type | `visualType` | `queryState` (as written and drawn) |
+  |---|---|---|
+  | `stacked-column` | `columnChart` | `Category` (column, `active`), `Series` (Legend column, no `active`), `Y` |
+  | `stacked-column-100` | `hundredPercentStackedColumnChart` | as `columnChart` |
+  | `stacked-bar` | `barChart` | as `columnChart` |
+  | `donut` | `donutChart` | `Category` (Legend, `active`), `Y`, as the pie |
+  | `area` | `areaChart` | `Category` (`active`), `Series` (Legend), `Y`, as the line chart |
+  | slicer `options: {style: dropdown}` | `slicer` | `objects.data[0].properties.mode = 'Dropdown'` (probe 20's literal) |
+
+  One page capture showed each drawn correctly with data and no error (the stacks by Region, the
+  donut's shares, the slicer as a dropdown; the area chart as one point per region, because each
+  region belongs to one country in the fixture). Desktop reported no unsaved changes, and a Ctrl+S
+  wrote nothing: **an untouched open isn't dirty, so it doesn't save** (probe 21's first save
+  attempt was the same). So the evidence is "drawn as written, nothing to change", not a save
+  diff. Verified only as probed: one category column, one measure, the donut without Details.
 
 ## Schema versions
 

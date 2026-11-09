@@ -223,6 +223,18 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
                                 "report; changing bindings isn't supported yet (delete the visual in "
                                 "Desktop and re-apply)")
                 continue
+            # Options are written when the visual is created. One the spec sets that the report
+            # doesn't match is refused like a binding; one the spec leaves out is Desktop's (or
+            # the user's) to set, and left alone.
+            changed = [name for name, value in vs.options.items()
+                       if render.option_literal(current.source.data, contract.options[name].object,
+                                                contract.options[name].property)
+                       != contract.options[name].values[value]]
+            if changed:
+                problems.append(f"visuals[{vs.index}] ({vs.id}): option(s) {', '.join(changed)} differ "
+                                "from the report; changing options isn't supported yet (set it in "
+                                "Desktop, or delete the visual there and re-apply)")
+                continue
             current.rect = rect
             current.positioned = True  # the layout owns this visual's position: restore it
             if current.region != p.region.key:
@@ -245,7 +257,9 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
         doc = render.visual(vid, contract.visual_type, rect, z, tab, vs.id, p.region.key,
                             bindings=want or None,
                             title=None if is_header else vs.title, text=vs.title if is_header else None,
-                            text_style=header_style if is_header else None)
+                            text_style=header_style if is_header else None,
+                            options=[(contract.options[n].object, contract.options[n].property,
+                                      contract.options[n].values[val]) for n, val in vs.options.items()])
         writer.add_create(plan, PAGES / pid / "visuals" / vid / "visual.json", doc,
                           f"new {vs.type} {vs.id!r} in region {p.region.key} at "
                           f"{rect.x},{rect.y} {rect.width}x{rect.height}")

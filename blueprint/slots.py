@@ -8,7 +8,7 @@ cite the probe that verified them.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import cache
 from pathlib import Path
 
@@ -36,11 +36,23 @@ class Slot:
 
 
 @dataclass(frozen=True)
+class Option:
+    """A formatting choice a spec may make: each value is the literal written at
+    ``visual.objects.<object>[0].properties.<property>`` (as Desktop wrote it in the cited probe).
+    Leaving the option out leaves Desktop's default."""
+    name: str
+    object: str
+    property: str
+    values: dict[str, str]  # spec value -> PBIR literal, e.g. dropdown -> "'Dropdown'"
+
+
+@dataclass(frozen=True)
 class Contract:
     type: str
     visual_type: str
     region: str
     slots: dict[str, Slot]
+    options: dict[str, Option] = field(default_factory=dict)
 
 
 def _load(path: Path) -> Contract:
@@ -55,7 +67,10 @@ def _load(path: Path) -> Contract:
                 raise ContractError(f"{where}: slot {name}: accepts must be from {KINDS}")
             slots[name] = Slot(name, spec["role"], accepts, bool(spec.get("required", False)),
                                bool(spec.get("ordered", False)), tuple(spec.get("list_excludes", ())))
-        contract = Contract(data["type"], data["visual_type"], data["region"], slots)
+        options = {name: Option(name, spec["object"], spec["property"],
+                                {str(k): str(v) for k, v in spec["values"].items()})
+                   for name, spec in (data.get("options") or {}).items()}
+        contract = Contract(data["type"], data["visual_type"], data["region"], slots, options)
         for slot in slots.values():
             unknown = [s for s in slot.list_excludes if s not in slots]
             if unknown or (slot.list_excludes and not slot.ordered):

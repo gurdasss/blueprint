@@ -42,7 +42,7 @@ ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
 _COLUMN = re.compile(r"^(?:'(?P<qt>(?:[^']|'')+)'|(?P<t>[A-Za-z_][\w ]*?))\[(?P<c>[^\]]+)\]$")
 _MEASURE = re.compile(r"^\[(?P<m>[^\]]+)\]$")
 _SPEC_KEYS = {"id", "page", "layout", "visuals"}
-_VISUAL_KEYS = {"type", "id", "title", "region", "slots", "blueprint"}
+_VISUAL_KEYS = {"type", "id", "title", "region", "slots", "options", "blueprint"}
 _ROLE_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 
 
@@ -71,6 +71,7 @@ class VisualSpec:
     slots: dict[str, tuple[FieldRef, ...]] = field(default_factory=dict)
     ignore: bool = False
     region: str | None = None  # region role chosen in the spec; None: the contract's role
+    options: dict[str, str] = field(default_factory=dict)  # option name -> value (contract options)
 
 
 @dataclass(frozen=True)
@@ -182,7 +183,27 @@ def _visual(i: int, raw: Any, known: dict[str, Contract], counts: dict[str, int]
         problems.append(f"{at}.title: a header needs a title (it is the header's text)")
 
     slots = {} if ignore else _slots(at, raw.get("slots"), known[vtype], problems)
-    return VisualSpec(i, vtype, vid, title, slots, ignore, region)
+    options = {} if ignore else _options(at, raw.get("options"), known[vtype], problems)
+    return VisualSpec(i, vtype, vid, title, slots, ignore, region, options)
+
+
+def _options(at: str, raw: Any, contract: Contract, problems: list[str]) -> dict[str, str]:
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        problems.append(f"{at}.options: must be a mapping of option name -> value")
+        return {}
+    out = {}
+    for name, value in raw.items():
+        option = contract.options.get(name)
+        if option is None:
+            allowed = ", ".join(contract.options) or "none"
+            problems.append(f"{at}.options.{name}: {contract.type} has no option {name!r} (options: {allowed})")
+        elif value not in option.values:
+            problems.append(f"{at}.options.{name}: {value!r} isn't one of {', '.join(option.values)}")
+        else:
+            out[name] = value
+    return out
 
 
 def _slots(at: str, raw: Any, contract: Contract, problems: list[str]) -> dict[str, tuple[FieldRef, ...]]:

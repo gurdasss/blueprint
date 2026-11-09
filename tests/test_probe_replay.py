@@ -45,9 +45,9 @@ ROOT = Path(__file__).resolve().parent.parent
 PROBES = ROOT / "docs" / "probes"
 FIXTURE = ROOT / "fixtures" / "02-card-and-chart"
 GUIDE = ROOT / "guidelines" / "example.yaml"
-REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
+REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
 # Probes whose report Blueprint built and Desktop then opened and saved.
-ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21]
+ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22]
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git to apply the evidence")
 
@@ -503,3 +503,51 @@ def test_21_desktop_kept_every_query_blueprint_wrote(replays):
     assert queries(steps["01 refresh and save"]) == built
     charts = [q["Y"] for q in built.values() if "Category" in q]
     assert [[p["nativeQueryRef"] for p in y["projections"]] for y in charts] == [["Total Amount", "Target Amount"]] * 3
+
+
+# Probe 22's candidates, as a spec of the types they became (the slicer's Dropdown isn't a spec
+# option yet, so it's left out).
+PROBE_22_SPEC = """\
+page: V
+layout: grid-2x3
+visuals:
+  - {type: header, title: V}
+  - {type: stacked-column, slots: {category: "Sales[Country]", value: "[Total Amount]", legend: "Sales[Region]"}}
+  - {type: stacked-column-100, slots: {category: "Sales[Country]", value: "[Total Amount]", legend: "Sales[Region]"}}
+  - {type: stacked-bar, slots: {category: "Sales[Country]", value: "[Total Amount]", legend: "Sales[Region]"}}
+  - {type: donut, slots: {category: "Sales[Region]", value: "[Total Amount]"}}
+  - {type: area, slots: {category: "Sales[Country]", value: "[Total Amount]", legend: "Sales[Region]"}}
+"""
+
+
+def test_22_new_types_write_what_desktop_drew(replays, tmp_path):
+    accepted = _last(replays, 22)
+    assert accepted.name.startswith("01 opened, all drawn")
+    fixture_visuals = {d["name"] for d in _visual_docs(FIXTURE / "Fixture.Report")}
+    desktop = {d["visual"]["visualType"]: d["visual"]["query"]["queryState"]
+               for d in _visual_docs(accepted.report) if "query" in d["visual"]
+               and d["name"] not in fixture_visuals and d["visual"]["visualType"] != "slicer"}
+    proj = _copy(accepted, tmp_path)
+    spec = tmp_path / "v.yaml"
+    spec.write_text(PROBE_22_SPEC)
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+    [page] = [p for p in read_report(proj / "Fixture.Report").pages if p.display_name == "V"]
+    ours = {v.visual_type: v.source.data["visual"]["query"]["queryState"] for v in page.visuals
+            if v.visual_type != "textbox"}
+    assert set(ours) == set(desktop) == {"columnChart", "hundredPercentStackedColumnChart", "barChart",
+                                         "donutChart", "areaChart"}
+    assert ours == desktop  # active flags included
+
+
+def test_22_dropdown_option_writes_what_desktop_drew(replays, tmp_path):
+    accepted = _last(replays, 22)
+    [desktop] = [d for d in _visual_docs(accepted.report) if d["visual"]["visualType"] == "slicer"]
+    proj = _copy(accepted, tmp_path)
+    spec = tmp_path / "d.yaml"
+    spec.write_text("page: D\nlayout: standard-4-up\nvisuals:\n  - {type: header, title: D}\n"
+                    "  - {type: slicer, slots: {field: 'Sales[Country]'}, options: {style: dropdown}}\n")
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+    [page] = [p for p in read_report(proj / "Fixture.Report").pages if p.display_name == "D"]
+    [ours] = [v.source.data for v in page.visuals if v.visual_type == "slicer"]
+    assert ours["visual"]["objects"] == desktop["visual"]["objects"]
+    assert ours["visual"]["query"] == desktop["visual"]["query"]

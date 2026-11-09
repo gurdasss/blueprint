@@ -2,10 +2,12 @@
 # visuals"): the plain Slicer is `slicer`, its Field well is role `Values`, and several columns
 # there are an ordered list (a hierarchy slicer: Country, expandable to Region), each projection
 # "active": true. A hierarchy built in the model wasn't probed in a slicer, so it isn't accepted.
-# Desktop's default style is written by Desktop, not Blueprint (Dropdown would be
-# objects.data[0].properties.mode = 'Dropdown').
 type: slicer
 visual_type: slicer
 region: main
 slots:
   field: { role: Values, accepts: column, required: true, ordered: true }
+options:
+  # Probe 20: Desktop wrote the Dropdown style as objects.data[0].properties.mode = 'Dropdown';
+  # probe 22: Desktop drew Blueprint's slicer with it as a dropdown. Left out: Desktop's default list.
+  style: { object: data, property: mode, values: { dropdown: "'Dropdown'" } }

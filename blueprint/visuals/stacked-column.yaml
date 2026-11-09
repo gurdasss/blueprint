@@ -1,0 +1,11 @@
+# Slot contract for spec type `stacked-column` (stacked column). Verified in probe 22 (pbir/schema.md "Creating pages
+# and visuals"): `columnChart` with the clustered chart's roles, X axis `Category` ("active": true) and
+# `Y`, plus Legend `Series` (a column, no "active"). Desktop drew it stacking the Legend within each
+# category and found nothing to rewrite. Only one category column and one measure were probed.
+type: stacked-column
+visual_type: columnChart
+region: main
+slots:
+  category: { role: Category, accepts: column, required: true }
+  value:    { role: Y, accepts: measure, required: true }
+  legend:   { role: Series, accepts: column }

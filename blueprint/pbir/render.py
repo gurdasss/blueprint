@@ -186,8 +186,10 @@ def title_objects(title: str) -> dict:
 def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec_id: str,
            region: str, *,
            bindings: dict[str, list[Binding]] | None = None, title: str | None = None,
-           text: str | None = None, text_style: dict | None = None) -> dict:
-    """A visual container. ``bindings``: query role -> ordered fields. ``text``: textbox content."""
+           text: str | None = None, text_style: dict | None = None,
+           options: list[tuple[str, str, str]] | None = None) -> dict:
+    """A visual container. ``bindings``: query role -> ordered fields. ``text``: textbox content.
+    ``options``: (object, property, literal) formatting choices from the contract."""
     body: dict[str, Any] = {"visualType": visual_type}
     if bindings:
         # Desktop writes roles in alphabetical order (probe 10: Goal, Indicator, TrendLine).
@@ -195,6 +197,11 @@ def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec
                                         for role, fields in sorted(bindings.items())}}
     if text is not None:
         body["objects"] = textbox_objects(text, text_style)
+    if options:
+        objects = body.setdefault("objects", {})
+        for obj, prop, literal in options:
+            entry = (objects.setdefault(obj, [{"properties": {}}]))[0]
+            entry.setdefault("properties", {})[prop] = _literal(literal)
     if title is not None:
         body["visualContainerObjects"] = title_objects(title)
     return {
@@ -205,6 +212,14 @@ def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec
         "visual": body,
         "annotations": visual_annotations(spec_id, region),
     }
+
+
+def option_literal(visual_doc: dict, obj: str, prop: str) -> str | None:
+    """The literal at ``visual.objects.<obj>[0].properties.<prop>``, or None."""
+    try:
+        return visual_doc["visual"]["objects"][obj][0]["properties"][prop]["expr"]["Literal"]["Value"]
+    except (KeyError, IndexError, TypeError):
+        return None
 
 
 def with_title(visual_doc: dict, title: str) -> dict:

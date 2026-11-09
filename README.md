@@ -248,6 +248,16 @@ visuals:
     blueprint: ignore          # hand-placed on purpose; leave it alone
 ```
 
+A visual may also set **options**, formatting choices its type declares (`bp describe` lists
+them). Leaving one out keeps Desktop's default:
+
+```yaml
+  - type: slicer
+    region: kpi-row
+    options: { style: dropdown }   # the slicer as a dropdown (probes 20, 22)
+    slots: { field: "Sales[Country]" }
+```
+
 ### Which page a spec builds
 
 `bp apply` marks the page it creates with the spec's **id** (the file name, or an explicit

@@ -1,0 +1,11 @@
+# Slot contract for spec type `area`. Verified in probe 22 (pbir/schema.md "Creating pages and
+# visuals"): `areaChart` with the line chart's roles, X axis `Category` ("active": true), Y axis `Y`
+# and Legend `Series` (no "active"). Desktop drew it and found nothing to rewrite. Only one X-axis
+# column and one measure were probed.
+type: area
+visual_type: areaChart
+region: main
+slots:
+  category: { role: Category, accepts: column, required: true }
+  value:    { role: Y, accepts: measure, required: true }
+  legend:   { role: Series, accepts: column }

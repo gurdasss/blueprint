@@ -22,10 +22,11 @@ def _describe(capsys, *args) -> dict:
 def test_types_layouts_and_limits_without_a_report(capsys):
     d = _describe(capsys)
     assert set(d["types"]) == set(contracts())
-    assert d["types"]["kpi"] == {"visual_type": "kpi", "region": "kpi-row", "slots": {
+    assert d["types"]["kpi"] == {"visual_type": "kpi", "region": "kpi-row", "options": {}, "slots": {
         "value": {"accepts": ["measure"], "required": True, "list": False},
         "trend": {"accepts": ["column"], "required": True, "list": False},
         "target": {"accepts": ["measure"], "required": False, "list": False}}}
+    assert d["types"]["slicer"]["options"] == {"style": ["dropdown"]}
     assert list(d["layouts"]) == ["dashboard-6", "grid-2x3", "kpi-row-plus-detail", "standard-4-up"]
     std = d["layouts"]["standard-4-up"]
     assert (std["default"], std["usable"], std["roles"]) == (True, True, {"header": 1, "kpi-row": 1, "main": 2})
@@ -85,7 +86,8 @@ def test_text_output(capsys, tmp_path: Path):
     shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
     assert main(["describe", "--report", str(tmp_path / "proj"), "--guidelines", str(GUIDE)]) == 0
     out = capsys.readouterr().out
-    assert "  kpi     region kpi-row  value*: measure, trend*: column, target: measure" in out
+    assert "  kpi                region kpi-row  value*: measure, trend*: column, target: measure\n" in out
+    assert "  slicer             region main     field*[]: column; options style: dropdown\n" in out
     assert "  standard-4-up (default): 1280x720; 1 header, 1 kpi-row, 2 main" in out
     assert "    measures: [Total Amount]" in out
     assert "  Overview  (1920x1080; not built by a spec)" in out

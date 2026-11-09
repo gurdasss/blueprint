@@ -34,6 +34,8 @@ SPEC_SYNTAX = {
         "title": "optional text; required for header (it is the header's text)",
         "region": "optional; a region role in the layout, overriding the type's default role",
         "slots": "mapping of slot name -> field reference, or a list where the slot allows one",
+        "options": "optional mapping of option name -> value, from the type's options "
+                   "(left out: Desktop's default)",
         "blueprint": "`ignore`: leave this visual alone (it takes no region)",
     },
     "fields": {
@@ -102,6 +104,7 @@ def _types() -> dict[str, Any]:
             "region": c.region,
             "slots": {s.name: {"accepts": list(s.accepts), "required": s.required, "list": s.ordered}
                       for s in c.slots.values()},
+            "options": {o.name: list(o.values) for o in c.options.values()},
         }
     return out
 
@@ -178,7 +181,10 @@ def to_text(data: dict[str, Any]) -> str:
     for name, t in data["types"].items():
         slots = ", ".join(f"{n}{'*' if sl['required'] else ''}{'[]' if sl['list'] else ''}: "
                           f"{'|'.join(sl['accepts'])}" for n, sl in t["slots"].items())
-        lines.append(f"  {name:<7} region {t['region']:<8} {slots or '(no slots)'}")
+        options = "; options " + ", ".join(f"{n}: {'|'.join(v)}" for n, v in t["options"].items()) \
+            if t["options"] else ""
+        width = max(map(len, data["types"]))
+        lines.append(f"  {name:<{width}} region {t['region']:<8} {slots or '(no slots)'}{options}")
     lines.append("")
 
     lines.append("Layouts")
