@@ -1,0 +1,133 @@
+"""Named layouts (data, not code) and placing a page spec's visuals into their regions.
+
+A layout is ``<search path>/<name>.yaml``:
+
+    name: standard-4-up
+    canvas: { width: 1280, height: 720 }
+    regions:
+      - { role: header, x: 16, y: 16, w: 1248, h: 64 }
+      - { role: main,   x: 16, y: 232, w: 616, h: 472 }
+
+Visuals fill regions **in declaration order**: each takes the next unused region whose role
+matches its type's region (from its slot contract). Running out of regions is an error, never a
+reflow. ``blueprint: ignore`` visuals take no region.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+from blueprint.model import Rect
+from blueprint.slots import contracts
+from blueprint.spec import PageSpec, VisualSpec
+
+
+class LayoutError(Exception):
+    pass
+
+
+@dataclass(frozen=True)
+class Region:
+    role: str
+    rect: Rect
+
+
+@dataclass(frozen=True)
+class Layout:
+    name: str
+    width: int
+    height: int
+    regions: tuple[Region, ...]
+    source: str = ""
+
+
+@dataclass(frozen=True)
+class Placement:
+    visual: VisualSpec
+    region: Region
+
+
+def find(name: str, search_path: tuple[Path, ...]) -> Path:
+    for directory in search_path:
+        candidate = directory / f"{name}.yaml"
+        if candidate.is_file():
+            return candidate
+    where = ", ".join(str(d) for d in search_path) or "(empty layouts.search_path)"
+    raise LayoutError(f"layout {name!r} not found in {where}")
+
+
+def load(name: str, search_path: tuple[Path, ...]) -> Layout:
+    path = find(name, search_path)
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError) as exc:
+        raise LayoutError(f"{path}: {exc}") from exc
+    return parse(data, str(path), expected_name=name)
+
+
+def _num(v: Any) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def parse(data: Any, source: str = "<layout>", expected_name: str | None = None) -> Layout:
+    problems: list[str] = []
+    if not isinstance(data, dict):
+        raise LayoutError(f"{source}: top level must be a mapping with name, canvas and regions")
+    name = data.get("name")
+    if not isinstance(name, str) or (expected_name is not None and name != expected_name):
+        problems.append(f"name: must be {expected_name!r} (the file name)" if expected_name
+                        else "name: required")
+    canvas = data.get("canvas")
+    canvas = canvas if isinstance(canvas, dict) else {}
+    width, height = canvas.get("width"), canvas.get("height")
+    if not (isinstance(width, int) and isinstance(height, int) and width > 0 and height > 0):
+        problems.append("canvas: needs integer width and height > 0")
+        width = height = 0
+    regions: list[Region] = []
+    raw_regions = data.get("regions")
+    if not isinstance(raw_regions, list) or not raw_regions:
+        problems.append("regions: required, a non-empty list")
+        raw_regions = []
+    for i, r in enumerate(raw_regions):
+        at = f"regions[{i}]"
+        if not isinstance(r, dict) or not isinstance(r.get("role"), str):
+            problems.append(f"{at}: needs a role and x, y, w, h")
+            continue
+        if not all(_num(r.get(k)) for k in ("x", "y", "w", "h")) or r["w"] <= 0 or r["h"] <= 0:
+            problems.append(f"{at}: x, y, w, h must be numbers, with w and h > 0")
+            continue
+        rect = Rect(r["x"], r["y"], r["w"], r["h"])
+        if width and (rect.x < 0 or rect.y < 0 or rect.right > width or rect.bottom > height):
+            problems.append(f"{at} ({r['role']}): extends outside the {width}x{height} canvas")
+        regions.append(Region(r["role"], rect))
+    if problems:
+        raise LayoutError(f"{source}: {len(problems)} problem(s)\n  " + "\n  ".join(problems))
+    return Layout(name, width, height, tuple(regions), source)
+
+
+def place(spec: PageSpec, layout: Layout) -> list[Placement]:
+    """Assign each non-ignored visual the next free region of its role, in spec order."""
+    known = contracts()
+    free = list(layout.regions)
+    placements: list[Placement] = []
+    problems: list[str] = []
+    for v in spec.visuals:
+        if v.ignore:
+            continue
+        role = known[v.type].region
+        region = next((r for r in free if r.role == role), None)
+        if region is None:
+            total = sum(r.role == role for r in layout.regions)
+            problems.append(f"visuals[{v.index}] ({v.type}): no free {role!r} region left in layout "
+                            f"{layout.name!r} (it has {total}); remove a visual, choose another "
+                            "layout, or mark it blueprint: ignore")
+            continue
+        free.remove(region)
+        placements.append(Placement(v, region))
+    if problems:
+        raise LayoutError(f"{spec.source}: " + "\n  ".join(problems))
+    return placements

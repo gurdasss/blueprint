@@ -30,5 +30,5 @@ page:
   density_policy: data   # named policy in blueprint/policies.py: all | visible | data
 
 layouts:
-  search_path: ["guidelines/layouts"]
+  search_path: ["layouts"]     # relative to this file
   default: standard-4-up

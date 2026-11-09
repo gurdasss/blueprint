@@ -31,8 +31,7 @@ ENV_VAR = "BLUEPRINT_GUIDELINES"
 SEVERITIES = ("error", "warning", "off")
 RULES = ("format", "bounds", "grid", "margin", "overlap", "page-size", "density", "typography")
 # Documented in README but unchecked until the PBIR format for them is verified.
-NOT_IMPLEMENTED = ("page.require_title", "page.title_region",
-                   "canvas.gutter", "layouts")
+NOT_IMPLEMENTED = ("page.require_title", "page.title_region", "canvas.gutter")
 
 
 class GuidelinesError(Exception):
@@ -88,6 +87,12 @@ class FontRule:
 
 
 @dataclass(frozen=True)
+class Layouts:
+    search_path: tuple[Path, ...]  # absolute; relative entries resolve against their own file
+    default: str | None
+
+
+@dataclass(frozen=True)
 class CheckRules:
     severity: dict[str, str]  # rule id -> error | warning | off
     decorative_types: tuple[str, ...]  # may contain other visuals; exempt from margin
@@ -102,6 +107,7 @@ class Guidelines:
     page: PageRules
     palette: Palette
     typography: dict[str, FontRule]  # role -> rule; only roles the guidelines mention
+    layouts: Layouts
     check: CheckRules
     sources: tuple[str, ...]  # which layers contributed, lowest first
     raw: dict[str, Any]
@@ -145,9 +151,10 @@ def load(
     if guidelines is None and os.environ.get(ENV_VAR):
         guidelines = Path(os.environ[ENV_VAR])
     if guidelines is not None:
-        layers.append((str(guidelines), _read(guidelines)))
+        layers.append((str(guidelines), _anchor(_read(guidelines), guidelines)))
     if report_dir is not None and (report_dir / REPORT_OVERRIDE).is_file():
-        layers.append((str(report_dir / REPORT_OVERRIDE), _read(report_dir / REPORT_OVERRIDE)))
+        override = report_dir / REPORT_OVERRIDE
+        layers.append((str(override), _anchor(_read(override), override)))
     if overrides:
         layers.append(("command line", overrides))
 
@@ -194,6 +201,7 @@ def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
                        density_policy=policy),
         palette=_palette(raw),
         typography=_typography(raw),
+        layouts=_layouts(raw),
         check=CheckRules(severity=dict(severity), decorative_types=tuple(decorative)),
         sources=sources,
         raw=raw,
@@ -306,3 +314,24 @@ def _typography(raw: dict[str, Any]) -> dict[str, FontRule]:
             raise GuidelinesError(f"{key}.bold must be true or false")
         out[role] = FontRule(tuple(f.strip() for f in fonts), tuple(float(z) for z in sizes), bold)
     return out
+
+
+def _anchor(layer: dict[str, Any], path: Path) -> dict[str, Any]:
+    """Resolve a layer's relative layouts.search_path entries against the file declaring them,
+    so a guidelines file works from any current directory."""
+    section = layer.get("layouts")
+    if not isinstance(section, dict) or not isinstance(section.get("search_path"), list):
+        return layer
+    base = path.resolve().parent
+    resolved = [str((base / p).resolve()) if isinstance(p, str) else p for p in section["search_path"]]
+    return {**layer, "layouts": {**section, "search_path": resolved}}
+
+
+def _layouts(raw: dict[str, Any]) -> Layouts:
+    search = _get(raw, "layouts.search_path", [])
+    if not isinstance(search, list) or not all(isinstance(p, str) and p for p in search):
+        raise GuidelinesError("layouts.search_path must be a list of directories")
+    default = _get(raw, "layouts.default")
+    if default is not None and (not isinstance(default, str) or not default.strip()):
+        raise GuidelinesError("layouts.default must be a layout name")
+    return Layouts(tuple(Path(p) for p in search), default)

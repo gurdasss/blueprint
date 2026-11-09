@@ -317,7 +317,7 @@ page:
   density_policy: strict   # named policy implemented in code, not an if-statement here
 
 layouts:
-  search_path: ["guidelines/layouts"]
+  search_path: ["layouts"]     # relative to this file
   default: standard-4-up
 ```
 
