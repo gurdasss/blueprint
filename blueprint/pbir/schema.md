@@ -429,6 +429,21 @@ README Q1–Q3 and Q5–Q11. Every file Desktop wrote validates and round-trips 
   - **`queryState` roles are written in alphabetical order**, not well order: `Goal`, `Indicator`,
     `TrendLine` (the wells read Value, Trend axis, Target). That matches every type seen so far
     (`Category`/`Y`, `Values`, `Data`), so `render` sorts roles.
+  - **Line and clustered bar charts (probe 12,** `scripts/probe_line_bar.py`; evidence
+    `docs/probes/12-line-bar.diff`). Desktop's names are Line chart and Clustered bar chart.
+
+    | Wells | `visualType` | `queryState` roles | Added by Desktop |
+    |---|---|---|---|
+    | Line chart: X-axis, Y-axis, Legend | `lineChart` | `Category` (column, `"active": true`), `Y` (measure), `Series` (Legend, no `active`) | `sortDefinition` descending on the measure |
+    | Clustered bar chart: Y-axis, X-axis | `clusteredBarChart` | `Category` = the **Y-axis** (categories, an ordered drill-down: Country then Region), `Y` = the **X-axis** (measure) | `sortDefinition` ascending on each category level, as for the column chart |
+
+    - **A bar chart is stored like the column chart:** the roles are named by meaning, not by screen
+      axis, so the categories are `Category` even though they're drawn on the Y-axis.
+    - Drilling back up set Region's `active` to `false` (drill state, probe 11). Both charts also got
+      the automatic `filterConfig` filters, which is filter-pane state (probe 05). The plain open and save
+      changed nothing this time.
+    - **Open:** a drill-down on the line chart's X-axis (only one column probed), and more than one
+      Legend column.
   - **Desktop accepts Blueprint's pie, table and KPI as written (probe 09,** `scripts/probe_apply_types.py`;
     evidence `docs/probes/09-apply-types.diff`). `bp apply examples/sales-mix.yaml` on fixture 02,
     then open and save: **no visual or page file changed**. Only `activePageName` and
