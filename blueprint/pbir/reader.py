@@ -31,6 +31,9 @@ VISUAL_ANNOTATION = "blueprint.visual"  # on a visual Blueprint created: the spe
 LAYOUT_ANNOTATION = "blueprint.layout"  # on a Blueprint page: layout name used by bp apply
 GUIDELINES_ANNOTATION = "blueprint.guidelines"  # on a Blueprint page: "<name>@<version>"
 REGION_ANNOTATION = "blueprint.region"  # on a Blueprint visual: "<role>#<n>" (n-th region of role)
+# on a Blueprint visual: fingerprint of the bindings bp apply last wrote (render.bindings_fingerprint),
+# so a re-run can tell a spec change (rebind) from an edit made in Desktop (refuse)
+BINDINGS_ANNOTATION = "blueprint.bindings"
 
 
 def annotations(doc: dict) -> dict[str, str]:
@@ -295,6 +298,7 @@ class _Reader:
             ignored=str(notes.get(IGNORE_ANNOTATION, "")).lower() == "true",
             spec_id=notes.get(VISUAL_ANNOTATION),
             region=notes.get(REGION_ANNOTATION),
+            bindings_mark=notes.get(BINDINGS_ANNOTATION),
             fields=_fields(visual),
             colors=formatting.colors_in(visual),
             fonts=formatting.fonts_in(visual),

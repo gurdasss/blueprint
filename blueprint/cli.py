@@ -61,6 +61,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="write even when a file's schema major version is unknown")
     p.add_argument("--take-over", action="store_true",
                    help="build a page that another spec built (it becomes this spec's page)")
+    p.add_argument("--overwrite-edits", action="store_true",
+                   help="rebind Blueprint visuals whose fields were changed in Desktop to what the spec says")
     p.set_defaults(func=apply_cmd.run)
 
     p = sub.add_parser("manifest", help="(re)generate the manifest from the report's current state")

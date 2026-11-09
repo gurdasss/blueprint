@@ -12,9 +12,11 @@ from pathlib import Path
 
 import pytest
 
+from blueprint import guidelines
 from blueprint.cli import main
 from blueprint.pbir import jsonfmt
 from blueprint.pbir.reader import read_report
+from blueprint.validate import check_report
 from tests.builders import make_report, visual, write
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -124,13 +126,30 @@ def test_bindings_are_checked_against_the_model_before_writing(tmp_path: Path, c
     assert _snapshot(report) == before
 
 
-def test_changed_bindings_or_type_are_refused(tmp_path: Path, capsys):
+def test_changed_bindings_are_rebound_in_place(tmp_path: Path, capsys):
+    report = _copy_fixture(tmp_path)
+    _apply(report)
+    _, _, before = _blueprint_visual(report, "column-1")
+    spec = tmp_path / "sales-overview.yaml"  # same file name: same spec id
+    spec.write_text(SPEC.read_text().replace('        - "Sales[Region]"\n', ""))
+    capsys.readouterr()
+    assert _apply(report, spec=spec) == 0
+    out = capsys.readouterr().out
+    assert "rebind Category [Country, Region]; Y [Total Amount] -> Category [Country]; Y [Total Amount]" in out
+    r, page, after = _blueprint_visual(report, "column-1")
+    assert [f.name for f in after.fields["Category"]] == ["Country"]
+    assert (after.name, after.rect, after.title) == (before.name, before.rect, before.title)  # same visual
+    assert after.bindings_mark != before.bindings_mark
+    assert [f for f in check_report(r, guidelines.load(GUIDE)).findings if f.page == page.name] == []
+    capsys.readouterr()
+    assert _apply(report, spec=spec) == 0
+    assert capsys.readouterr().out.startswith("No changes.")
+
+
+def test_changed_type_is_refused(tmp_path: Path, capsys):
     report = _copy_fixture(tmp_path)
     _apply(report)
     spec = tmp_path / "sales-overview.yaml"
-    spec.write_text(SPEC.read_text().replace('        - "Sales[Region]"\n', ""))
-    assert _apply(report, spec=spec) == 2
-    assert "field bindings differ from the report" in capsys.readouterr().err
     spec.write_text(SPEC.read_text().replace("type: card\n", "type: column\n    id: card-1\n")
                     .replace('value: "[Total Amount]"\n\n  - type: column',
                              'category: "Sales[Country]"\n      value: "[Total Amount]"\n\n  - type: column'))

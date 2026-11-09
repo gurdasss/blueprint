@@ -679,6 +679,15 @@ Data pane (Create hierarchy on Country, renamed Geography, then Region added):
   page or visual file was rewritten**: no `filterConfig` added, no `$schema` raised
   (`test_24_desktops_save_kept_every_blueprint_file`). Re-applying the specs afterwards changes
   nothing. This completes probes 22 and 23's evidence with a real save.
+- **Desktop takes Blueprint visuals rebound in place (probe 26,** evidence
+  `docs/probes/26-rebind.diff`; built on a copy of probe 21's final state, so its sections replay
+  21 first). A re-applied spec rebound three charts (Country with two measures → Region with one),
+  swapped a matrix's rows and columns, and cut a slicer to one field. `render.with_bindings`
+  rewrote each query as for a new visual and dropped Desktop's own condition-less `filterConfig`
+  filters on fields no longer bound (the bar and line charts had them from probe 21's save), the
+  sort if it named a gone field, and stale `expansionStates`; formatting, title and position were
+  kept. Opened through the bridge: every visual drew with its new fields (one page capture), with
+  Desktop's automatic subtitles following the new bindings. Nothing dirty, so no save.
 
 ## Schema versions
 

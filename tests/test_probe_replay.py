@@ -45,9 +45,9 @@ ROOT = Path(__file__).resolve().parent.parent
 PROBES = ROOT / "docs" / "probes"
 FIXTURE = ROOT / "fixtures" / "02-card-and-chart"
 GUIDE = ROOT / "guidelines" / "example.yaml"
-REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26]
 # Probes whose report Blueprint built and Desktop then opened and saved.
-ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24]
+ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24, 26]
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git to apply the evidence")
 
@@ -315,6 +315,7 @@ def test_blueprint_annotations_survive_every_desktop_save(replays, probe):
     (19, ["specs/geo-bar-pie.yaml", "specs/geo-line.yaml"]),
     (21, ["specs/slicer-matrix.yaml"]),
     (24, ["specs/saved-variants-1.yaml", "specs/saved-variants-2.yaml"]),
+    (26, ["specs/slicer-matrix.yaml"]),
 ])
 def test_reapply_after_desktop_saved_changes_nothing(replays, probe, specs, tmp_path, capsys):
     """Nothing but the manifest: Desktop's save can raise files' $schema versions, which the
@@ -616,3 +617,27 @@ def test_24_desktops_save_kept_every_blueprint_file(replays):
 
     assert report_files(saved) == report_files(built)
     assert len(_managed(saved)) == 14  # 12 charts and slicers, 2 headers
+
+
+def test_21_rebinding_after_desktops_save(replays, tmp_path, capsys):
+    """Probe 21's charts carry the filterConfig Desktop added on save. Rebinding them in place
+    drops Desktop's filters on the fields that went, keeps the rest, and leaves a valid file."""
+    proj = _copy(_last(replays, 21), tmp_path)
+    spec = proj / "specs" / "slicer-matrix.yaml"
+    text = spec.read_text()
+    spec.write_text(text.replace('slots: {category: "Sales[Country]", value: ["[Total Amount]", "[Target Amount]"]}',
+                                 'slots: {category: "Sales[Region]", value: "[Total Amount]"}'))
+    args = ["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]
+    capsys.readouterr()
+    assert main(args) == 0
+    assert capsys.readouterr().out.count("rebind Category [Country]; Y [Total Amount, Target Amount] -> "
+                                         "Category [Region]; Y [Total Amount]") == 3
+    report = read_report(proj / "Fixture.Report")
+    for d in _visual_docs(proj / "Fixture.Report"):
+        if d["visual"]["visualType"] in ("clusteredBarChart", "lineChart"):  # Desktop saved these two
+            assert [f["field"] for f in d["filterConfig"]["filters"]] == [
+                {"Measure": {"Expression": {"SourceRef": {"Entity": "Sales"}}, "Property": "Total Amount"}}]
+    found = check_report(report, guidelines.load(GUIDE)).findings
+    assert [f for f in found if f.rule == "format"] == []
+    capsys.readouterr()
+    assert main(args) == 0 and capsys.readouterr().out.startswith("No changes.")

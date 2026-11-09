@@ -119,6 +119,8 @@ def test_target_takes_a_measure_not_a_column(tmp_path: Path):
 
 
 def test_reapply_refuses_a_target_swapped_for_a_column_in_desktop(tmp_path: Path, capsys):
+    """A Desktop edit to a Blueprint visual's fields is refused, not silently undone (its
+    blueprint.bindings fingerprint no longer matches); --overwrite-edits puts the spec back."""
     report = _fixture_with_target(tmp_path)
     spec = tmp_path / "kpi-target.yaml"
     spec.write_text('page: K\nlayout: standard-4-up\nvisuals:\n  - type: kpi\n    title: T\n'
@@ -136,11 +138,19 @@ def test_reapply_refuses_a_target_swapped_for_a_column_in_desktop(tmp_path: Path
     path.write_bytes(jsonfmt.dump_bytes(doc))
     capsys.readouterr()
     assert main(args) != 0
-    assert "field bindings differ" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "its fields were changed in Desktop since Blueprint wrote them" in err
     assert main(["manifest", "--report", str(report)]) == 0
     manifest = jsonfmt.load(report / ".blueprint.manifest.json")
     [kpi] = [v for p in manifest["pages"] for v in p["visuals"] if v["visual_type"] == "kpi"]
     assert kpi["slots"]["target"] == "Sum(Sales[Amount])"
+    capsys.readouterr()
+    assert main([*args, "--overwrite-edits"]) == 0
+    assert "rebind" in capsys.readouterr().out
+    assert jsonfmt.load(path)["visual"]["query"]["queryState"]["Goal"]["projections"][0]["field"] == {
+        "Measure": {"Expression": {"SourceRef": {"Entity": "Sales"}}, "Property": "Target Amount"}}
+    capsys.readouterr()
+    assert main(args) == 0 and capsys.readouterr().out.startswith("No changes.")
 
 
 def test_pie_drill_down_and_details_match_probe_11(tmp_path: Path):

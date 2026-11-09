@@ -12,12 +12,15 @@ exactly, and the writer refuses to create anything that doesn't.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass
 from typing import Any
 
 from blueprint.model import Rect
 from blueprint.pbir import schemas
 from blueprint.pbir.reader import (
+    BINDINGS_ANNOTATION,
     GUIDELINES_ANNOTATION,
     LAYOUT_ANNOTATION,
     PAGE_ANNOTATION,
@@ -112,6 +115,18 @@ def visual_annotations(spec_id: str, region: str) -> list[dict]:
     return [{"name": VISUAL_ANNOTATION, "value": spec_id}, {"name": REGION_ANNOTATION, "value": region}]
 
 
+def bindings_fingerprint(bound: dict[str, list[tuple]]) -> str:
+    """A short, stable digest of role -> (kind, table, name, level) per field, in field order.
+    Drill state (``active``) and Desktop's extras don't enter it, only what is bound where."""
+    canonical = json.dumps([[role, [list(f) for f in fields]] for role, fields in sorted(bound.items())],
+                           ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
+
+
+def bindings_annotation(mark: str) -> list[dict]:
+    return [{"name": BINDINGS_ANNOTATION, "value": mark}]
+
+
 def with_annotations(doc: dict, wanted: list[dict]) -> dict:
     """``doc`` with Blueprint's annotations set to ``wanted``; any other annotations are kept."""
     names = {a["name"] for a in wanted}
@@ -187,7 +202,7 @@ def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec
            region: str, *,
            bindings: dict[str, list[Binding]] | None = None, title: str | None = None,
            text: str | None = None, text_style: dict | None = None,
-           options: list[tuple[str, str, str]] | None = None) -> dict:
+           options: list[tuple[str, str, str]] | None = None, bindings_mark: str | None = None) -> dict:
     """A visual container. ``bindings``: query role -> ordered fields. ``text``: textbox content.
     ``options``: (object, property, literal) formatting choices from the contract."""
     body: dict[str, Any] = {"visualType": visual_type}
@@ -210,8 +225,67 @@ def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec
         "position": {"x": rect.x, "y": rect.y, "z": z, "height": rect.height, "width": rect.width,
                      "tabOrder": tab_order},
         "visual": body,
-        "annotations": visual_annotations(spec_id, region),
+        "annotations": visual_annotations(spec_id, region)
+        + (bindings_annotation(bindings_mark) if bindings_mark else []),
     }
+
+
+def with_bindings(visual_doc: dict, visual_type: str, bindings: dict[str, list[Binding]]) -> dict:
+    """``visual_doc`` with its query replaced by what a new visual with these bindings gets, and
+    the state Desktop keeps about the old fields cleared, so the visual is as Blueprint would
+    create it apart from what the user formatted:
+
+    - ``query.queryState``: rendered as for a new visual (the verified shapes);
+    - ``query.sortDefinition``: kept only if every field it sorts on is still bound;
+    - ``filterConfig`` filters Desktop adds on its own (no ``filter`` condition, no ``howCreated``,
+      probe 21) on fields no longer bound: dropped (Desktop adds them again on save); filters with
+      a condition or made by the user are kept;
+    - ``expansionStates`` (a slicer's expanded nodes, probe 20) naming a field no longer bound:
+      dropped.
+
+    A new Blueprint visual has none of the dropped parts, and Desktop takes it (probes 05-24)."""
+    body = dict(visual_doc.get("visual") or {})
+    state = {role: {"projections": _projections(role, fields, visual_type)}
+             for role, fields in sorted(bindings.items())}
+    bound = [p["field"] for entry in state.values() for p in entry["projections"]]
+    refs = {p["queryRef"] for entry in state.values() for p in entry["projections"]}
+    query: dict[str, Any] = {"queryState": state}
+    sort = (body.get("query") or {}).get("sortDefinition")
+    if isinstance(sort, dict) and all(s.get("field") in bound for s in sort.get("sort") or [] if isinstance(s, dict)):
+        query["sortDefinition"] = sort
+    body["query"] = query
+    if "expansionStates" in body:
+        kept = [e for e in body["expansionStates"] if isinstance(e, dict) and all(
+            ref in refs for lv in e.get("levels") or [] for ref in (lv.get("queryRefs") or []))]
+        if kept:
+            body["expansionStates"] = kept
+        else:
+            del body["expansionStates"]
+    out = {**visual_doc, "visual": body}
+    config = visual_doc.get("filterConfig")
+    if isinstance(config, dict) and isinstance(config.get("filters"), list):
+        filters = [f for f in config["filters"] if not (
+            isinstance(f, dict) and "filter" not in f and "howCreated" not in f and f.get("field") not in bound)]
+        if filters:
+            out["filterConfig"] = {**config, "filters": filters}
+        else:
+            out = {k: v for k, v in out.items() if k != "filterConfig"}
+    return out
+
+
+def with_option(visual_doc: dict, obj: str, prop: str, literal: str) -> dict:
+    """``visual_doc`` with ``visual.objects.<obj>[0].properties.<prop>`` set to ``literal``,
+    leaving every other formatting property as it is."""
+    body = dict(visual_doc.get("visual") or {})
+    objects = dict(body.get("objects") or {})
+    entries = list(objects.get(obj) or [{}])
+    first = dict(entries[0] or {})
+    props = dict(first.get("properties") or {})
+    props[prop] = _literal(literal)
+    entries[0] = {**first, "properties": props}
+    objects[obj] = entries
+    body["objects"] = objects
+    return {**visual_doc, "visual": body}
 
 
 def option_literal(visual_doc: dict, obj: str, prop: str) -> str | None:

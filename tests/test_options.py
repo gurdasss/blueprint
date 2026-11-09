@@ -65,12 +65,16 @@ def test_dropdown_is_written_as_desktop_wrote_it_and_rerun_rules(tmp_path: Path,
     assert code == 0 and out.startswith("No changes.")
 
 
-def test_changing_an_option_on_rerun_is_refused(tmp_path: Path, capsys):
+def test_an_option_the_spec_sets_is_set_in_place_on_rerun(tmp_path: Path, capsys):
     shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
     assert _apply(tmp_path, "", capsys)[0] == 0
     assert "objects" not in _slicer(tmp_path)["visual"]  # Desktop's default style
+    name = _slicer(tmp_path)["name"]
     code, out = _apply(tmp_path, ", options: {style: dropdown}", capsys)
-    assert code == 2 and "option(s) style differ from the report" in out
+    assert code == 0 and "option style -> dropdown" in out
+    assert _slicer(tmp_path)["visual"]["objects"] == DROPDOWN and _slicer(tmp_path)["name"] == name
+    code, out = _apply(tmp_path, ", options: {style: dropdown}", capsys)
+    assert code == 0 and out.startswith("No changes.")
 
 
 def test_unquoted_on_in_a_spec_means_on():

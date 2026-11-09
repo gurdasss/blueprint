@@ -98,6 +98,10 @@
     {
       "name": "blueprint.region",
       "value": "main#2"
+    },
+    {
+      "name": "blueprint.bindings",
+      "value": "2a124e94ce9b4cf0"
     }
   ]
 }

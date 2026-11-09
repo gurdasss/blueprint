@@ -12,7 +12,8 @@ what Blueprint owns is updated: positions (the layout is the source of truth) an
 Anything that would need guessing or destroying is refused or reported instead:
 
 - page size differs from the layout's canvas: error (never scale a layout);
-- a visual's type or field bindings changed in the spec: error (delete it in Desktop, re-apply);
+- a visual's type changed in the spec: error (delete it in Desktop, re-apply); changed field
+  bindings or options are rebound or set in place (render.with_bindings, with_option);
 - a Blueprint-created visual is no longer in the spec: warning, left in place (never delete);
 - a new visual lands on a hand-placed one: warning (`bp check` reports the overlap).
 
@@ -125,6 +126,18 @@ def _next(page: Page | None, key: str) -> int:
     return (max(nums) // STEP + 1) * STEP if nums else 0
 
 
+def _bound(fields: dict) -> dict[str, list[tuple]]:
+    """Role -> (kind, table, name, level) per field, for the report's fields or the spec's bindings."""
+    return {role: [(f.kind, f.table, f.name, f.level) for f in fs] for role, fs in fields.items()}
+
+
+def _bindings_text(bound: dict[str, list[tuple]]) -> str:
+    """Compactly, for the plan: Category [Country, Region]; Y [Total Amount]."""
+    def name(kind: str, table: str, field: str, level: str | None) -> str:
+        return f"{field}.{level}" if kind == "hierarchy_level" else field
+    return "; ".join(f"{role} [{', '.join(name(*f) for f in fields)}]" for role, fields in sorted(bound.items()))
+
+
 def _title_warnings(placements: list[layouts.Placement], rules: guidelines.Guidelines) -> list[str]:
     """What `bp check` will report under the title rules, said up front. A warning, not a refusal:
     like an overlap with a hand-placed visual, it's the guidelines' call, and check enforces it."""
@@ -217,24 +230,33 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
                 problems.append(f"visuals[{vs.index}] ({vs.id}): is a {current.visual_type} in the "
                                 f"report but {vs.type} ({contract.visual_type}) in the spec")
                 continue
-            have = {role: [(f.kind, f.table, f.name, f.level) for f in fs] for role, fs in current.fields.items()}
-            if have != {role: [(b.kind, b.table, b.name, b.level) for b in fs] for role, fs in want.items()}:
-                problems.append(f"visuals[{vs.index}] ({vs.id}): field bindings differ from the "
-                                "report; changing bindings isn't supported yet (delete the visual in "
-                                "Desktop and re-apply)")
-                continue
-            # Options are written when the visual is created. One the spec sets that the report
-            # doesn't match is refused like a binding; one the spec leaves out is Desktop's (or
+            # Bindings that differ are rebound in place: the query is rewritten as for a new
+            # visual and Desktop's state about the old fields is cleared (render.with_bindings);
+            # title, formatting and position are kept.
+            have = _bound(current.fields)
+            edited = current.bindings_mark is not None and current.bindings_mark != render.bindings_fingerprint(have)
+            if have != _bound(want):
+                if edited and not getattr(args, "overwrite_edits", False):
+                    problems.append(
+                        f"visuals[{vs.index}] ({vs.id}): its fields were changed in Desktop since "
+                        f"Blueprint wrote them (now {_bindings_text(have)}); the spec says "
+                        f"{_bindings_text(_bound(want))}. Put the Desktop change in the spec, or pass "
+                        "--overwrite-edits to replace it")
+                    continue
+                current.source.data = render.with_bindings(current.source.data, contract.visual_type, want)
+                current.notes.append(f"rebind {_bindings_text(have)} -> {_bindings_text(_bound(want))}")
+            if want and (have != _bound(want) or edited):  # record what is bound now
+                mark = render.bindings_fingerprint(_bound(want))
+                current.source.data = render.with_annotations(current.source.data,
+                                                              render.bindings_annotation(mark))
+            # An option the spec sets is set in place; one the spec leaves out is Desktop's (or
             # the user's) to set, and left alone.
-            changed = [name for name, value in vs.options.items()
-                       if render.option_literal(current.source.data, contract.options[name].object,
-                                                contract.options[name].property)
-                       != contract.options[name].values[value]]
-            if changed:
-                problems.append(f"visuals[{vs.index}] ({vs.id}): option(s) {', '.join(changed)} differ "
-                                "from the report; changing options isn't supported yet (set it in "
-                                "Desktop, or delete the visual there and re-apply)")
-                continue
+            for name, value in vs.options.items():
+                opt = contract.options[name]
+                if render.option_literal(current.source.data, opt.object, opt.property) != opt.values[value]:
+                    current.source.data = render.with_option(current.source.data, opt.object,
+                                                             opt.property, opt.values[value])
+                    current.notes.append(f"option {name} -> {value}")
             current.rect = rect
             current.positioned = True  # the layout owns this visual's position: restore it
             if current.region != p.region.key:
@@ -259,7 +281,8 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
                             title=None if is_header else vs.title, text=vs.title if is_header else None,
                             text_style=header_style if is_header else None,
                             options=[(contract.options[n].object, contract.options[n].property,
-                                      contract.options[n].values[val]) for n, val in vs.options.items()])
+                                      contract.options[n].values[val]) for n, val in vs.options.items()],
+                            bindings_mark=render.bindings_fingerprint(_bound(want)) if want else None)
         writer.add_create(plan, PAGES / pid / "visuals" / vid / "visual.json", doc,
                           f"new {vs.type} {vs.id!r} in region {p.region.key} at "
                           f"{rect.x},{rect.y} {rect.width}x{rect.height}")

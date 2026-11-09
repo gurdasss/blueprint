@@ -274,6 +274,22 @@ top-level `id:`), and finds it again by that id:
   purpose, pass `--take-over`.
 - Pages built before spec ids existed are adopted on the next apply, without moving anything.
 
+### Changing a spec and re-applying
+
+Re-running `bp apply` with an edited spec updates the visuals it built, in place:
+
+- **Fields:** change a slot (`value: "[Total Units]"` → `["[Total Units]", "[Sales $]"]`) and the
+  visual is rebound. Its title, formatting and position stay; the plan says
+  `rebind Category [Country]; Y [Total Amount] -> …`. Sorts and Desktop's automatic filters on
+  fields that are gone are cleared; filters someone set by hand are kept.
+- **Options** the spec sets are set; ones it leaves out are left to Desktop.
+- **Layout and titles** follow the spec, as before.
+- **Edited in Desktop?** If someone changed a Blueprint visual's fields in Desktop since Blueprint
+  wrote them, `apply` refuses rather than undo their work, and says what's bound now. Put the
+  change in the spec, or pass `--overwrite-edits`.
+- **Type changes** (a `column` that becomes a `bar`) are refused: delete the visual in Desktop and
+  re-apply. Visuals dropped from the spec are kept, with a warning.
+
 ### Typed slots
 
 Each visual type declares the slots it accepts and what each slot takes — a dimension

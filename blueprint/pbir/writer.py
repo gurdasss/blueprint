@@ -6,7 +6,9 @@ overwrites only the fields Blueprint owns, and re-serialises it with ``jsonfmt``
 exactly as it was.
 
 Fields owned in existing visuals: ``position.x/y/width/height`` (``z`` and ``tabOrder`` are
-kept) and the title text (only when the model sets one). ``add_modify`` and ``add_create`` let a
+kept) and the title text (only when the model sets one). A command may also patch a Blueprint
+visual's ``source.data`` in place (``bp apply``: its query and options) and say what it changed in
+``visual.notes``. ``add_modify`` and ``add_create`` let a
 command patch other documents (e.g. the page registry) or create new ones.
 
 Safety checks, all made before anything is written:
@@ -68,6 +70,7 @@ def _visual_write(visual: Visual, *, force_schema: bool) -> FileWrite | None:
     if visual.title is not None and visual.title != current_title:
         data = render.with_title(data, visual.title)
         changes.append(f"title {current_title!r} -> {visual.title!r}")
+    changes += visual.notes  # what a command changed in doc.data (e.g. bp apply's bindings)
     after = jsonfmt.dump_bytes(data)
     if after == doc.raw:
         return None
