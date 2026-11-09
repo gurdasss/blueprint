@@ -173,7 +173,12 @@ bp apply examples/sales-overview.yaml \
 # 5. See exactly what changed (a new page, three visuals, pages.json and the manifest)
 cd /tmp/demo && git status --short && cd -
 
-# 6. Check the result, and re-run apply: it reports "No changes."
+# 6. Align the rest of the report: snap hand-placed visuals, apply the guidelines theme
+bp fmt   --report /tmp/demo/Fixture.Report --guidelines guidelines/example.yaml
+bp theme --report /tmp/demo/Fixture.Report --guidelines guidelines/example.yaml
+
+# 7. Check: 0 errors. The two warnings left are judgement calls on the hand-built page
+#    (its 1920x1080 size, and a visual at the page edge), which Blueprint reports but never forces.
 bp check --report /tmp/demo/Fixture.Report --guidelines guidelines/example.yaml
 ```
 
@@ -188,6 +193,7 @@ Then open the report in Power BI Desktop and look at it.
 | `bp fmt` | Snap existing visuals to grid, normalise sizes. Idempotent. |
 | `bp apply <spec>` | Create or update pages from a page spec. |
 | `bp manifest` | (Re)generate the manifest from the report's current state. |
+| `bp theme` | Write a custom theme from the guidelines (palette, text colour, title/callout fonts) and make the report use it. |
 
 `--dry-run` is available on every mutating command and prints the planned file writes
 without performing them.
