@@ -207,6 +207,7 @@ geometry.
 
 ```yaml
 # examples/sales-overview.yaml
+# id: sales-overview    (optional; defaults to the file name. See "Which page a spec builds" below.)
 page: Sales Overview
 layout: standard-4-up
 
@@ -240,6 +241,18 @@ visuals:
   - type: table
     blueprint: ignore          # hand-placed on purpose; leave it alone
 ```
+
+### Which page a spec builds
+
+`bp apply` marks the page it creates with the spec's **id** (the file name, or an explicit
+top-level `id:`), and finds it again by that id:
+
+- **Rename `page:` in the spec** and re-apply: the existing page is renamed and keeps its visuals.
+  No second page is created.
+- **Another spec uses the same page name:** `apply` refuses and names the spec that owns the page.
+  If it's the same spec under a new file name, set `id:` to the old one. To hand the page over on
+  purpose, pass `--take-over`.
+- Pages built before spec ids existed are adopted on the next apply, without moving anything.
 
 ### Typed slots
 
