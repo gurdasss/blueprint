@@ -59,15 +59,33 @@ def snap_rect(rect: Rect, grid: int, page_w: float, page_h: float) -> Rect:
     return Rect(left, top, right - left, bottom - top)
 
 
+def _size(r: Rect) -> str:
+    def n(v: float) -> str:
+        return str(int(v)) if float(v).is_integer() else f"{v:.1f}"
+
+    return f"{n(r.width)}x{n(r.height)}"
+
+
 def _overlaps(a: Rect, b: Rect) -> bool:
     return a.x < b.right and b.x < a.right and a.y < b.bottom and b.y < a.bottom
 
 
-def snap_report(report: Report, grid: int) -> SnapResult:
-    """Snap every eligible visual in place and report what was skipped and why."""
+def resize_ratio(before: Rect, after: Rect) -> float:
+    """Largest relative change in width or height, e.g. 24 -> 32 tall is 0.33."""
+    return max(abs(after.width - before.width) / before.width if before.width else math.inf,
+               abs(after.height - before.height) / before.height if before.height else math.inf)
+
+
+def snap_report(report: Report, grid: int, max_resize: float | None = None) -> SnapResult:
+    """Snap every eligible visual in place and report what was skipped and why.
+
+    ``max_resize``: when snapping would change a visual's width or height by more than this
+    fraction, the visual is left alone with a warning (coarse grids badly distort small
+    visuals; refusing beats surprising). ``None`` disables the limit.
+    """
     result = SnapResult()
     for page in report.pages:
-        _snap_page(page, grid, result)
+        _snap_page(page, grid, max_resize, result)
     return result
 
 
@@ -82,7 +100,7 @@ def _eligible(page: Page, v: Visual, result: SnapResult) -> bool:
     return True
 
 
-def _snap_page(page: Page, grid: int, result: SnapResult) -> None:
+def _snap_page(page: Page, grid: int, max_resize: float | None, result: SnapResult) -> None:
     if page.width is None or page.height is None:
         result.warnings.append(
             f"{page.display_name}: skipped (no fixed page size; displayOption "
@@ -95,6 +113,13 @@ def _snap_page(page: Page, grid: int, result: SnapResult) -> None:
         if not _eligible(page, v, result):
             continue
         new = snap_rect(v.rect, grid, page.width, page.height)
+        ratio = resize_ratio(v.rect, new)
+        if max_resize is not None and ratio > max_resize:
+            result.warnings.append(
+                f"{page.display_name} / {v.name}: skipped (snapping would resize it "
+                f"{_size(v.rect)} -> {_size(new)}, {ratio:.0%} > grid.max_resize {max_resize:.0%})"
+            )
+            continue
         if new != v.rect:
             v.rect = new
             result.moved.append((page.name, v.name))

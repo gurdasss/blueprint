@@ -19,7 +19,7 @@ def build_plan(args: argparse.Namespace) -> Plan:
         plan = Plan(root=report.root)
         plan.warnings.append("grid.snap is false in the guidelines; nothing to do")
         return plan
-    result = grid.snap_report(report, rules.grid.size)
+    result = grid.snap_report(report, rules.grid.size, rules.grid.max_resize)
     plan = writer.plan_writes(report, force_schema=args.force_schema)
     plan.warnings = report.warnings + result.warnings + plan.warnings
     return plan

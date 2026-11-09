@@ -33,6 +33,7 @@ class GuidelinesError(Exception):
 class Grid:
     size: int
     snap: bool
+    max_resize: float | None  # fraction; None = no limit
 
 
 @dataclass(frozen=True)
@@ -88,7 +89,8 @@ def load(
         name=str(raw.get("name", "")),
         version=_int(raw, "version", minimum=1),
         grid=Grid(size=_int(raw.get("grid", {}), "grid.size", minimum=1, key="size"),
-                  snap=_bool(raw.get("grid", {}), "grid.snap", key="snap")),
+                  snap=_bool(raw.get("grid", {}), "grid.snap", key="snap"),
+                  max_resize=_fraction(raw.get("grid", {}), "grid.max_resize", key="max_resize")),
         sources=tuple(name for name, _ in layers),
         raw=raw,
     )
@@ -106,3 +108,12 @@ def _bool(section: Any, label: str, *, key: str) -> bool:
     if not isinstance(value, bool):
         raise GuidelinesError(f"{label} must be true or false, got {value!r}")
     return value
+
+
+def _fraction(section: Any, label: str, *, key: str) -> float | None:
+    value = section.get(key) if isinstance(section, dict) else None
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+        raise GuidelinesError(f"{label} must be a number >= 0 (e.g. 0.25) or null, got {value!r}")
+    return float(value)

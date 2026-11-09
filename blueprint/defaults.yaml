@@ -6,3 +6,6 @@ name: Blueprint defaults
 grid:
   size: 8
   snap: true
+  # Leave a visual alone (with a warning) if snapping would change its width or height
+  # by more than this fraction. null disables the limit.
+  max_resize: 0.25

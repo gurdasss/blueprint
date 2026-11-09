@@ -91,3 +91,29 @@ def test_warns_when_snapping_creates_overlap(tmp_path: Path):
     r = read_report(make_report(tmp_path, {"p": [visual("a", 0, 0, 2, 8), visual("b", 3, 0, 8, 8)]}))
     result = snap_report(r, 8)
     assert any("a and b overlap" in w for w in result.warnings)
+
+
+def test_max_resize_skips_visuals_that_would_be_distorted(tmp_path: Path):
+    # Sample shape: a 24.5px footer textbox on a coarse grid.
+    r = read_report(make_report(tmp_path, {"p": [
+        visual("footer", 1151.39, 694.51, 126.16, 24.5),
+        visual("chart", 607.41, 331.08, 654.34, 379.31),
+    ]}))
+    result = snap_report(r, 32, max_resize=0.25)
+    assert result.moved == [("p", "chart")]
+    footer = next(v for v in r.page("p").visuals if v.name == "footer")
+    assert footer.rect == Rect(1151.39, 694.51, 126.16, 24.5)  # untouched
+    [warning] = [w for w in result.warnings if "footer" in w]
+    assert "126.2x24.5 -> 128x48" in warning and "96% > grid.max_resize 25%" in warning
+
+
+def test_max_resize_none_disables_limit(tmp_path: Path):
+    r = read_report(make_report(tmp_path, {"p": [visual("footer", 1151.39, 694.51, 126.16, 24.5)]}))
+    assert snap_report(r, 32, max_resize=None).moved == [("p", "footer")]
+
+
+def test_max_resize_skip_is_idempotent(tmp_path: Path):
+    rd = make_report(tmp_path, {"p": [visual("footer", 1151.39, 694.51, 126.16, 24.5)]})
+    first = snap_report(read_report(rd), 32, max_resize=0.25)
+    second = snap_report(read_report(rd), 32, max_resize=0.25)
+    assert first.moved == second.moved == [] and first.warnings == second.warnings
