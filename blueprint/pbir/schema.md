@@ -429,6 +429,19 @@ README Q1–Q3 and Q5–Q11. Every file Desktop wrote validates and round-trips 
   - **`queryState` roles are written in alphabetical order**, not well order: `Goal`, `Indicator`,
     `TrendLine` (the wells read Value, Trend axis, Target). That matches every type seen so far
     (`Category`/`Y`, `Values`, `Data`), so `render` sorts roles.
+  - **Desktop accepts Blueprint's line, bar and drill-down pie as written (probe 14,**
+    `scripts/probe_apply_charts.py`; evidence `docs/probes/14-apply-charts.diff`). Two specs were
+    applied to fixture 02 plus a calculated date column added straight to `Sales.tmdl` (the DAX from
+    probe 13, without the automatic date tables). Then the user opened, saved, inspected and
+    drilled:
+    - Every chart was drawn with its title. The bar and pie drill-downs worked down and back up.
+    - **A date column bound as a plain `Column` works:** the line chart drew it, and Desktop kept the
+      binding. Desktop **did not create the automatic date tables** for a column added outside it
+      (no TMDL changed). So `Order Date` had no Date Hierarchy, and the chart couldn't drill by year.
+    - On save Desktop changed only UI state on Blueprint's visuals. It added the automatic `filterConfig` filters to three
+      of the four, raised their `$schema` to 2.14.0, and flipped drill `active` flags. Re-running
+      `bp apply` with both specs then reported **no changes**, and `bp check` found nothing on either
+      page.
   - **Line and clustered bar charts (probe 12,** `scripts/probe_line_bar.py`; evidence
     `docs/probes/12-line-bar.diff`). Desktop's names are Line chart and Clustered bar chart.
 
@@ -539,9 +552,9 @@ content, so Blueprint's theme file matches Desktop's format exactly.
   "Variation", "Property": "Order Date"}}, "Hierarchy": "Date Hierarchy"}}, "Level": "Year"}},
   "queryRef": "Sales.Order Date.Variation.Date Hierarchy.Year", "nativeQueryRef": "Order Date
   Year"}`, then Quarter, Month and Day. Only Year was `active` at first. Choosing *Order Date* in the
-  well's menu set every level `active` (expand) and **did not switch to the plain column**. So how a
-  date column is bound without its hierarchy is still **open**, and Blueprint binds `Table[Column]`
-  as a plain `Column` (an open item for date columns).
+  well's menu set every level `active` (expand) and **did not switch to the plain column**.
+  Probe 14 settled how Blueprint binds a date: `Table[Column]` as a plain `Column`, which Desktop draws
+  and keeps as written.
 - **Aggregation codes:** "Average of Amount" is `Function: 1` and "Count of Region" (a text column) is
   `Function: 5`. Desktop kept the field's old `queryRef` (`Sum(Sales.Amount)` on the Average,
   `Sales.Region` on the Count), so a `queryRef` says nothing reliable about the aggregation.
