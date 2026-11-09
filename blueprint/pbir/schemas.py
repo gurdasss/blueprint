@@ -137,3 +137,20 @@ def validate(doc: Any, resolution: Resolution) -> list[str]:
         doc = {**doc, "$schema": resolution.used.url}
     errors = sorted(_validator(resolution.used).iter_errors(doc), key=lambda e: list(e.path))
     return [f"{'/'.join(map(str, e.absolute_path)) or '<root>'}: {e.message}" for e in errors]
+
+
+def validate_documents(documents) -> list[str]:
+    """Schema problems across parsed report documents (``reader.Document``s), one per line.
+
+    Documents with an unknown major version can't be validated; that's reported too.
+    """
+    problems: list[str] = []
+    for doc in sorted(documents, key=lambda d: d.path.as_posix()):
+        res = doc.schema
+        if res is None:
+            continue
+        if res.used is None:
+            problems.append(f"{doc.path.as_posix()}: not validated (unknown schema {res.declared.url})")
+            continue
+        problems.extend(f"{doc.path.as_posix()}: {e}" for e in validate(doc.data, res))
+    return problems

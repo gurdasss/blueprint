@@ -40,6 +40,24 @@ def _snap_edge(v: float, grid: int, limit: float) -> float:
     return n
 
 
+EPS = 1e-6
+
+
+def off_grid_edges(rect: Rect, grid: int, page_w: float, page_h: float) -> dict[str, float]:
+    """Edges not on a grid line, by name. Page edges count as grid lines (as in snapping).
+
+    This is the single definition of "on grid" shared by ``fmt`` and ``check``: any rect
+    ``snap_rect`` returns has no off-grid edges.
+    """
+    def on(v: float, limit: float | None) -> bool:
+        r = v % grid
+        return min(r, grid - r) < EPS or (limit is not None and abs(v - limit) < EPS)
+
+    edges = {"left": (rect.x, None), "top": (rect.y, None),
+             "right": (rect.right, page_w), "bottom": (rect.bottom, page_h)}
+    return {name: v for name, (v, limit) in edges.items() if not on(v, limit)}
+
+
 def _span(lo: float, hi: float, grid: int, limit: float, was_hi: float) -> tuple[float, float]:
     """Snap one axis. A visual never collapses below one grid cell, and growing it to one
     cell must not push it off the page: if there's no room after it, grow it the other way."""
