@@ -43,6 +43,8 @@ class SemanticModel:
     tables: dict[str, set[str]] = field(default_factory=dict)  # table -> columns
     measures: dict[str, list[str]] = field(default_factory=dict)  # measure -> home table(s)
     hierarchies: dict[tuple[str, str], tuple[str, ...]] = field(default_factory=dict)  # (table, name) -> levels
+    hidden_tables: set[str] = field(default_factory=set)  # `isHidden` tables (e.g. Desktop's auto-date ones)
+    hidden: set[tuple[str, str]] = field(default_factory=set)  # (table, column or measure) marked `isHidden`
 
     def measure_table(self, name: str) -> str:
         homes = self.measures.get(name, [])
@@ -90,6 +92,25 @@ def parse_table(text: str, source: str = "<tmdl>") -> tuple[str, set[str], set[s
     return _name(m), columns, measures
 
 
+def parse_hidden(text: str) -> tuple[bool, set[str]]:
+    """(is the table hidden, names of its hidden columns and measures) from one table file.
+    TMDL writes ``isHidden`` as a property line: one tab in for the table, two tabs in under the
+    member it belongs to (seen in Microsoft's sample models, e.g. auto-date tables, ID columns)."""
+    table_hidden, hidden, member = False, set(), None
+    for line in text.replace("\r\n", "\n").split("\n"):
+        if line == "\tisHidden" or line.startswith("\tisHidden "):
+            table_hidden = True
+            continue
+        m = _MEMBER.match(line)
+        if m:
+            member = _name(m)
+        elif line.startswith("\t") and not line.startswith("\t\t") and line.strip():
+            member = None  # another kind of member (hierarchy, partition, annotation)
+        elif member and line.strip() == "isHidden" and line.startswith("\t\t") and not line.startswith("\t\t\t"):
+            hidden.add(member)
+    return table_hidden, hidden
+
+
 def parse_hierarchies(text: str) -> dict[str, tuple[str, ...]]:
     """Hierarchy name -> its levels in order, from one ``tables/<name>.tmdl`` file (probe 16)."""
     out: dict[str, list[str]] = {}
@@ -124,6 +145,10 @@ def load(model_dir: Path) -> SemanticModel:
         model.tables[table] = columns
         for name, levels in parse_hierarchies(text).items():
             model.hierarchies[(table, name)] = levels
+        table_hidden, hidden = parse_hidden(text)
+        if table_hidden:
+            model.hidden_tables.add(table)
+        model.hidden |= {(table, name) for name in hidden}
         for m in sorted(measures):
             model.measures.setdefault(m, []).append(table)
     return model

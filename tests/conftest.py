@@ -19,6 +19,22 @@ def retail_report() -> Path:
     return sample_report("retail-analysis")
 
 
+def _real_reports() -> list[Path]:
+    """Every sample's .Report folder, so tests that hold for any Desktop-saved report run on each."""
+    if not SAMPLES.is_dir():
+        return []
+    return sorted(r for d in SAMPLES.iterdir() if d.is_dir() for r in d.glob("*.Report"))
+
+
+@pytest.fixture(params=_real_reports() or [None],
+                ids=lambda p: p.parent.name if p else "no-samples")
+def real_report(request) -> Path:
+    """Each local sample report in turn (see samples/README.md); skips when there are none."""
+    if request.param is None:
+        pytest.skip("no sample reports under samples/ (local-only, gitignored)")
+    return request.param
+
+
 FIXTURES = ROOT / "fixtures"
 
 

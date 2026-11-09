@@ -41,7 +41,7 @@ def test_model_fields_are_written_in_spec_syntax(capsys, tmp_path: Path):
     d = _describe(capsys, "--report", str(tmp_path / "proj"))
     assert d["model"] == {"available": True, "tables": {"Sales": {
         "columns": ["Sales[Amount]", "Sales[Country]", "Sales[Region]"],
-        "measures": ["[Total Amount]"], "hierarchies": {}}}}
+        "measures": ["[Total Amount]"], "hierarchies": {}, "hidden": []}}, "hidden_tables": []}
     for ref in [*d["model"]["tables"]["Sales"]["columns"], *d["model"]["tables"]["Sales"]["measures"]]:
         assert spec.parse_field(ref) is not None
     assert [(p["name"], p["spec"]) for p in d["pages"]] == [("Overview", None)]

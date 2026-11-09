@@ -5,12 +5,12 @@ import pytest
 from blueprint.pbir import jsonfmt
 
 
-def test_round_trip_is_byte_identical_on_desktop_output(retail_report: Path):
-    files = sorted(retail_report.rglob("*.json")) + sorted(retail_report.glob("*.pbir"))
+def test_round_trip_is_byte_identical_on_desktop_output(real_report: Path):
+    files = sorted(real_report.rglob("*.json")) + sorted(real_report.glob("*.pbir"))
     files = [f for f in files if ".pbi" not in f.parts]
     assert files
     mismatched = [
-        str(f.relative_to(retail_report))
+        str(f.relative_to(real_report))
         for f in files
         if jsonfmt.dump_bytes(jsonfmt.load(f)) != f.read_bytes()
     ]

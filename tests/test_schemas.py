@@ -43,8 +43,8 @@ def test_builder_output_is_schema_valid(tmp_path: Path):
             assert schemas.validate(doc.data, doc.schema) == [], doc.path
 
 
-def test_sample_report_is_schema_valid(retail_report: Path):
-    r = read_report(retail_report)
+def test_sample_report_is_schema_valid(real_report: Path):
+    r = read_report(real_report)
     for doc in r.source.documents.values():
         if doc.schema is not None:
             assert schemas.validate(doc.data, doc.schema) == [], doc.path

@@ -133,24 +133,45 @@ def _quote(table: str) -> str:
     return table if table.replace("_", "a").isalnum() else "'" + table.replace("'", "''") + "'"
 
 
+def _ref(model: semantic.SemanticModel, quoted_table: str, name: str, is_measure: bool) -> str:
+    """A field in spec syntax, flagged when a measure name lives in several tables."""
+    if not is_measure:
+        return f"{quoted_table}[{name}]"
+    homes = model.measures.get(name, [])
+    return f"[{name}]" + (f"  (ambiguous: in {', '.join(homes)})" if len(homes) > 1 else "")
+
+
 def _model(report: Report) -> dict[str, Any]:
     pbir = report.source.documents.get(Path("definition.pbir"))
     try:
         model = semantic.load(semantic.model_dir_for(report.root, pbir.data if pbir else {}))
     except semantic.ModelError as exc:
         return {"available": False, "problem": str(exc), "tables": {}}
+    # Hidden columns and measures are listed apart: what a report author sees in Desktop's Data
+    # pane comes first. A hidden table's columns count as hidden, but its own visible measures are
+    # listed (a hidden table holding the measures is a common pattern: the Procurement sample's
+    # visuals use them). A hidden table with nothing visible (auto-date tables) is left out.
     tables: dict[str, Any] = {}
+    left_out = []
     for table in sorted(model.tables):
         q = _quote(table)
         measures = sorted(m for m, homes in model.measures.items() if table in homes)
+        columns = sorted(model.tables[table])
+        hidden = {n for t, n in model.hidden if t == table}
+        if table in model.hidden_tables:
+            hidden |= set(columns)
+            if not [m for m in measures if m not in hidden]:
+                left_out.append(table)
+                continue
         tables[table] = {
-            "columns": [f"{q}[{c}]" for c in sorted(model.tables[table])],
-            "measures": [f"[{m}]" + ("" if len(model.measures[m]) == 1 else "  (ambiguous: in "
-                                     + ", ".join(model.measures[m]) + ")") for m in measures],
+            "columns": [_ref(model, q, c, False) for c in columns if c not in hidden],
+            "measures": [_ref(model, q, m, True) for m in measures if m not in hidden],
             "hierarchies": {f"{q}[{h}]": list(levels)
                             for (t, h), levels in sorted(model.hierarchies.items()) if t == table},
+            "hidden": [_ref(model, q, n, n in measures) for n in sorted(set(columns) | set(measures))
+                       if n in hidden],
         }
-    return {"available": True, "tables": tables}
+    return {"available": True, "tables": tables, "hidden_tables": left_out}
 
 
 def to_text(data: dict[str, Any]) -> str:
@@ -214,6 +235,11 @@ def to_text(data: dict[str, Any]) -> str:
                 lines.append(f"    columns:  {', '.join(t['columns'])}")
             for h, levels in t["hierarchies"].items():
                 lines.append(f"    hierarchy {h}: {' > '.join(levels)}")
+            if t["hidden"]:
+                lines.append(f"    hidden:   {', '.join(t['hidden'])}")
+        if m.get("hidden_tables"):
+            lines.append(f"  ({len(m['hidden_tables'])} hidden table(s) with nothing visible, not listed: "
+                         f"{', '.join(m['hidden_tables'])})")
         lines.append("")
         lines.append("Pages (spec = the spec id that built it)")
         for p in data["pages"]:

@@ -38,9 +38,9 @@ def test_dry_run_writes_nothing(tmp_path: Path, capsys):
     assert _snapshot(rd) == before
 
 
-def test_fmt_idempotent_and_valid_on_sample(retail_report: Path, tmp_path: Path, capsys):
-    copy = tmp_path / retail_report.name
-    shutil.copytree(retail_report, copy)
+def test_fmt_idempotent_and_valid_on_sample(real_report: Path, tmp_path: Path, capsys):
+    copy = tmp_path / real_report.name
+    shutil.copytree(real_report, copy)
     original, once, twice = _fmt_twice(copy, capsys)
     assert once == twice
     changed = [k for k in original if original[k] != once[k]]

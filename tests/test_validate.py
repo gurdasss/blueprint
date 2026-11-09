@@ -204,9 +204,9 @@ def test_example_guidelines_load():
     assert (g.canvas.margin, g.page.max_visuals, g.page.density_policy) == (16, 6, "data")
 
 
-def test_fmt_then_check_leaves_only_fmt_skipped_grid_findings(retail_report: Path, tmp_path: Path, capsys):
-    copy = tmp_path / retail_report.name
-    shutil.copytree(retail_report, copy)
+def test_fmt_then_check_leaves_only_fmt_skipped_grid_findings(real_report: Path, tmp_path: Path, capsys):
+    copy = tmp_path / real_report.name
+    shutil.copytree(real_report, copy)
     for g in ("8", "16", "32"):
         assert main(["fmt", "--report", str(copy), "--grid", g]) == 0
         capsys.readouterr()

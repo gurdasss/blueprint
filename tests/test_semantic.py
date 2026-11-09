@@ -69,3 +69,54 @@ def test_check_hierarchy_level(tmp_path: Path):
                         (("Sales", "Geography", "City"), "no level 'City'")):
         with pytest.raises(semantic.ModelError, match=match):
             m.check_hierarchy_level(*args)
+
+
+# Shaped like Microsoft's sample models: a hidden auto-date table, and hidden ID columns and a
+# hidden measure (an `isHidden` line under the member, two tabs in; deeper lines aren't the flag).
+HIDDEN_TMDL = (
+    "table Vendor\n\tlineageTag: 1\n\n"
+    "\tmeasure 'Vendor Count' = COUNTROWS(Vendor)\n\t\tisHidden\n\n"
+    "\tmeasure Spend = SUM(Vendor[Amount])\n\t\tformatString: 0\n\n"
+    "\tcolumn VendorID\n\t\tdataType: double\n\t\tisHidden\n\t\tsummarizeBy: none\n\n"
+    "\tcolumn Vendor\n\t\tdataType: string\n\n"
+    "\tcolumn Notes = \"x\"\n\t\tannotation Y =\n\t\t\tisHidden\n\n"
+    "\tpartition Vendor = m\n\t\tmode: import\n"
+)
+
+
+def test_parse_hidden_members_and_tables():
+    assert semantic.parse_hidden(HIDDEN_TMDL) == (False, {"Vendor Count", "VendorID"})
+    auto = "table LocalDateTable_1\n\tisHidden\n\tshowAsVariationsOnly\n\n\tcolumn Date\n\t\tdataType: dateTime\n"
+    assert semantic.parse_hidden(auto) == (True, set())
+    assert semantic.parse_hidden(auto.replace("\n", "\r\n")) == (True, set())
+
+
+def test_load_records_hidden(tmp_path):
+    tables = tmp_path / "M" / "definition" / "tables"
+    tables.mkdir(parents=True)
+    (tables / "Vendor.tmdl").write_text(HIDDEN_TMDL)
+    (tables / "LocalDateTable_1.tmdl").write_text("table LocalDateTable_1\n\tisHidden\n\n\tcolumn Date\n")
+    m = semantic.load(tmp_path / "M")
+    assert m.hidden_tables == {"LocalDateTable_1"}
+    assert m.hidden == {("Vendor", "Vendor Count"), ("Vendor", "VendorID")}
+    assert m.measure_table("Vendor Count") == "Vendor"  # hidden fields still bind, as in Desktop
+
+
+def test_describe_lists_a_hidden_tables_visible_measures(tmp_path):
+    from blueprint.commands.describe import _model
+    from tests.builders import make_report
+    rd = make_report(tmp_path / "r", {"p": []})
+    tables = tmp_path / "r" / "M" / "definition" / "tables"
+    tables.mkdir(parents=True)
+    # Procurement-sample shape: the hidden table holds the measures the report uses.
+    (tables / "Facts.tmdl").write_text("table Facts\n\tisHidden\n\n\tmeasure Total = 1\n\n"
+                                       "\tmeasure Helper = 2\n\t\tisHidden\n\n\tcolumn Amount\n")
+    (tables / "LocalDateTable_1.tmdl").write_text("table LocalDateTable_1\n\tisHidden\n\n\tcolumn Date\n")
+    import json
+    pbir = rd / "definition.pbir"
+    pbir.write_text(json.dumps({"version": "4.0", "datasetReference": {"byPath": {"path": "../M"}}}))
+    from blueprint.pbir.reader import read_report
+    m = _model(read_report(rd))
+    assert m["tables"] == {"Facts": {"columns": [], "measures": ["[Total]"], "hierarchies": {},
+                                     "hidden": ["Facts[Amount]", "[Helper]"]}}
+    assert m["hidden_tables"] == ["LocalDateTable_1"]
