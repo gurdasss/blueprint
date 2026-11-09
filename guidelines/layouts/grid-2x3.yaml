@@ -1,0 +1,12 @@
+# A header over six equal main regions, two rows of three, filled left to right, top to bottom.
+# Columns are 400px with 24px gaps; rows are 296px with a 16px gap (608 = 2 x 296 + 16).
+name: grid-2x3
+canvas: { width: 1280, height: 720 }
+regions:
+  - { role: header, x: 16,  y: 16,  w: 1248, h: 64 }
+  - { role: main,   x: 16,  y: 96,  w: 400,  h: 296 }
+  - { role: main,   x: 440, y: 96,  w: 400,  h: 296 }
+  - { role: main,   x: 864, y: 96,  w: 400,  h: 296 }
+  - { role: main,   x: 16,  y: 408, w: 400,  h: 296 }
+  - { role: main,   x: 440, y: 408, w: 400,  h: 296 }
+  - { role: main,   x: 864, y: 408, w: 400,  h: 296 }

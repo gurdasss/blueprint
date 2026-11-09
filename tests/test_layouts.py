@@ -30,6 +30,50 @@ def test_example_layout_and_spec_place_in_declaration_order(monkeypatch, tmp_pat
         ("header", "header", 16), ("card", "main", 16), ("column", "main", 648)]
 
 
+def test_spec_region_overrides_the_contract_role():
+    layout = layouts.parse({**LAYOUT, "regions": [*LAYOUT["regions"],
+                                                  {"role": "kpi-row", "x": 16, "y": 96, "w": 400, "h": 120}]})
+    placed = layouts.place(_spec(CARD, {**CARD, "region": "kpi-row"}), layout)
+    assert [p.region.key for p in placed] == ["main#1", "kpi-row#1"]
+
+
+def test_spec_region_the_layout_lacks_is_an_error():
+    with pytest.raises(LayoutError, match=r"visuals\[0\]\.region: layout 'two' has no 'kpi-row' region "
+                                          r"\(it has header, main\)"):
+        layouts.place(_spec({**CARD, "region": "kpi-row"}), layouts.parse(LAYOUT))
+
+
+@pytest.mark.parametrize("bad", ["", "KPI Row", 3, ["main"]])
+def test_spec_region_must_be_a_role_name(bad):
+    with pytest.raises(spec.SpecError, match=r"visuals\[0\]\.region: .* must be a region role"):
+        _spec({**CARD, "region": bad})
+
+
+SHIPPED = sorted(p.stem for p in (ROOT / "guidelines" / "layouts").glob("*.yaml"))
+
+
+@pytest.mark.parametrize("name", SHIPPED)
+def test_shipped_layouts_fit_the_example_guidelines(name):
+    g = guidelines.load(ROOT / "guidelines" / "example.yaml")
+    layout = layouts.load(name, g.layouts.search_path)
+    assert (layout.width, layout.height) == (g.canvas.width, g.canvas.height)
+    assert layouts.conflicts(layout, g.grid.size, g.canvas.margin, g.canvas.gutter) == []
+    assert sum(r.role == "header" for r in layout.regions) == 1
+
+
+def test_shipped_layouts():
+    assert SHIPPED == ["dashboard-6", "grid-2x3", "kpi-row-plus-detail", "standard-4-up"]
+
+
+def test_conflicts_include_the_gutter():
+    assert layouts.conflicts(layouts.parse(LAYOUT), 8, 16, 16) == []  # 16px apart
+    assert layouts.conflicts(layouts.parse(LAYOUT), 8, 16, 24) == [
+        "regions header#1 and main#1 are 16px apart, less than the 24px gutter",
+        "regions header#1 and main#2 are 16px apart, less than the 24px gutter",
+        "regions main#1 and main#2 are 16px apart, less than the 24px gutter",
+    ]
+
+
 def test_running_out_of_regions_is_an_error_not_a_reflow():
     with pytest.raises(LayoutError, match=r"visuals\[2\] \(card\): no free 'main' region left in layout 'two' \(it has 2\)"):
         layouts.place(_spec(CARD, CARD, CARD), layouts.parse(LAYOUT))
@@ -130,3 +174,32 @@ def test_apply_fmt_apply_converges(tmp_path: Path, capsys):
     assert "No changes." in capsys.readouterr().out
     assert main(["fmt", *args]) == 0
     assert "No changes." in capsys.readouterr().out
+
+
+def test_changing_a_visuals_region_moves_it_on_re_apply(tmp_path: Path, capsys):
+    import shutil
+
+    from blueprint.cli import main
+    from blueprint.pbir.reader import read_report
+    shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
+    args = ["--report", str(tmp_path / "proj"), "--guidelines", str(ROOT / "guidelines" / "example.yaml")]
+    s = tmp_path / "dash.yaml"
+    body = ("page: Dash\nlayout: dashboard-6\nvisuals:\n  - {type: header, title: Hi}\n"
+            "  - {type: card, id: total, %sslots: {value: '[Total Amount]'}}\n")
+
+    def card():
+        [page] = [p for p in read_report(tmp_path / "proj").pages if p.display_name == "Dash"]
+        [v] = [v for v in page.visuals if v.visual_type == "cardVisual"]
+        return v.region, (v.rect.x, v.rect.y)
+
+    s.write_text(body % "")
+    assert main(["apply", str(s), *args]) == 0
+    assert card() == ("main#1", (16, 232))
+    s.write_text(body % "region: kpi-row, ")
+    assert main(["apply", str(s), *args]) == 0
+    assert card() == ("kpi-row#1", (16, 96))
+    from blueprint.validate import check_report
+    report = read_report(tmp_path / "proj")
+    [page] = [p.name for p in report.pages if p.display_name == "Dash"]
+    found = check_report(report, guidelines.load(ROOT / "guidelines" / "example.yaml")).findings
+    assert [f for f in found if f.page == page] == []

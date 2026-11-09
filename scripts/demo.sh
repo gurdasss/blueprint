@@ -14,7 +14,7 @@ BP="$(cd "$(dirname "$0")/.." && pwd)"
 DEMO="${DEMO:-/tmp/bp-demo}"
 R="$DEMO/project"
 export BLUEPRINT_GUIDELINES="$BP/guidelines/example.yaml"
-SPECS=(overview charts pies dates-tables geography geo-charts geo-line)
+SPECS=(overview charts pies dates-tables geography geo-charts geo-line dashboard kpi-detail grid)
 cd "$BP"
 if [ -z "${VIRTUAL_ENV:-}" ] && [ -f .venv/bin/activate ]; then source .venv/bin/activate; fi
 

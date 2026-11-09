@@ -1,0 +1,23 @@
+# layout kpi-row-plus-detail: four KPI-row visuals over one full-width table
+page: KPI Detail Demo
+layout: kpi-row-plus-detail
+visuals:
+  - type: header
+    title: KPIs and Detail
+  - type: kpi
+    title: Total vs Target
+    slots: {value: "[Total Amount]", trend: "Sales[Country]", target: "[Target Amount]"}
+  - type: card
+    title: Total
+    region: kpi-row
+    slots: {value: "[Total Amount]"}
+  - type: card
+    title: Target
+    region: kpi-row
+    slots: {value: "[Target Amount]"}
+  - type: kpi
+    title: Total by Region
+    slots: {value: "[Total Amount]", trend: "Sales[Region]"}
+  - type: table
+    title: Detail
+    slots: {columns: ["Sales[Geography]", "[Total Amount]", "[Target Amount]"]}

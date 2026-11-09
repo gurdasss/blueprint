@@ -293,8 +293,29 @@ regions:
   - { role: main,    x: 648, y: 232, w: 616,  h: 472 }
 ```
 
-Visuals fill regions in declaration order. Running out of regions is an error, not a
-reflow.
+Visuals fill regions in declaration order. Each visual takes the next free region of its
+type's role (`region:` in its slot contract: `kpi` → `kpi-row`, `header` → `header`, everything
+else → `main`), or of the role its spec names:
+
+```yaml
+  - type: card
+    region: kpi-row          # a card in the KPI row instead of a main region
+    slots: { value: "[Total Sales]" }
+```
+
+Running out of regions is an error, not a reflow. Shipped with the example guidelines
+(`guidelines/layouts/`), all 1280×720, on the 8px grid, inside the 16px margin and at least the
+16px gutter apart:
+
+| Layout | Regions |
+|---|---|
+| `standard-4-up` | header, 1 KPI row, 2 main |
+| `dashboard-6` | header, 3 KPI row, 3 main |
+| `kpi-row-plus-detail` | header, 4 KPI row, 1 full-width main |
+| `grid-2x3` | header, 6 main (2 rows of 3) |
+
+`bp apply` refuses a layout that doesn't fit the guidelines it runs with: regions off the grid,
+inside `canvas.margin`, or closer together than `canvas.gutter`.
 
 ---
 
@@ -325,7 +346,7 @@ canvas:
   width: 1280
   height: 720
   margin: 16
-  gutter: 32
+  gutter: 16
 
 palette:
   categorical: ["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"]

@@ -118,8 +118,17 @@ def _check_geometry(page: Page, rules: Guidelines, c: _Collector) -> None:
             if near:
                 c.add("margin", f"closer than {m}px to the page edge ({', '.join(near)})", page, v)
 
+    decorative = set(rules.check.decorative_types)
+    if rules.canvas.gutter and c.on("gutter"):
+        spaced = [v for v in candidates if v.visual_type not in decorative]
+        for i, a in enumerate(spaced):
+            for b in spaced[i + 1:]:
+                gap = gutter_gap(a.rect, b.rect)
+                if gap is not None and gap < rules.canvas.gutter - grid.EPS:
+                    c.add("gutter", f"{_fmt(gap)}px from {b.name} ({b.visual_type}); "
+                                    f"canvas.gutter is {rules.canvas.gutter}px", page, a)
+
     if c.on("overlap"):
-        decorative = set(rules.check.decorative_types)
         for i, a in enumerate(candidates):
             for b in candidates[i + 1:]:
                 if not _intersects(a.rect, b.rect):
@@ -136,6 +145,21 @@ def _fmt_hint(r: Rect, rules: Guidelines, w: float, h: float) -> str:
     if rules.grid.max_resize is not None and ratio > rules.grid.max_resize:
         return f"bp fmt skips it (would resize {ratio:.0%}); fix by hand or mark it blueprint.ignore"
     return "bp fmt fixes this"
+
+
+def gutter_gap(a: Rect, b: Rect) -> float | None:
+    """The gap between two rectangles that sit side by side or one above the other (they share
+    part of a row or a column), or None if they overlap or are only diagonal neighbours.
+    Touching edges are a gap of 0."""
+    across = min(a.right, b.right) - max(a.x, b.x)  # > 0: they share part of a column
+    down = min(a.bottom, b.bottom) - max(a.y, b.y)  # > 0: they share part of a row
+    if across > grid.EPS and down > grid.EPS:
+        return None  # overlapping: the overlap rule's business
+    if down > grid.EPS:
+        return -across
+    if across > grid.EPS:
+        return -down
+    return None
 
 
 def _intersects(a: Rect, b: Rect) -> bool:

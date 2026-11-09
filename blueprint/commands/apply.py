@@ -129,10 +129,11 @@ def build_plan(args: argparse.Namespace) -> Plan:
     if not layout_name:
         raise ApplyError(f"{page_spec.source}: no layout (set `layout:` or layouts.default in guidelines)")
     layout = layouts.load(layout_name, rules.layouts.search_path)
-    clash = layouts.conflicts(layout, rules.grid.size, rules.canvas.margin)
+    clash = layouts.conflicts(layout, rules.grid.size, rules.canvas.margin, rules.canvas.gutter)
     if clash:
-        raise ApplyError(f"layout {layout.name!r} doesn't fit the guidelines, so bp apply and bp fmt "
-                         "would keep moving its visuals back and forth. Fix the layout:\n  "
+        raise ApplyError(f"layout {layout.name!r} doesn't fit the guidelines: bp apply and bp fmt "
+                         "would keep moving its visuals back and forth, or bp check would flag "
+                         "the page it builds. Fix the layout:\n  "
                          + "\n  ".join(clash))
     placements = layouts.place(page_spec, layout)
     bindings = _resolve(placements, report)

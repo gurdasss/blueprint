@@ -29,9 +29,9 @@ REPORT_OVERRIDE = ".blueprint.yaml"
 ENV_VAR = "BLUEPRINT_GUIDELINES"
 
 SEVERITIES = ("error", "warning", "off")
-RULES = ("format", "bounds", "grid", "margin", "overlap", "page-size", "density", "typography")
+RULES = ("format", "bounds", "grid", "margin", "gutter", "overlap", "page-size", "density", "typography")
 # Documented in README but unchecked until the PBIR format for them is verified.
-NOT_IMPLEMENTED = ("page.require_title", "page.title_region", "canvas.gutter")
+NOT_IMPLEMENTED = ("page.require_title", "page.title_region")
 
 
 class GuidelinesError(Exception):
@@ -50,6 +50,7 @@ class Canvas:
     width: int | None  # None: page size isn't checked
     height: int | None
     margin: int
+    gutter: int  # minimum gap between neighbouring visuals; 0: not checked
 
 
 @dataclass(frozen=True)
@@ -95,7 +96,7 @@ class Layouts:
 @dataclass(frozen=True)
 class CheckRules:
     severity: dict[str, str]  # rule id -> error | warning | off
-    decorative_types: tuple[str, ...]  # may contain other visuals; exempt from margin
+    decorative_types: tuple[str, ...]  # may contain other visuals; exempt from margin and gutter
 
 
 @dataclass(frozen=True)
@@ -196,7 +197,8 @@ def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
                   max_resize=_number(raw, "grid.max_resize", nullable=True)),
         canvas=Canvas(width=_int(raw, "canvas.width", minimum=1, nullable=True),
                       height=_int(raw, "canvas.height", minimum=1, nullable=True),
-                      margin=_int(raw, "canvas.margin", minimum=0)),
+                      margin=_int(raw, "canvas.margin", minimum=0),
+                      gutter=_int(raw, "canvas.gutter", minimum=0)),
         page=PageRules(max_visuals=_int(raw, "page.max_visuals", minimum=1, nullable=True),
                        density_policy=policy),
         palette=_palette(raw),

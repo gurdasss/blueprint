@@ -11,7 +11,7 @@ canvas:
   width: 1280
   height: 720
   margin: 16
-  gutter: 32
+  gutter: 16      # minimum gap between neighbouring visuals
 
 palette:
   categorical: ["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"]

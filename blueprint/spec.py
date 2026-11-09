@@ -15,6 +15,8 @@ A page spec describes *intent* (README "Page specs"):
         slots:
           category: ["Sales[Country]", "Sales[Region]"]   # ordered list = drill-down
           value: "[Total Amount]"
+      - type: card
+        region: kpi-row            # optional; overrides the region role the type's contract sets
       - type: table
         blueprint: ignore          # hand-placed on purpose; never touched or placed
 
@@ -40,7 +42,8 @@ ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
 _COLUMN = re.compile(r"^(?:'(?P<qt>(?:[^']|'')+)'|(?P<t>[A-Za-z_][\w ]*?))\[(?P<c>[^\]]+)\]$")
 _MEASURE = re.compile(r"^\[(?P<m>[^\]]+)\]$")
 _SPEC_KEYS = {"id", "page", "layout", "visuals"}
-_VISUAL_KEYS = {"type", "id", "title", "slots", "blueprint"}
+_VISUAL_KEYS = {"type", "id", "title", "region", "slots", "blueprint"}
+_ROLE_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 
 
 class SpecError(Exception):
@@ -67,6 +70,7 @@ class VisualSpec:
     title: str | None = None
     slots: dict[str, tuple[FieldRef, ...]] = field(default_factory=dict)
     ignore: bool = False
+    region: str | None = None  # region role chosen in the spec; None: the contract's role
 
 
 @dataclass(frozen=True)
@@ -170,11 +174,15 @@ def _visual(i: int, raw: Any, known: dict[str, Contract], counts: dict[str, int]
     if marker is not None and marker != "ignore":
         problems.append(f"{at}.blueprint: the only accepted value is `ignore`")
     ignore = marker == "ignore"
+    region = raw.get("region")
+    if region is not None and (not isinstance(region, str) or not _ROLE_RE.match(region)):
+        problems.append(f"{at}.region: {region!r} must be a region role, e.g. main or kpi-row")
+        region = None
     if vtype == "header" and not ignore and not title:
         problems.append(f"{at}.title: a header needs a title (it is the header's text)")
 
     slots = {} if ignore else _slots(at, raw.get("slots"), known[vtype], problems)
-    return VisualSpec(i, vtype, vid, title, slots, ignore)
+    return VisualSpec(i, vtype, vid, title, slots, ignore, region)
 
 
 def _slots(at: str, raw: Any, contract: Contract, problems: list[str]) -> dict[str, tuple[FieldRef, ...]]:

@@ -9,7 +9,8 @@ A layout is ``<search path>/<name>.yaml``:
       - { role: main,   x: 16, y: 232, w: 616, h: 472 }
 
 Visuals fill regions **in declaration order**: each takes the next unused region whose role
-matches its type's region (from its slot contract). Running out of regions is an error, never a
+matches the visual's role: its spec's ``region:`` if it has one, else its type's region (from
+its slot contract). Running out of regions is an error, never a
 reflow. ``blueprint: ignore`` visuals take no region.
 """
 
@@ -112,10 +113,12 @@ def parse(data: Any, source: str = "<layout>", expected_name: str | None = None)
     return Layout(name, width, height, tuple(regions), source)
 
 
-def conflicts(layout: Layout, grid: int, margin: int) -> list[str]:
+def conflicts(layout: Layout, grid: int, margin: int, gutter: int = 0) -> list[str]:
     """Ways ``layout`` breaks the guidelines it's used with. A region off the grid or inside the
-    margin would make `bp apply` and `bp fmt` undo each other forever (behaviour audit)."""
-    from blueprint.grid import off_grid_edges  # local: grid imports model only, no cycle
+    margin would make `bp apply` and `bp fmt` undo each other forever (behaviour audit); regions
+    closer than the gutter would build pages `bp check` flags."""
+    from blueprint.grid import EPS, off_grid_edges  # local: grid imports model only, no cycle
+    from blueprint.validate import gutter_gap
 
     problems = []
     for r in layout.regions:
@@ -129,6 +132,13 @@ def conflicts(layout: Layout, grid: int, margin: int) -> list[str]:
                                    ("bottom", layout.height - r.rect.bottom)) if d < margin]
             if near:
                 problems.append(f"region {r.key} is inside the {margin}px margin ({', '.join(near)})")
+    if gutter:
+        for i, a in enumerate(layout.regions):
+            for b in layout.regions[i + 1:]:
+                gap = gutter_gap(a.rect, b.rect)
+                if gap is not None and gap < gutter - EPS:
+                    problems.append(f"regions {a.key} and {b.key} are {gap:g}px apart, "
+                                    f"less than the {gutter}px gutter")
     return problems
 
 
@@ -138,11 +148,16 @@ def place(spec: PageSpec, layout: Layout) -> list[Placement]:
     free = list(layout.regions)
     placements: list[Placement] = []
     problems: list[str] = []
+    roles = sorted({r.role for r in layout.regions})
     for v in spec.visuals:
         if v.ignore:
             continue
-        role = known[v.type].region
+        role = v.region or known[v.type].region
         region = next((r for r in free if r.role == role), None)
+        if region is None and v.region and role not in roles:
+            problems.append(f"visuals[{v.index}].region: layout {layout.name!r} has no {role!r} "
+                            f"region (it has {', '.join(roles)})")
+            continue
         if region is None:
             total = sum(r.role == role for r in layout.regions)
             problems.append(f"visuals[{v.index}] ({v.type}): no free {role!r} region left in layout "

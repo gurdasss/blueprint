@@ -51,6 +51,31 @@ def test_grid_hint_when_fmt_would_skip(tmp_path: Path):
     assert "bp fmt skips it (would resize 96%)" in f.message
 
 
+def test_gutter_between_side_by_side_and_stacked_visuals(tmp_path: Path):
+    body = "canvas: {gutter: 16}"
+    side = [visual("a", 16, 16, 400, 200), visual("b", 424, 96, 400, 200)]  # 8px apart, rows overlap
+    [f] = findings(tmp_path, side, body, "gutter")
+    assert (f.visual, f.severity, f.message) == ("a", "warning", "8px from b (card); canvas.gutter is 16px")
+    stacked = [visual("a", 16, 16, 400, 200), visual("b", 200, 216, 400, 200)]  # touching
+    [f] = findings(tmp_path, stacked, body, "gutter")
+    assert f.message.startswith("0px from b")
+    assert findings(tmp_path, [visual("a", 16, 16, 400, 200), visual("b", 432, 16, 400, 200)],
+                    body, "gutter") == []  # exactly the gutter
+
+
+def test_gutter_ignores_diagonal_overlapping_and_decorative(tmp_path: Path):
+    body = "canvas: {gutter: 16}"
+    diagonal = [visual("a", 16, 16, 400, 200), visual("b", 424, 224, 400, 200)]
+    assert findings(tmp_path, diagonal, body, "gutter") == []
+    overlapping = [visual("a", 16, 16, 400, 200), visual("b", 400, 16, 400, 200)]
+    assert findings(tmp_path, overlapping, body, "gutter") == []  # reported as overlap instead
+    panel = [visual("bg", 8, 8, 816, 216, vtype="shape"), visual("a", 16, 16, 400, 200)]
+    assert findings(tmp_path, panel, body, "gutter") == []
+    close = [visual("a", 16, 16, 400, 200), visual("b", 424, 16, 400, 200)]
+    assert findings(tmp_path, close, "", "gutter") == []  # gutter 0 (default): not checked
+    assert findings(tmp_path, close, body + "\ncheck: {severity: {gutter: 'off'}}", "gutter") == []
+
+
 def test_margin_and_decorative_exemption(tmp_path: Path):
     body = "canvas: {margin: 16}"
     [f] = findings(tmp_path, [visual("a", 8, 16, 64, 64)], body, "margin")
@@ -169,7 +194,7 @@ def test_unchecked_guidelines_are_listed(tmp_path: Path, capsys):
     g = tmp_path / "g.yaml"
     g.write_text("canvas: {gutter: 32}\npage: {require_title: true}\n")
     main(["check", "--report", str(rd), "--guidelines", str(g)])
-    assert "not checked yet (set in guidelines, not implemented): page.require_title, canvas.gutter" in capsys.readouterr().out
+    assert "not checked yet (set in guidelines, not implemented): page.require_title\n" in capsys.readouterr().out
 
 
 def test_example_guidelines_load():

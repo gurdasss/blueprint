@@ -1,0 +1,24 @@
+# layout grid-2x3: six main regions, filled left to right, top to bottom
+page: Grid Demo
+layout: grid-2x3
+visuals:
+  - type: header
+    title: Six-up Grid
+  - type: card
+    title: Total
+    slots: {value: "[Total Amount]"}
+  - type: column
+    title: By Country
+    slots: {category: "Sales[Country]", value: "[Total Amount]"}
+  - type: bar
+    title: By Region
+    slots: {category: "Sales[Region]", value: "[Total Amount]"}
+  - type: pie
+    title: Share by Country
+    slots: {category: "Sales[Country]", value: "[Total Amount]"}
+  - type: line
+    title: Over Time
+    slots: {category: "Sales[Order Date]", value: "[Total Amount]"}
+  - type: table
+    title: Detail
+    slots: {columns: ["Sales[Country]", "[Total Amount]"]}

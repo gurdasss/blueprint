@@ -1,0 +1,26 @@
+# layout dashboard-6: cards placed in the KPI row with `region:` (a card's own region is main)
+page: Dashboard Demo
+layout: dashboard-6
+visuals:
+  - type: header
+    title: Sales Dashboard
+  - type: card
+    title: Total
+    region: kpi-row
+    slots: {value: "[Total Amount]"}
+  - type: kpi
+    title: Total vs Target
+    slots: {value: "[Total Amount]", trend: "Sales[Country]", target: "[Target Amount]"}
+  - type: card
+    title: Target
+    region: kpi-row
+    slots: {value: "[Target Amount]"}
+  - type: column
+    title: By Country
+    slots: {category: "Sales[Country]", value: "[Total Amount]"}
+  - type: pie
+    title: Share by Region
+    slots: {category: "Sales[Region]", value: "[Total Amount]"}
+  - type: line
+    title: Over Time
+    slots: {category: "Sales[Order Date]", value: "[Total Amount]"}

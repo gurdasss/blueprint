@@ -17,6 +17,7 @@ canvas:
   width: null    # null: page size is not checked
   height: null
   margin: 0      # minimum distance from visual edges to the page edge
+  gutter: 0      # minimum gap between neighbouring visuals (0: not checked)
 
 page:
   max_visuals: null        # null: no density budget
@@ -53,9 +54,11 @@ check:
     bounds: error      # visual extends outside the page
     grid: error        # an edge is off the grid (page edges count as grid lines)
     margin: warning    # an edge is closer to the page edge than canvas.margin
+    gutter: warning    # two side-by-side or stacked visuals are closer than canvas.gutter
     overlap: warning   # visuals partially overlap
     page-size: warning # page size differs from canvas.width/height
     density: warning   # more visuals than page.max_visuals
     typography: error  # a font, size or bold setting outside the typography guidelines
-  # Visual types allowed to contain other visuals (backgrounds, panels); exempt from margin.
+  # Visual types allowed to contain other visuals (backgrounds, panels); exempt from margin
+  # and gutter.
   decorative_types: [image, shape, basicShape]
