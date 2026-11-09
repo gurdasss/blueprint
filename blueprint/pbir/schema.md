@@ -130,6 +130,29 @@ Desktop?
 get? (Probe 01 step 4 was not done.) Are grouped visuals' positions relative to the
 group or to the page?
 
+## Colours, fonts and theme
+
+**Verified [sample]:** colour and font values come in at least two encodings:
+
+- **Textbox text runs**: plain strings in
+  `visual.objects.general[0].properties.paragraphs[i].textRuns[j].textStyle`, e.g.
+  `{"fontFamily": "Segoe UI Light", "fontSize": "28pt", "fontStyle": "normal",
+  "fontWeight": "normal"}` and `{"fontSize": "15pt", "color": "#2da2bf"}`. Font size is a
+  string with a `pt` unit. Hex can be lowercase. `"fontFamily": "Heading"` appears too and is
+  presumably a theme font token (unverified).
+- **Formatting objects** (`objects` / `visualContainerObjects`): expression literals, e.g.
+  title colour `fontColor = {"solid": {"color": {"expr": {"Literal": {"Value": "'#000000'"}}}}}`
+  and the same shape for `visualContainerObjects.background[0].properties.color`. The hex is
+  inside a single-quoted literal.
+- **Theme:** `report.json` `themeCollection.customTheme = {"name": "Concourse", "type":
+  "RegisteredResources", …}`, but **no theme file exists** in `StaticResources` and none
+  is listed in `resourcePackages`. Desktop opens the report anyway, so a referenced theme
+  can be missing. A palette check can't assume the theme's colours are readable.
+
+**Open (probe 02, `scripts/probe_formatting.py`):** how data colours, theme-colour
+references (and shades), per-category selectors, title and card font sizes and bold,
+and page background are stored, and where a theme lives when it's switched.
+
 ## Field bindings
 
 **Verified [sample]** (`ReportSection3/visuals/VisualContainer4`):
@@ -144,6 +167,8 @@ group or to the page?
                          "queryRef": "Sales.Total Sales Variance"}]}}}
 ```
 
+- Some sample visuals use `"queryRef": "select"`, `"select1"`, … instead of
+  `Table.Column` (older report). Readers must not parse meaning out of `queryRef`.
 - Measures and columns are both bound with their **home table** (`Entity`). So a spec
   that says `"[Total Sales]"` needs the semantic model to find that table.
 - The semantic model is TMDL: `tables/<Table>.tmdl` with `measure <Name> = …` lines.
