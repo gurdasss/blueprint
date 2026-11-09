@@ -45,9 +45,9 @@ ROOT = Path(__file__).resolve().parent.parent
 PROBES = ROOT / "docs" / "probes"
 FIXTURE = ROOT / "fixtures" / "02-card-and-chart"
 GUIDE = ROOT / "guidelines" / "example.yaml"
-REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
 # Probes whose report Blueprint built and Desktop then opened and saved.
-ACCEPTANCE = [5, 6, 9, 14, 17, 19]
+ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21]
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git to apply the evidence")
 
@@ -237,8 +237,8 @@ def test_rendering_desktops_bindings_gives_desktops_query(replays):
         assert _without_active(ours) == _without_active(desktop), f"{step}: {v.visual_type}"
         checked += 1
     # card + column (fixture), pie/table/kpi (08), kpi with target (10), pie drill + details (11),
-    # line, line + legend, bar drill (12), column/table/bar/pie/line on a hierarchy (16, 18)
-    assert checked >= 15
+    # line, line + legend, bar drill (12), column/table/bar/pie/line on a hierarchy (16, 18),
+    assert checked >= 26  # + slicer, matrix, column/bar/line with two measures (20)
 
 
 # --- what the user saw ---------------------------------------------------------------------
@@ -313,6 +313,7 @@ def test_blueprint_annotations_survive_every_desktop_save(replays, probe):
     (14, ["specs/dates-and-bars.yaml", "specs/pies-and-lines.yaml"]),
     (17, ["specs/geography.yaml"]),
     (19, ["specs/geo-bar-pie.yaml", "specs/geo-line.yaml"]),
+    (21, ["specs/slicer-matrix.yaml"]),
 ])
 def test_reapply_after_desktop_saved_changes_nothing(replays, probe, specs, tmp_path, capsys):
     """Nothing but the manifest: Desktop's save can raise files' $schema versions, which the
@@ -442,3 +443,63 @@ def test_spec_hierarchy_on_bar_pie_line_matches_probe_18(replays, tmp_path, spec
     assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
     # exactly what Desktop wrote when Geography was dragged onto that chart, active flags included
     assert _query(proj / "Fixture.Report", visual_type, True) == _query(_last(replays, 18).report, visual_type, False)
+
+
+# Probe 20, as a spec. The charts list Target Amount first because Desktop's file does (the user
+# reported adding Total first; the acceptance probe settles whether Desktop reorders).
+PROBE_20_SPEC = """\
+page: P
+layout: grid-2x3
+visuals:
+  - {type: header, title: Probe 20}
+  - {type: slicer, slots: {field: ["Sales[Country]", "Sales[Region]"]}}
+  - {type: matrix, slots: {rows: "Sales[Country]", columns: "Sales[Region]", values: ["[Total Amount]", "[Target Amount]"]}}
+  - {type: column, slots: {category: "Sales[Country]", value: ["[Target Amount]", "[Total Amount]"]}}
+  - {type: bar, slots: {category: "Sales[Country]", value: ["[Target Amount]", "[Total Amount]"]}}
+  - {type: line, slots: {category: "Sales[Country]", value: ["[Target Amount]", "[Total Amount]"]}}
+"""
+
+
+@pytest.mark.parametrize("visual_type", ["slicer", "pivotTable", "clusteredColumnChart",
+                                         "clusteredBarChart", "lineChart"])
+def test_20_spec_writes_desktops_queries(replays, tmp_path, visual_type):
+    proj = _copy(_last(replays, 20), tmp_path)  # has Target Amount
+    spec = tmp_path / "p20.yaml"
+    spec.write_text(PROBE_20_SPEC)
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+    fixture_visuals = {d["name"] for d in _visual_docs(FIXTURE / "Fixture.Report")}
+
+    def query(report: Path, managed: bool) -> dict:
+        [doc] = [d for d in _visual_docs(report) if d["visual"]["visualType"] == visual_type
+                 and any(a.get("name") == "blueprint.visual" for a in d.get("annotations", [])) == managed
+                 and d["name"] not in fixture_visuals]
+        return doc["visual"]["query"]["queryState"]
+
+    # exactly Desktop's queries, active flags included
+    assert query(proj / "Fixture.Report", True) == query(_last(replays, 20).report, False)
+
+
+def test_20_line_with_a_legend_takes_one_measure(replays, tmp_path, capsys):
+    proj = _copy(_last(replays, 20), tmp_path)
+    spec = tmp_path / "bad.yaml"
+    spec.write_text("page: Bad\nvisuals:\n  - {type: line, slots: {category: \"Sales[Country]\", "
+                    "legend: \"Sales[Region]\", value: [\"[Total Amount]\", \"[Target Amount]\"]}}\n")
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 2
+    assert "visuals[0].slots.value: takes one field when legend is set" in capsys.readouterr().err
+
+
+def test_21_desktop_kept_every_query_blueprint_wrote(replays):
+    """Desktop's save (after a data refresh) left each Blueprint query as written, so it doesn't
+    reorder Y: the charts keep Total Amount before Target Amount, the order the legend showed."""
+    steps = {s.name: s for s in replays[21]}
+
+    def queries(step: Step) -> dict[str, dict]:
+        return {d["name"]: d["visual"]["query"]["queryState"] for d in _visual_docs(step.report)
+                if any(a.get("name") == "blueprint.visual" for a in d.get("annotations", []))
+                and "query" in d["visual"]}
+
+    built = queries(steps["blueprint: apply specs/slicer-matrix.yaml"])
+    assert len(built) == 5
+    assert queries(steps["01 refresh and save"]) == built
+    charts = [q["Y"] for q in built.values() if "Category" in q]
+    assert [[p["nativeQueryRef"] for p in y["projections"]] for y in charts] == [["Total Amount", "Target Amount"]] * 3

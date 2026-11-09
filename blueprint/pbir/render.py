@@ -65,21 +65,28 @@ class Binding:
         return p
 
 
-# Roles whose column projections Desktop marks "active": the column chart's and the pie's Category
-# (probes 04, 08). A table's Values and a KPI's TrendLine columns don't carry it (probe 08).
+# Roles whose column projections Desktop marks "active": every chart's Category (probes 04, 08, 12),
+# the slicer's Values and the matrix's Rows and Columns (probe 20). It depends on the visual type:
+# a table's Values (probe 08) and a KPI's TrendLine columns don't carry it.
 ACTIVE_ROLES = frozenset({"Category"})
+ACTIVE_BY_TYPE = {"slicer": frozenset({"Values"}), "pivotTable": frozenset({"Rows", "Columns"})}
 
 
-def _projections(role: str, fields: list[Binding]) -> list[dict]:
-    """Projections for one role. In an ACTIVE_ROLES role every column is "active": true, as in
+def _active(visual_type: str, role: str) -> bool:
+    return role in ACTIVE_ROLES or role in ACTIVE_BY_TYPE.get(visual_type, frozenset())
+
+
+def _projections(role: str, fields: list[Binding], visual_type: str = "") -> list[dict]:
+    """Projections for one role. In an active role (_active) every column is "active": true, as in
     Desktop's own drill-down (fixture 02), and a hierarchy's levels are active only on its first
     level, as Desktop created them (probe 16; the rest is drill view state)."""
     out, seen = [], set()
+    marked = _active(visual_type, role)
     for b in fields:
         active = None
-        if role in ACTIVE_ROLES and b.kind == "column":
+        if marked and b.kind == "column":
             active = True
-        elif role in ACTIVE_ROLES and b.kind == "hierarchy_level":
+        elif marked and b.kind == "hierarchy_level":
             active = (b.table, b.name) not in seen
             seen.add((b.table, b.name))
         out.append(b.projection(active))
@@ -184,7 +191,7 @@ def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec
     body: dict[str, Any] = {"visualType": visual_type}
     if bindings:
         # Desktop writes roles in alphabetical order (probe 10: Goal, Indicator, TrendLine).
-        body["query"] = {"queryState": {role: {"projections": _projections(role, fields)}
+        body["query"] = {"queryState": {role: {"projections": _projections(role, fields, visual_type)}
                                         for role, fields in sorted(bindings.items())}}
     if text is not None:
         body["objects"] = textbox_objects(text, text_style)

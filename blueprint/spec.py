@@ -225,4 +225,9 @@ def _slots(at: str, raw: Any, contract: Contract, problems: list[str]) -> dict[s
     for name, slot in contract.slots.items():
         if slot.required and name not in raw:
             problems.append(f"{at}.slots.{name}: required by {contract.type}")
+        if len(out.get(name, ())) > 1:
+            for other in slot.list_excludes:
+                if other in raw:
+                    problems.append(f"{at}.slots.{name}: takes one field when {other} is set "
+                                    f"({contract.type} with a {other} shows one {name} per {other} value)")
     return out

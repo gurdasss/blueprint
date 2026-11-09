@@ -604,6 +604,37 @@ Data pane (Create hierarchy on Country, renamed Geography, then Region added):
   All three were drawn with their titles, showed UK and FR, and drilled to regions and back. On save
   Desktop kept their queries apart from the drill `active` flags, kept the annotations, and added only
   the automatic `filterConfig` filters.
+- **Slicer, matrix, and charts with two measures (probe 20,** `scripts/probe_slicer_matrix_measures.py`;
+  evidence `docs/probes/20-slicer-matrix-measures.diff`). Built in Desktop on fixture 02 after
+  adding `Target Amount = 600` (TMDL as in probe 10). The user saved without snapping between
+  steps, so the evidence is one section, the final state; what plain open-and-save rewrites isn't
+  re-recorded here (probe 12 did).
+
+  | Desktop (wells) | `visualType` | `queryState` | Desktop adds |
+  |---|---|---|---|
+  | Slicer (plain): Field = Country, Region | `slicer` | `Values`: both columns, in well order, **each `"active": true`** | `expansionStates` (an expanded node, view state), `filterConfig`, `drillFilterOtherVisuals` (no sort) |
+  | Matrix: Rows, Columns, Values | `pivotTable` | `Columns` (Region, `active`), `Rows` (Country, `active`), `Values` (Total Amount, Target Amount in well order, no `active`); roles alphabetical | `filterConfig` (Categorical for columns, Advanced for measures), `drillFilterOtherVisuals` (no sort) |
+  | Clustered column / bar, line: two measures on the value axis | unchanged | `Category` as before; `Y`: **one projection per measure**, no `active` | `sortDefinition` descending on the first `Y` measure (`isDefaultSort`), `filterConfig` |
+
+  - Slicer style **Dropdown** is `visual.objects.data[0].properties.mode = Literal "'Dropdown'"`.
+    Blueprint doesn't write it (Desktop's default style applies).
+  - Each chart showed two series with a legend (user). The charts' `Y` lists Target Amount first
+    and the matrix Total Amount first: that's the order the fields were dropped in. **Desktop
+    doesn't reorder `Y`** (probe 21: Blueprint wrote Total first, and Desktop's save kept it).
+  - Not probed, so not accepted by the contracts: a model hierarchy in a slicer or matrix, and a
+    line chart with a Legend and more than one measure (Desktop allows one `Y` value then).
+  - Blueprint renders all five exactly as Desktop wrote them, `active` included
+    (`tests/test_probe_replay.py::test_20_spec_writes_desktops_queries`). `active` depends on the
+    visual type: chart `Category`, slicer `Values`, matrix `Rows`/`Columns` (`render.ACTIVE_BY_TYPE`).
+- **Desktop accepts Blueprint's slicer, matrix and two-measure charts (probe 21,**
+  `scripts/probe_apply_slicer_matrix.py`; evidence `docs/probes/21-apply-slicer-matrix.diff`). The
+  first probe driven through the Desktop Bridge CLI (`scripts/desktop.sh`): opened, inspected with
+  two page captures, then the user refreshed the data and saved. All five visuals drew with their
+  titles; the slicer as a list (FR > East, West; UK > North, South), the matrix with Region across
+  and both values under each, each chart two series with the legend Total Amount, Target Amount.
+  On save Desktop changed no query (`test_21_desktop_kept_every_query_blueprint_wrote`), kept the
+  annotations, and only added `filterConfig` and raised `$schema` to 2.14.0 on the bar and line
+  charts (as in probes 17, 19); the slicer, matrix and column chart files weren't rewritten.
 
 ## Schema versions
 

@@ -2,10 +2,12 @@
 # visuals"): `lineChart`, X-axis in role `Category`, Y-axis in role `Y`, Legend in role `Series`.
 # Only one X-axis column and one Legend column were probed, so each takes one. Probe 18: the X-axis
 # also takes a hierarchy built in the model (one field, binding its levels as a drill-down).
+# Probe 20: several measures on the Y-axis are projections of `Y` in well order, one line each.
+# Several measures together with a Legend wasn't probed (Desktop allows one Y value then): refused.
 type: line
 visual_type: lineChart
 region: main
 slots:
   category: { role: Category, accepts: [column, hierarchy], required: true }
-  value:    { role: Y, accepts: measure, required: true }
+  value:    { role: Y, accepts: measure, required: true, ordered: true, list_excludes: [legend] }
   legend:   { role: Series, accepts: column }

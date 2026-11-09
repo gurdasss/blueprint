@@ -32,6 +32,7 @@ class Slot:
     accepts: tuple[str, ...]  # subset of KINDS
     required: bool = False
     ordered: bool = False  # an ordered list is allowed (e.g. a drill-down path)
+    list_excludes: tuple[str, ...] = ()  # slots that must be empty when this one holds a list
 
 
 @dataclass(frozen=True)
@@ -53,8 +54,13 @@ def _load(path: Path) -> Contract:
             if not accepts or any(a not in KINDS for a in accepts):
                 raise ContractError(f"{where}: slot {name}: accepts must be from {KINDS}")
             slots[name] = Slot(name, spec["role"], accepts, bool(spec.get("required", False)),
-                               bool(spec.get("ordered", False)))
+                               bool(spec.get("ordered", False)), tuple(spec.get("list_excludes", ())))
         contract = Contract(data["type"], data["visual_type"], data["region"], slots)
+        for slot in slots.values():
+            unknown = [s for s in slot.list_excludes if s not in slots]
+            if unknown or (slot.list_excludes and not slot.ordered):
+                raise ContractError(f"{where}: slot {slot.name}: list_excludes needs ordered: true "
+                                    "and names of this contract's slots")
     except (KeyError, TypeError, AttributeError) as exc:
         raise ContractError(f"{where}: malformed contract ({exc})") from exc
     if contract.type != path.stem:

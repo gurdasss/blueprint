@@ -1,0 +1,796 @@
+# Probe 20: slicer, matrix, and clustered column/bar and line charts with two measures, built in
+# Desktop on fixture 02 after adding the measure `Target Amount = 600`.
+# The user did all 11 steps of STEPS.md but saved without running snap.sh in between, so this is
+# one section: the final state. What the user saw: each chart showed two series with a legend
+# (Total Amount and Target Amount). The slicer's FR node was expanded (an expansionStates entry,
+# not a selection; filterConfig has no filter condition). Fixture data is invented.
+
+######## 01-11 all steps, one final save (steps not snapped)
+
+diff --git a/Fixture.Report/definition/pages/190e7f7e08536c707673/page.json b/Fixture.Report/definition/pages/190e7f7e08536c707673/page.json
+new file mode 100644
+index 0000000..1b5dd5a
+--- /dev/null
++++ b/Fixture.Report/definition/pages/190e7f7e08536c707673/page.json
+@@ -0,0 +1,8 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
++  "name": "190e7f7e08536c707673",
++  "displayName": "Probe 20",
++  "displayOption": "FitToPage",
++  "height": 1080,
++  "width": 1920
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/190e7f7e08536c707673/visuals/157c7f83034a87970a20/visual.json b/Fixture.Report/definition/pages/190e7f7e08536c707673/visuals/157c7f83034a87970a20/visual.json
+new file mode 100644
+index 0000000..9ece0c6
+--- /dev/null
++++ b/Fixture.Report/definition/pages/190e7f7e08536c707673/visuals/157c7f83034a87970a20/visual.json
+@@ -0,0 +1,150 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
++  "name": "157c7f83034a87970a20",
++  "position": {
++    "x": 10,
++    "y": 0,
++    "z": 0,
++    "height": 280,
++    "width": 280,
++    "tabOrder": 0
++  },
++  "visual": {
++    "visualType": "slicer",
++    "query": {
++      "queryState": {
++        "Values": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            },
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region",
++              "active": true
++            }
++          ]
++        }
++      }
++    },
++    "expansionStates": [
++      {
++        "roles": [
++          "Values"
++        ],
++        "levels": [
++          {
++            "queryRefs": [
++              "Sales.Country"
++            ],
++            "isCollapsed": true,
++            "identityKeys": [
++              {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              }
++            ],
++            "isPinned": true
++          },
++          {
++            "queryRefs": [
++              "Sales.Region"
++            ],
++            "isCollapsed": true,
++            "isPinned": true
++          }
++        ],
++        "root": {
++          "children": [
++            {
++              "identityValues": [
++                {
++                  "Literal": {
++                    "Value": "'FR'"
++                  }
++                }
++              ],
++              "isToggled": true
++            }
++          ]
++        }
++      }
++    ],
++    "objects": {
++      "data": [
++        {
++          "properties": {
++            "mode": {
++              "expr": {
++                "Literal": {
++                  "Value": "'Dropdown'"
++                }
++              }
++            }
++          }
++        }
++      ]
++    },
++    "drillFilterOtherVisuals": true
++  },
++  "filterConfig": {
++    "filters": [
++      {
++        "name": "b065fc56307bdc204099",
++        "field": {
++          "Column": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Country"
++          }
++        },
++        "type": "Categorical"
++      },
++      {
++        "name": "3d0d6e0d8cd604806337",
++        "field": {
++          "Column": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Region"
++          }
++        },
++        "type": "Categorical"
++      }
++    ]
++  }
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/190e7f7e08536c707673/visuals/8321b7a61e8591159b47/visual.json b/Fixture.Report/definition/pages/190e7f7e08536c707673/visuals/8321b7a61e8591159b47/visual.json
+new file mode 100644
+index 0000000..5d2ebd2
+--- /dev/null
++++ b/Fixture.Report/definition/pages/190e7f7e08536c707673/visuals/8321b7a61e8591159b47/visual.json
+@@ -0,0 +1,135 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
++  "name": "8321b7a61e8591159b47",
++  "position": {
++    "x": 10,
++    "y": 580,
++    "z": 2,
++    "height": 280,
++    "width": 280,
++    "tabOrder": 2
++  },
++  "visual": {
++    "visualType": "clusteredColumnChart",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Y": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Target Amount"
++                }
++              },
++              "queryRef": "Sales.Target Amount",
++              "nativeQueryRef": "Target Amount"
++            },
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      },
++      "sortDefinition": {
++        "sort": [
++          {
++            "field": {
++              "Measure": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Property": "Target Amount"
++              }
++            },
++            "direction": "Descending"
++          }
++        ],
++        "isDefaultSort": true
++      }
++    },
++    "drillFilterOtherVisuals": true
++  },
++  "filterConfig": {
++    "filters": [
++      {
++        "name": "0585b39e2346140e910c",
++        "field": {
++          "Column": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Country"
++          }
++        },
++        "type": "Categorical"
++      },
++      {
++        "name": "03553e7e0dbd00abd037",
++        "field": {
++          "Measure": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Target Amount"
++          }
++        },
++        "type": "Advanced"
++      },
++      {
++        "name": "eb32220389009443045d",
++        "field": {
++          "Measure": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Total Amount"
++          }
++        },
++        "type": "Advanced"
++      }
++    ]
++  }
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/190e7f7e08536c707673/visuals/9aec558a054d80ccca69/visual.json b/Fixture.Report/definition/pages/190e7f7e08536c707673/visuals/9aec558a054d80ccca69/visual.json
+new file mode 100644
+index 0000000..83f59e0
+--- /dev/null
++++ b/Fixture.Report/definition/pages/190e7f7e08536c707673/visuals/9aec558a054d80ccca69/visual.json
+@@ -0,0 +1,135 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
++  "name": "9aec558a054d80ccca69",
++  "position": {
++    "x": 10,
++    "y": 870,
++    "z": 3,
++    "height": 210,
++    "width": 280,
++    "tabOrder": 3
++  },
++  "visual": {
++    "visualType": "clusteredBarChart",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Y": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Target Amount"
++                }
++              },
++              "queryRef": "Sales.Target Amount",
++              "nativeQueryRef": "Target Amount"
++            },
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      },
++      "sortDefinition": {
++        "sort": [
++          {
++            "field": {
++              "Measure": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Property": "Target Amount"
++              }
++            },
++            "direction": "Descending"
++          }
++        ],
++        "isDefaultSort": true
++      }
++    },
++    "drillFilterOtherVisuals": true
++  },
++  "filterConfig": {
++    "filters": [
++      {
++        "name": "bef428debc0b5cba8d28",
++        "field": {
++          "Column": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Country"
++          }
++        },
++        "type": "Categorical"
++      },
++      {
++        "name": "6c81444490a13a30aa02",
++        "field": {
++          "Measure": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Target Amount"
++          }
++        },
++        "type": "Advanced"
++      },
++      {
++        "name": "b0ed22c12da40b0dce7c",
++        "field": {
++          "Measure": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Total Amount"
++          }
++        },
++        "type": "Advanced"
++      }
++    ]
++  }
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/190e7f7e08536c707673/visuals/b02c39d01795c7801e3e/visual.json b/Fixture.Report/definition/pages/190e7f7e08536c707673/visuals/b02c39d01795c7801e3e/visual.json
+new file mode 100644
+index 0000000..f337f76
+--- /dev/null
++++ b/Fixture.Report/definition/pages/190e7f7e08536c707673/visuals/b02c39d01795c7801e3e/visual.json
+@@ -0,0 +1,150 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
++  "name": "b02c39d01795c7801e3e",
++  "position": {
++    "x": 10,
++    "y": 290,
++    "z": 1,
++    "height": 280,
++    "width": 280,
++    "tabOrder": 1
++  },
++  "visual": {
++    "visualType": "pivotTable",
++    "query": {
++      "queryState": {
++        "Columns": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region",
++              "active": true
++            }
++          ]
++        },
++        "Rows": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Values": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            },
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Target Amount"
++                }
++              },
++              "queryRef": "Sales.Target Amount",
++              "nativeQueryRef": "Target Amount"
++            }
++          ]
++        }
++      }
++    },
++    "drillFilterOtherVisuals": true
++  },
++  "filterConfig": {
++    "filters": [
++      {
++        "name": "d8a2c8a7a900ead32487",
++        "field": {
++          "Column": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Country"
++          }
++        },
++        "type": "Categorical"
++      },
++      {
++        "name": "6586906920883005853d",
++        "field": {
++          "Measure": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Total Amount"
++          }
++        },
++        "type": "Advanced"
++      },
++      {
++        "name": "4e581bd3e3b44a3295cb",
++        "field": {
++          "Measure": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Target Amount"
++          }
++        },
++        "type": "Advanced"
++      },
++      {
++        "name": "795d431b33aa5d765078",
++        "field": {
++          "Column": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Region"
++          }
++        },
++        "type": "Categorical"
++      }
++    ]
++  }
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/190e7f7e08536c707673/visuals/fc746f524bd99ca60ad0/visual.json b/Fixture.Report/definition/pages/190e7f7e08536c707673/visuals/fc746f524bd99ca60ad0/visual.json
+new file mode 100644
+index 0000000..4ceb04b
+--- /dev/null
++++ b/Fixture.Report/definition/pages/190e7f7e08536c707673/visuals/fc746f524bd99ca60ad0/visual.json
+@@ -0,0 +1,135 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
++  "name": "fc746f524bd99ca60ad0",
++  "position": {
++    "x": 300,
++    "y": 0,
++    "z": 4,
++    "height": 280,
++    "width": 280,
++    "tabOrder": 4
++  },
++  "visual": {
++    "visualType": "lineChart",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Y": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Target Amount"
++                }
++              },
++              "queryRef": "Sales.Target Amount",
++              "nativeQueryRef": "Target Amount"
++            },
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      },
++      "sortDefinition": {
++        "sort": [
++          {
++            "field": {
++              "Measure": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Property": "Target Amount"
++              }
++            },
++            "direction": "Descending"
++          }
++        ],
++        "isDefaultSort": true
++      }
++    },
++    "drillFilterOtherVisuals": true
++  },
++  "filterConfig": {
++    "filters": [
++      {
++        "name": "f09fcdcac088be82bd02",
++        "field": {
++          "Column": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Country"
++          }
++        },
++        "type": "Categorical"
++      },
++      {
++        "name": "8dfc3546c80109e18c52",
++        "field": {
++          "Measure": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Target Amount"
++          }
++        },
++        "type": "Advanced"
++      },
++      {
++        "name": "4702b48108776560768b",
++        "field": {
++          "Measure": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Total Amount"
++          }
++        },
++        "type": "Advanced"
++      }
++    ]
++  }
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/pages.json b/Fixture.Report/definition/pages/pages.json
+index e28de5a..82b537b 100644
+--- a/Fixture.Report/definition/pages/pages.json
++++ b/Fixture.Report/definition/pages/pages.json
+@@ -1,7 +1,8 @@
+ {
+   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.1.0/schema.json",
+   "pageOrder": [
+-    "6a692d13619c1d4c0146"
++    "6a692d13619c1d4c0146",
++    "190e7f7e08536c707673"
+   ],
+-  "activePageName": "6a692d13619c1d4c0146"
++  "activePageName": "190e7f7e08536c707673"
+ }
+\ No newline at end of file
+diff --git a/Fixture.SemanticModel/definition/tables/Sales.tmdl b/Fixture.SemanticModel/definition/tables/Sales.tmdl
+index 4b3c8d8..9d566a2 100644
+--- a/Fixture.SemanticModel/definition/tables/Sales.tmdl
++++ b/Fixture.SemanticModel/definition/tables/Sales.tmdl
+@@ -5,6 +5,10 @@ table Sales
+ 		formatString: 0
+ 		lineageTag: e6eb2d64-b4c3-497b-941e-816943dec7e2
+ 
++	measure 'Target Amount' = 600
++		formatString: 0
++		lineageTag: 5fd299b6-2d0f-425d-9751-158c2ab18a47
++
+ 	column Country
+ 		dataType: string
+ 		lineageTag: bbedb577-9e73-424a-a819-f7141ced9761
+

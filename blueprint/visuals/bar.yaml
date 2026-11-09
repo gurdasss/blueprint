@@ -7,4 +7,4 @@ visual_type: clusteredBarChart
 region: main
 slots:
   category: { role: Category, accepts: [column, hierarchy], required: true, ordered: true }
-  value:    { role: Y, accepts: measure, required: true }
+  value:    { role: Y, accepts: measure, required: true, ordered: true }   # a list: one series each (probe 20)
