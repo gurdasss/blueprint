@@ -316,3 +316,8 @@ Segoe UI 11, Title Segoe UI Semibold 16):
   major version. All 31 sample files validate this way.
 - Policy: same major version, newer minor: read and write, report it as "validated as X".
   Unknown major version: refused for writing unless `--force-schema`.
+- A file with a newer, unvendored minor version can legitimately fail the older schema (new
+  properties). So the writer blocks only on errors **its own change introduces**, compared with
+  the file as read from disk. `check` reports such files as a single **warning** per file,
+  pointing to `scripts/vendor_schemas.py`, not as errors. Errors on an exactly vendored version
+  stay errors.
