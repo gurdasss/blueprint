@@ -58,13 +58,17 @@ class TextClass:
 class Field:
     """A field a visual is bound to."""
 
-    kind: str  # "measure" | "column"
+    kind: str  # "measure" | "column" | "aggregation" (an implicit aggregate of a column)
     table: str | None
     name: str
+    function: str | None = None  # aggregation only, e.g. "Sum"
 
     def __str__(self) -> str:
-        # Spec/manifest syntax (README): [Measure], Table[Column]
-        return f"[{self.name}]" if self.kind == "measure" else f"{self.table}[{self.name}]"
+        # Spec/manifest syntax (README): [Measure], Table[Column]; manifest only: Sum(Table[Column])
+        if self.kind == "measure":
+            return f"[{self.name}]"
+        column = f"{self.table}[{self.name}]"
+        return f"{self.function}({column})" if self.kind == "aggregation" else column
 
 
 @dataclass(frozen=True)

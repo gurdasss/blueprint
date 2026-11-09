@@ -116,3 +116,28 @@ def test_target_takes_a_measure_not_a_column(tmp_path: Path):
     spec.write_text('page: B\nvisuals:\n  - type: kpi\n'
                     '    slots: {value: "[Total Amount]", trend: "Sales[Country]", target: "Sales[Amount]"}\n')
     assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) != 0
+
+
+def test_reapply_refuses_a_target_swapped_for_a_column_in_desktop(tmp_path: Path, capsys):
+    report = _fixture_with_target(tmp_path)
+    spec = tmp_path / "kpi-target.yaml"
+    spec.write_text('page: K\nlayout: standard-4-up\nvisuals:\n  - type: kpi\n    title: T\n'
+                    '    slots: {value: "[Total Amount]", trend: "Sales[Country]", target: "[Target Amount]"}\n')
+    args = ["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]
+    assert main(args) == 0
+    # probe 10 step 04, done to Blueprint's KPI: Target becomes "Sum of Amount"
+    path = next(f for f in report.glob("definition/pages/*/visuals/*/visual.json")
+                if jsonfmt.load(f)["visual"]["visualType"] == "kpi")
+    doc = jsonfmt.load(path)
+    doc["visual"]["query"]["queryState"]["Goal"]["projections"] = [{
+        "field": {"Aggregation": {"Expression": {"Column": {"Expression": {"SourceRef": {"Entity": "Sales"}},
+                                                            "Property": "Amount"}}, "Function": 0}},
+        "queryRef": "Sum(Sales.Amount)", "nativeQueryRef": "Sum of Amount"}]
+    path.write_bytes(jsonfmt.dump_bytes(doc))
+    capsys.readouterr()
+    assert main(args) != 0
+    assert "field bindings differ" in capsys.readouterr().err
+    assert main(["manifest", "--report", str(report)]) == 0
+    manifest = jsonfmt.load(report / ".blueprint.manifest.json")
+    [kpi] = [v for p in manifest["pages"] for v in p["visuals"] if v["visual_type"] == "kpi"]
+    assert kpi["slots"]["target"] == "Sum(Sales[Amount])"

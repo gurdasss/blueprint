@@ -408,8 +408,8 @@ README Q1–Q3 and Q5–Q11. Every file Desktop wrote validates and round-trips 
     {"Aggregation": {"Expression": {"Column": {"Expression": {"SourceRef": {"Entity": "Sales"}},
     "Property": "Amount"}}, "Function": 0}}, "queryRef": "Sum(Sales.Amount)", "nativeQueryRef":
     "Sum of Amount"}` (Desktop shows "Sum of Amount"; `Function` 0 is Sum, and other functions
-    weren't observed). Specs have no syntax for this, so the `target` slot accepts measures only, and the
-    reader skips `Aggregation` fields.
+    weren't observed). Specs have no syntax for this, so the `target` slot accepts measures only. The
+    reader reads it as an `aggregation` field, shown as `Sum(Sales[Amount])` in the manifest.
   - **`queryState` roles are written in alphabetical order**, not well order: `Goal`, `Indicator`,
     `TrendLine` (the wells read Value, Trend axis, Target). That matches every type seen so far
     (`Category`/`Y`, `Values`, `Data`), so `render` sorts roles.

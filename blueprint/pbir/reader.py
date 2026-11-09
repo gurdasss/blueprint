@@ -302,17 +302,37 @@ class _Reader:
         )
 
 
+# Aggregation "Function" codes. Probe 10 verified only 0 (Desktop's "Sum of"). Other codes are
+# shown by number rather than guessed.
+AGGREGATE_FUNCTIONS = {0: "Sum"}
+
+
+def _field(f: dict) -> Field | None:
+    """One projection's field: a measure or column (probe 04), or an implicit aggregate of a
+    column (probe 10: ``{"Aggregation": {"Expression": {"Column": …}, "Function": 0}}``)."""
+    for key, kind in (("Measure", "measure"), ("Column", "column")):
+        if isinstance(f.get(key), dict):
+            src = (f[key].get("Expression") or {}).get("SourceRef") or {}
+            return Field(kind, src.get("Entity"), f[key].get("Property", ""))
+    agg = f.get("Aggregation")
+    if isinstance(agg, dict):
+        inner = _field(agg.get("Expression") or {})
+        code = agg.get("Function")
+        if inner is not None and inner.kind == "column" and isinstance(code, int) and not isinstance(code, bool):
+            return Field("aggregation", inner.table, inner.name, AGGREGATE_FUNCTIONS.get(code, f"Aggregate{code}"))
+    return None
+
+
 def _fields(visual: dict) -> dict[str, list[Field]]:
-    """Bound fields by query role, in projection order (probe 04 shapes)."""
+    """Bound fields by query role, in projection order. Field shapes not listed in ``_field`` are skipped."""
     out: dict[str, list[Field]] = {}
     state = (visual.get("query") or {}).get("queryState") or {}
     for role, entry in state.items():
         for p in (entry or {}).get("projections") or [] if isinstance(entry, dict) else []:
-            f = (p or {}).get("field") or {}
-            for key, kind in (("Measure", "measure"), ("Column", "column")):
-                if isinstance(f.get(key), dict):
-                    src = (f[key].get("Expression") or {}).get("SourceRef") or {}
-                    out.setdefault(role, []).append(Field(kind, src.get("Entity"), f[key].get("Property", "")))
+            f = (p or {}).get("field")
+            field = _field(f) if isinstance(f, dict) else None
+            if field is not None:
+                out.setdefault(role, []).append(field)
     return out
 
 
