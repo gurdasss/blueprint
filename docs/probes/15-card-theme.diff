@@ -1,0 +1,103 @@
+# Probe 15: theming the new card's value and Category label. Desktop 2.159.1231.0, 2026-11-09 (scripts/probe_card_theme.py), on fixture 02.
+# User saw: callout value Segoe UI Light 32 and Category label Arial 14, as themed; label still above the value, grey #616161, card border with rounded corners kept; column chart axis labels unchanged (Segoe UI). All content invented.
+
+######## blueprint: theme (callout Segoe UI Light 32)
+
+diff --git a/Fixture.Report/StaticResources/RegisteredResources/blueprint-theme.json b/Fixture.Report/StaticResources/RegisteredResources/blueprint-theme.json
+new file mode 100644
+index 0000000..83e022a
+--- /dev/null
++++ b/Fixture.Report/StaticResources/RegisteredResources/blueprint-theme.json
+@@ -0,0 +1,9 @@
++{
++  "name": "Probe 15",
++  "textClasses": {
++    "callout": {
++      "fontFace": "Segoe UI Light",
++      "fontSize": 32
++    }
++  }
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/report.json b/Fixture.Report/definition/report.json
+index 6b0944f..f1ffe23 100644
+--- a/Fixture.Report/definition/report.json
++++ b/Fixture.Report/definition/report.json
+@@ -9,6 +9,15 @@
+         "page": "2.3.1"
+       },
+       "type": "SharedResources"
++    },
++    "customTheme": {
++      "name": "blueprint-theme.json",
++      "reportVersionAtImport": {
++        "visual": "2.14.0",
++        "report": "3.4.0",
++        "page": "2.3.1"
++      },
++      "type": "RegisteredResources"
+     }
+   },
+   "objects": {
+@@ -27,6 +36,17 @@
+     ]
+   },
+   "resourcePackages": [
++    {
++      "name": "RegisteredResources",
++      "type": "RegisteredResources",
++      "items": [
++        {
++          "name": "blueprint-theme.json",
++          "path": "blueprint-theme.json",
++          "type": "CustomTheme"
++        }
++      ]
++    },
+     {
+       "name": "SharedResources",
+       "type": "SharedResources",
+diff --git a/probe-guidelines.yaml b/probe-guidelines.yaml
+new file mode 100644
+index 0000000..d073d2a
+--- /dev/null
++++ b/probe-guidelines.yaml
+@@ -0,0 +1,4 @@
++name: Probe 15
++version: 1
++typography:
++  callout: { font: Segoe UI Light, size: 32 }
+
+######## probe: add visualStyles.cardVisual label (Arial 14) to the theme
+
+diff --git a/Fixture.Report/StaticResources/RegisteredResources/blueprint-theme.json b/Fixture.Report/StaticResources/RegisteredResources/blueprint-theme.json
+index 83e022a..3aa8118 100644
+--- a/Fixture.Report/StaticResources/RegisteredResources/blueprint-theme.json
++++ b/Fixture.Report/StaticResources/RegisteredResources/blueprint-theme.json
+@@ -5,5 +5,18 @@
+       "fontFace": "Segoe UI Light",
+       "fontSize": 32
+     }
++  },
++  "visualStyles": {
++    "cardVisual": {
++      "*": {
++        "label": [
++          {
++            "$id": "default",
++            "fontSize": 14,
++            "fontFamily": "'Arial', helvetica, arial, sans-serif"
++          }
++        ]
++      }
++    }
+   }
+ }
+\ No newline at end of file
+
+######## 01 open and save (no changes)
+
+
+######## 03 chart unchanged (no changes)
+
+

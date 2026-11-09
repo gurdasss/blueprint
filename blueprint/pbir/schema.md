@@ -313,11 +313,16 @@ What follows:
   `textClasses.label` (10.5), which is the same layering as titles in probe 06.
 - Colours are found by shape (`fontColor.solid.color.expr`), so the palette rule already covers them.
 - The typography role `card_label` covers `objects.label`. Its theme default is read from
-  `visualStyles.cardVisual["*"].label[0]` over `textClasses.label`. **Open:** whether a custom
-  theme's `visualStyles.cardVisual` entry overrides the base one (Blueprint doesn't write one), and the
-  legacy `card`'s category label.
-- **Open:** whether a custom theme's `textClasses.callout` reaches the card's value. By the probe 06
-  layering it should, because the base sets only `textClass` at the `visualStyles` level, but no probe has applied one.
+  `visualStyles.cardVisual["*"].label[0]` over `textClasses.label`.
+- **Verified, probe 15** (`scripts/probe_card_theme.py`; evidence `docs/probes/15-card-theme.diff`):
+  a custom theme entry `visualStyles.cardVisual["*"].label = [{"$id": "default", "fontSize": 14,
+  "fontFamily": "'Arial', helvetica, arial, sans-serif"}]` made Desktop show the Category label in
+  Arial 14. The entry **merges with the base one key by key**: the label stayed above the value, in grey
+  (#616161), and the card kept its rounded border, all from the base theme. Other visuals were
+  unaffected (the column chart's axis labels stayed Segoe UI). Desktop's open and save changed no file,
+  the theme included. **Open:** the label's `bold` in a theme, and the legacy `card`'s category label.
+- **A custom theme's `textClasses.callout` reaches the card's value (probe 15).** `bp theme` with
+  `callout: {font: Segoe UI Light, size: 32}` made Desktop show the value in Segoe UI Light 32.
 - Step 1, an open and save with no changes, also rewrote unrelated state. A slicer projection's
   `active` went from `true` to `false`, and `report.json` gained `objects.outspacePane[0].expanded =
   false`, recording the collapsed Filters pane. That's view state Desktop persists on save.
