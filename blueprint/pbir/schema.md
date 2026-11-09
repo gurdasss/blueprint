@@ -86,8 +86,8 @@ core.whitespace cr-at-eol` hides it.
   `ReportSection`, `ReportSection2`; visuals `VisualContainer`, `VisualContainer1`, …
   Folder name == `name` property in every case. Readers must not assume hex IDs.
 
-**Open (README Q4):** does Desktop accept any compliant name for a *new* object? See
-"Creating pages and visuals" below: new objects get 20 hex characters.
+**README Q4:** Desktop gives new objects 20 hex characters, and accepts Blueprint's derived 20-hex
+names (probe 05, below).
 
 ## Pages
 
@@ -314,8 +314,8 @@ README Q1–Q3 and Q5–Q11. Every file Desktop wrote validates and round-trips 
 - Pages, visuals and **filters** (`filterConfig.filters[].name`) all get **20 lowercase hex
   characters** (`6a692d13619c1d4c0146`). They look random. A pasted visual gets a new ID, and
   so does each of its filters.
-- **Open:** whether Desktop accepts a Blueprint-generated name (deterministic, still 20 hex)
-  for a *new* object. Settle it by opening a report `bp apply` wrote.
+- Desktop **accepts Blueprint-generated names** (deterministic, still 20 hex) for new objects:
+  see probe 05 below.
 
 ### Pages (Q2, Q3, Q5)
 
@@ -354,6 +354,29 @@ README Q1–Q3 and Q5–Q11. Every file Desktop wrote validates and round-trips 
 - **Paste:** an identical file apart from `name`, filter `name`s, `position`, and the next
   `z`/`tabOrder`. (Whether annotations are copied is untested.)
 - **Delete:** the visual's folder is removed. Nothing else changes.
+
+### Blueprint-created pages and visuals in Desktop (probe 05)
+
+**Verified 2026-11-09, Desktop 2.159.1231.0** (`scripts/probe_apply_output.py`; evidence
+`docs/probes/05-apply-output.diff`). `bp apply` added a page (1280×720) with a header textbox, a
+card and a column chart with a drill-down to fixture 02. The user opened it, saved without
+changes, then dragged the card and saved:
+
+- **Desktop accepts Blueprint's derived 20-hex names** for new pages and visuals (README Q4).
+  Folder names and `name` values were kept, and nothing was renamed or dropped.
+- **Annotations survived** on the page and all three visuals (`blueprint.page`/`blueprint.visual`).
+- **Desktop added nothing to the minimal visuals:** no `sortDefinition`, no `filterConfig`, no
+  `drillFilterOtherVisuals`. The textbox with a bare `{"value": …}` text run and the page.json
+  were left byte-identical. So the minimal shapes in `pbir/render.py` are sufficient.
+- On the same save, Desktop **removed the auto-created `filterConfig.filters`** from the
+  hand-made fixture visuals. That matches Learn: visual automatic filters persist only after the
+  filter pane has been expanded. They are pane state, not something a generator must write.
+- **Desktop renumbers `z` and `tabOrder` in steps of 1000** on save (0, 1, 2 became
+  0, 1000, 2000 on both pages). Blueprint now writes 1000-steps, so this rewrite doesn't happen.
+- Files Desktop rewrote got their `$schema` raised from vendored `visualContainer/2.13.0` to
+  `2.14.0`. Untouched files kept 2.13.0. An older minor version is accepted as written.
+- A drag changed only the card's `position` (sub-pixel floats). **Re-running `bp apply` restored
+  the layout position exactly** and changed nothing else. A third run reported no changes.
 
 ## Field bindings
 
