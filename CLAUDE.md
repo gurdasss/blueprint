@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `pbir/writer`, `model`, `plan`, `guidelines`, `grid`, `bp inspect` and `bp fmt`. Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
+Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `pbir/writer`, `model`, `plan`, `guidelines`, `policies`, `grid`, `validate`, `bp inspect`, `bp fmt` and `bp check`. Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
 
 ## Commands
 
@@ -18,6 +18,7 @@ pytest tests/test_reader.py::test_sample_report   # one test
 ruff check .
 bp inspect --report samples/retail-analysis       # accepts .Report dir, .pbip, or a parent dir
 bp fmt --report <copy> --dry-run                  # never run fmt on samples/ itself; copy it first
+bp check --report samples/retail-analysis --guidelines guidelines/example.yaml   # exit 0 clean, 1 errors, 2 unreadable
 python scripts/vendor_schemas.py <$schema URL>    # vendor a schema + its $refs into blueprint/pbir/schemas/
 ```
 
@@ -30,6 +31,9 @@ python scripts/vendor_schemas.py <$schema URL>    # vendor a schema + its $refs 
 - **Blueprint's own metadata goes in `annotations`** (e.g. `blueprint.ignore`). The schemas reject unknown keys, and annotations are verified to survive Desktop saves, including on visuals Desktop rewrites (probe 01). Never write `pages.json` `activePageName`: Desktop changes it on every save.
 - Commands live in `blueprint/commands/`, one module each. `cli.py` only parses arguments. A mutating command changes the model, calls `writer.plan_writes(report)` to get a `plan.Plan` (file writes + warnings), then either prints it (`--dry-run`) or calls `writer.apply`. The writer schema-validates every changed document, refuses files that changed on disk since they were read, writes temp files before renaming any of them into place, and keeps file permissions.
 - The writer owns only `position.x/y/width/height` so far. To make Blueprint own another field, extend `writer._visual_write`. Never regenerate a whole document.
+- `validate.py` holds the guideline rules (`bounds`, `grid`, `margin`, `overlap`, `page-size`, `density`), pure functions over the model. `bp check` adds `format` findings from `pbir/` (reader warnings plus `schemas.validate_documents`). Rule ids and exit codes are a CI contract, so don't rename them. Each rule's severity comes from `check.severity` in the guidelines.
+- `grid.off_grid_edges` is the only definition of "on grid", used by both `fmt` and `check`. A test asserts that `check` passes everything `fmt` produces.
+- A guideline key the docs describe but no code implements goes in `guidelines.NOT_IMPLEMENTED`, so `check` reports it as unchecked instead of passing silently. Only check what `schema.md` marks as verified.
 - `grid.py` snaps each of a visual's four edges to the nearest grid line, rounding halves up. It skips `blueprint.ignore` visuals silently. It skips, with a warning, pages with no fixed size (`DeprecatedDynamic`) and grouped visuals (group-relative positioning is unverified).
 
 ## Design rules (from README; load-bearing)
