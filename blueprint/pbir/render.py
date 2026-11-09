@@ -39,25 +39,51 @@ def schema_url(kind: str) -> str:
 
 @dataclass(frozen=True)
 class Binding:
-    kind: str  # "measure" | "column"
+    kind: str  # "measure" | "column" | "hierarchy_level"
     table: str
-    name: str
+    name: str  # the measure, column or hierarchy
+    level: str | None = None  # hierarchy_level only
 
     def field(self) -> dict:
+        source = {"SourceRef": {"Entity": self.table}}
+        if self.kind == "hierarchy_level":
+            # probe 16: a level of a hierarchy built in the model
+            return {"HierarchyLevel": {"Expression": {"Hierarchy": {"Expression": source, "Hierarchy": self.name}},
+                                       "Level": self.level}}
         key = "Measure" if self.kind == "measure" else "Column"
-        return {key: {"Expression": {"SourceRef": {"Entity": self.table}}, "Property": self.name}}
+        return {key: {"Expression": source, "Property": self.name}}
 
-    def projection(self, role: str) -> dict:
-        p: dict[str, Any] = {"field": self.field(), "queryRef": f"{self.table}.{self.name}",
-                             "nativeQueryRef": self.name}
-        if self.kind == "column" and role in ACTIVE_ROLES:
-            p["active"] = True
+    def projection(self, active: bool | None = None) -> dict:
+        if self.kind == "hierarchy_level":
+            refs = {"queryRef": f"{self.table}.{self.name}.{self.level}",
+                    "nativeQueryRef": f"{self.name} {self.level}"}
+        else:
+            refs = {"queryRef": f"{self.table}.{self.name}", "nativeQueryRef": self.name}
+        p: dict[str, Any] = {"field": self.field(), **refs}
+        if active is not None:
+            p["active"] = active
         return p
 
 
-# Roles whose column projections Desktop marks "active": true: the column chart's and the pie's
-# Category (probes 04, 08). A table's Values and a KPI's TrendLine columns don't carry it (probe 08).
+# Roles whose column projections Desktop marks "active": the column chart's and the pie's Category
+# (probes 04, 08). A table's Values and a KPI's TrendLine columns don't carry it (probe 08).
 ACTIVE_ROLES = frozenset({"Category"})
+
+
+def _projections(role: str, fields: list[Binding]) -> list[dict]:
+    """Projections for one role. In an ACTIVE_ROLES role every column is "active": true, as in
+    Desktop's own drill-down (fixture 02), and a hierarchy's levels are active only on its first
+    level, as Desktop created them (probe 16; the rest is drill view state)."""
+    out, seen = [], set()
+    for b in fields:
+        active = None
+        if role in ACTIVE_ROLES and b.kind == "column":
+            active = True
+        elif role in ACTIVE_ROLES and b.kind == "hierarchy_level":
+            active = (b.table, b.name) not in seen
+            seen.add((b.table, b.name))
+        out.append(b.projection(active))
+    return out
 
 
 def _literal(value: str) -> dict:
@@ -158,7 +184,7 @@ def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec
     body: dict[str, Any] = {"visualType": visual_type}
     if bindings:
         # Desktop writes roles in alphabetical order (probe 10: Goal, Indicator, TrendLine).
-        body["query"] = {"queryState": {role: {"projections": [b.projection(role) for b in fields]}
+        body["query"] = {"queryState": {role: {"projections": _projections(role, fields)}
                                         for role, fields in sorted(bindings.items())}}
     if text is not None:
         body["objects"] = textbox_objects(text, text_style)

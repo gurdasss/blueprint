@@ -257,7 +257,9 @@ top-level `id:`), and finds it again by that id:
 ### Typed slots
 
 Each visual type declares the slots it accepts and what each slot takes — a dimension
-column, a measure, or an ordered list for drill-down. Blueprint validates bindings
+column, a measure, or an ordered list for drill-down. A hierarchy built in the model is written
+like a column (`category: "Sales[Geography]"`) and binds all its levels, as dragging it in
+Desktop does; the column chart's category and the table's columns take one. Blueprint validates bindings
 *before* writing anything, so a measure in a category slot is an error from `bp`, not a
 confusing result in Desktop.
 

@@ -1,7 +1,8 @@
 # Slot contract for spec type `table`. Verified in probe 08: `tableEx`, every column and measure in
-# role `Values`, in the order given (reordering the well only reorders the projections).
+# role `Values`, in the order given (reordering the well only reorders the projections). Probe 16:
+# a hierarchy built in the model adds all its levels as columns.
 type: table
 visual_type: tableEx
 region: main
 slots:
-  columns: { role: Values, accepts: [column, measure], required: true, ordered: true }
+  columns: { role: Values, accepts: [column, measure, hierarchy], required: true, ordered: true }

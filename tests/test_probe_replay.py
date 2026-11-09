@@ -367,3 +367,59 @@ def test_15_bp_theme_reproduces_the_accepted_theme(replays, tmp_path):
                      + "  card_label: { font: Arial, size: 14 }\n")
     assert main(["theme", "--report", str(proj), "--guidelines", str(guide)]) == 0
     assert (proj / "Fixture.Report" / THEME).read_bytes() == (last.report / THEME).read_bytes()
+
+
+# --- specs binding a hierarchy (probe 16) -------------------------------------------------
+
+HIERARCHY_SPEC = """\
+page: Geo
+layout: standard-4-up
+visuals:
+  - type: column
+    title: By Geography
+    slots: {category: "Sales[Geography]", value: "[Total Amount]"}
+  - type: table
+    title: Detail
+    slots: {columns: ["Sales[Geography]", "[Total Amount]"]}
+"""
+
+
+def _query(report: Path, visual_type: str, managed: bool) -> dict:
+    [doc] = [d for d in _visual_docs(report) if d["visual"]["visualType"] == visual_type
+             and any(a.get("name") == "blueprint.visual" for a in d.get("annotations", [])) == managed
+             and "Sales.Country" not in jsonfmt.dumps(d)]
+    return doc["visual"]["query"]["queryState"]
+
+
+def test_spec_hierarchy_binds_what_desktop_bound(replays, tmp_path, capsys):
+    steps = {s.name: s for s in replays[16]}
+    proj = _copy(steps["02 create hierarchy Geography"], tmp_path)  # the model has Geography now
+    spec = tmp_path / "geo.yaml"
+    spec.write_text(HIERARCHY_SPEC)
+    args = ["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]
+    assert main(args) == 0
+    report = proj / "Fixture.Report"
+    # exactly Desktop's queries: the column chart as created in step 03 (first level active, the
+    # rest not), the table from step 04 (no "active" at all)
+    assert _query(report, "clusteredColumnChart", True) == \
+        _query(steps["03 column by Geography"].report, "clusteredColumnChart", False)
+    assert _query(report, "tableEx", True) == _query(steps["04 table by one level"].report, "tableEx", False)
+    capsys.readouterr()
+    assert main(args) == 0  # the levels compare equal on a re-run
+    assert capsys.readouterr().out.startswith("No changes.")
+
+
+@pytest.mark.parametrize(("slot", "match"), [
+    ('{type: pie, slots: {category: "Sales[Geography]", value: "[Total Amount]"}}',
+     "Sales\\[Geography\\] is a hierarchy, but pie's category doesn't take one"),
+    ('{type: line, slots: {category: "Sales[Country]", value: "[Total Amount]", legend: "Sales[Geography]"}}',
+     "Sales\\[Geography\\] is a hierarchy, but line's legend doesn't take one"),
+])
+def test_spec_hierarchy_refused_where_unverified(replays, tmp_path, capsys, slot, match):
+    proj = _copy(replays[16][1], tmp_path)
+    spec = tmp_path / "bad.yaml"
+    spec.write_text(f"page: Bad\nlayout: standard-4-up\nvisuals:\n  - {slot}\n")
+    before = {p: p.read_bytes() for p in proj.rglob("*") if p.is_file()}
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) != 0
+    assert re.search(match, capsys.readouterr().err)
+    assert {p: p.read_bytes() for p in proj.rglob("*") if p.is_file()} == before  # nothing written

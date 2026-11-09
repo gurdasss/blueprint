@@ -3,6 +3,8 @@
 import shutil
 from pathlib import Path
 
+import pytest
+
 from blueprint import guidelines
 from blueprint.cli import main
 from blueprint.pbir import jsonfmt
@@ -38,7 +40,7 @@ DESKTOP = {
 def test_contracts_ship_the_probed_types():
     c = contracts()
     assert (c["pie"].visual_type, c["table"].visual_type, c["kpi"].visual_type) == ("pieChart", "tableEx", "kpi")
-    assert c["table"].slots["columns"].accepts == ("column", "measure")
+    assert c["table"].slots["columns"].accepts == ("column", "measure", "hierarchy")
 
 
 def test_apply_writes_desktops_query_shapes(tmp_path: Path):
@@ -189,3 +191,11 @@ def test_line_and_bar_match_probe_12(tmp_path: Path):
     assert made["clusteredBarChart"]["visual"]["query"]["queryState"] == {
         "Category": {"projections": [col("Country", active=True), col("Region", active=True)]},
         "Y": {"projections": [MEASURE]}}
+
+
+def test_a_hierarchy_slot_must_be_ordered(tmp_path: Path, monkeypatch):
+    from blueprint import slots
+    (tmp_path / "bad.yaml").write_text("type: bad\nvisual_type: x\nregion: main\n"
+                                       "slots:\n  c: {role: Category, accepts: [column, hierarchy]}\n")
+    with pytest.raises(slots.ContractError, match="must be ordered"):
+        slots._load(tmp_path / "bad.yaml")

@@ -15,7 +15,9 @@ from pathlib import Path
 import yaml
 
 VISUALS_DIR = Path(__file__).resolve().parent / "visuals"
-KINDS = ("measure", "column")
+# "hierarchy": a hierarchy built in the model, written like a column (Table[Hierarchy]); it binds
+# all its levels in order (probe 16), so only an ordered slot can take one.
+KINDS = ("measure", "column", "hierarchy")
 
 
 class ContractError(Exception):
@@ -51,6 +53,9 @@ def _load(path: Path) -> Contract:
                 raise ContractError(f"{where}: slot {name}: accepts must be from {KINDS}")
             slots[name] = Slot(name, spec["role"], accepts, bool(spec.get("required", False)),
                                bool(spec.get("ordered", False)))
+            if "hierarchy" in accepts and not slots[name].ordered:
+                raise ContractError(f"{where}: slot {name}: a hierarchy binds several levels, so the "
+                                    "slot must be ordered")
         contract = Contract(data["type"], data["visual_type"], data["region"], slots)
     except (KeyError, TypeError, AttributeError) as exc:
         raise ContractError(f"{where}: malformed contract ({exc})") from exc

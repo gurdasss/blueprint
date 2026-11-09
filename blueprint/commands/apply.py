@@ -50,9 +50,20 @@ def _resolve(placements: list[layouts.Placement], report: Report) -> dict[str, d
         v = p.visual
         roles: dict[str, list[render.Binding]] = {}
         for slot_name, refs in v.slots.items():
-            role = known[v.type].slots[slot_name].role
+            slot = known[v.type].slots[slot_name]
             for j, ref in enumerate(refs):
                 at = f"visuals[{v.index}].slots.{slot_name}" + (f"[{j}]" if len(refs) > 1 else "")
+                levels = model.hierarchies.get((ref.table, ref.name)) if ref.kind == "column" else None
+                if levels is not None:
+                    # Table[Name] names a hierarchy built in the model (names are unique in a table):
+                    # it binds all its levels in order, as Desktop does when one is dragged (probe 16).
+                    if "hierarchy" not in slot.accepts:
+                        problems.append(f"{at}: {ref} is a hierarchy, but {v.type}'s {slot_name} doesn't "
+                                        "take one (no Desktop probe has verified it there)")
+                        continue
+                    roles.setdefault(slot.role, []).extend(
+                        render.Binding("hierarchy_level", ref.table, ref.name, lvl) for lvl in levels)
+                    continue
                 try:
                     if ref.kind == "measure":
                         table = model.measure_table(ref.name)
@@ -62,7 +73,7 @@ def _resolve(placements: list[layouts.Placement], report: Report) -> dict[str, d
                 except semantic.ModelError as exc:
                     problems.append(f"{at}: {exc}")
                     continue
-                roles.setdefault(role, []).append(render.Binding(ref.kind, table, ref.name))
+                roles.setdefault(slot.role, []).append(render.Binding(ref.kind, table, ref.name))
         out[v.id] = roles
     if problems:
         raise ApplyError("field references don't match the semantic model:\n  " + "\n  ".join(problems))
@@ -185,8 +196,8 @@ def build_plan(args: argparse.Namespace) -> Plan:
                 problems.append(f"visuals[{vs.index}] ({vs.id}): is a {current.visual_type} in the "
                                 f"report but {vs.type} ({contract.visual_type}) in the spec")
                 continue
-            have = {role: [(f.kind, f.table, f.name) for f in fs] for role, fs in current.fields.items()}
-            if have != {role: [(b.kind, b.table, b.name) for b in fs] for role, fs in want.items()}:
+            have = {role: [(f.kind, f.table, f.name, f.level) for f in fs] for role, fs in current.fields.items()}
+            if have != {role: [(b.kind, b.table, b.name, b.level) for b in fs] for role, fs in want.items()}:
                 problems.append(f"visuals[{vs.index}] ({vs.id}): field bindings differ from the "
                                 "report; changing bindings isn't supported yet (delete the visual in "
                                 "Desktop and re-apply)")

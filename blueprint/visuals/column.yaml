@@ -1,8 +1,9 @@
 # Slot contract for spec type `column`. Verified in probe 04: `clusteredColumnChart`, X axis in
-# role `Category` (an ordered list of columns is a drill-down), Y axis in role `Y`.
+# role `Category` (an ordered list of columns is a drill-down), Y axis in role `Y`. Probe 16: a
+# hierarchy built in the model binds its levels there as a drill-down.
 type: column
 visual_type: clusteredColumnChart
 region: main
 slots:
-  category: { role: Category, accepts: column, required: true, ordered: true }
+  category: { role: Category, accepts: [column, hierarchy], required: true, ordered: true }
   value:    { role: Y, accepts: measure, required: true }

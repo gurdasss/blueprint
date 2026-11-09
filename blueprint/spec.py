@@ -20,6 +20,8 @@ A page spec describes *intent* (README "Page specs"):
 
 Field references are syntactic here: ``Table[Column]`` or ``'Table name'[Column]`` is a
 column and ``[Name]`` is a measure (its table is resolved against the semantic model later).
+``Table[Name]`` may also name a hierarchy built in the model; ``bp apply`` finds that out from the
+model and binds its levels, where the slot accepts one.
 All problems are collected and reported together, each with its location.
 """
 

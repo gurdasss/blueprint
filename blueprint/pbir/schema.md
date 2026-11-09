@@ -580,8 +580,11 @@ Data pane (Create hierarchy on Country, renamed Geography, then Region added):
   chart's X-axis the levels are a drill-down (Country `active`, Region not). `sortDefinition` sorts by
   the same `HierarchyLevel` fields.
 - **Dragging one level into a table added the whole hierarchy** (Country and Region, no `active`).
-- The reader reads these as `hierarchy_level` fields, shown as `Sales[Geography].Country`. Specs
-  can't bind a hierarchy (`apply` treats one added in Desktop as a changed binding).
+- The reader reads these as `hierarchy_level` fields, shown as `Sales[Geography].Country`. A spec
+  binds one by writing it like a column (`Sales[Geography]`). `apply` expands it to these level
+  projections, matching Desktop's step 03 and 04 queries exactly (first level `active` in `Category`,
+  no `active` in a table's `Values`). It's allowed only in the column chart's category and the table's
+  columns; elsewhere it's refused as unverified.
 
 ## Schema versions
 
