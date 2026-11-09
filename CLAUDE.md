@@ -27,7 +27,7 @@ python scripts/vendor_schemas.py <$schema URL>    # vendor a schema + its $refs 
 - **`pbir/jsonfmt.py` is the only way to read or write PBIR JSON.** It reproduces Desktop's output byte for byte (CRLF, 2-space indent, no trailing newline, raw non-ASCII) and keeps each float's original text via `RawFloat`. Using the stdlib `json` to write will change every file.
 - **`pbir/schemas.py`** validates against the vendored Microsoft schemas. Desktop writes minor versions that haven't been published yet (the sample has visualContainer 2.14.0, newest published is 2.13.0). So resolution picks the nearest vendored version with the same major and swaps the `$schema` const. A different major version is unknown.
 - **`pbir/schema.md` is the source of truth for format facts.** Each fact is marked verified (and how) or open. Don't write code that relies on an open item. Settle it with a Desktop probe and record the result first.
-- **Blueprint's own metadata goes in `annotations`** (e.g. `blueprint.ignore`). Desktop ignores annotations, and the schemas reject unknown keys.
+- **Blueprint's own metadata goes in `annotations`** (e.g. `blueprint.ignore`). The schemas reject unknown keys, and annotations are verified to survive Desktop saves, including on visuals Desktop rewrites (probe 01). Never write `pages.json` `activePageName`: Desktop changes it on every save.
 - Commands live in `blueprint/commands/`, one module each. `cli.py` only parses arguments. A mutating command changes the model, calls `writer.plan_writes(report)` to get a `plan.Plan` (file writes + warnings), then either prints it (`--dry-run`) or calls `writer.apply`. The writer schema-validates every changed document, refuses files that changed on disk since they were read, writes temp files before renaming any of them into place, and keeps file permissions.
 - The writer owns only `position.x/y/width/height` so far. To make Blueprint own another field, extend `writer._visual_write`. Never regenerate a whole document.
 - `grid.py` snaps each of a visual's four edges to the nearest grid line, rounding halves up. It skips `blueprint.ignore` visuals silently. It skips, with a warning, pages with no fixed size (`DeprecatedDynamic`) and grouped visuals (group-relative positioning is unverified).
@@ -41,6 +41,7 @@ python scripts/vendor_schemas.py <$schema URL>    # vendor a schema + its $refs 
 
 ## Test data
 
+- `docs/probes/` holds raw diffs from Desktop probes, which are the evidence cited in `schema.md`. Probes are built with `scripts/probe_*.py` on the Windows drive (`/mnt/c/...`). After the user opens and saves in Desktop, read the diff with `git -C <probe> diff`.
 - `samples/` holds real reports for format study. It is gitignored (except its README). Tests reach it through the `retail_report` fixture in `tests/conftest.py`, which skips when it's missing.
 - `tests/builders.py` builds minimal synthetic PBIR reports in `tmp_path`, so the core tests don't depend on samples. `fixtures/` (committed, built from scratch) is planned.
 - Never commit real report files, client measure or table names, or data. `visual.json` and bookmark files can contain data values from the model.
