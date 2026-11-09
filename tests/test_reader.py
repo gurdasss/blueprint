@@ -122,10 +122,12 @@ def test_date_hierarchy_levels_are_read(tmp_path: Path):
     _level(None),
     _level("Year", entity=None),
     _level("Year", prop=7),
-    {"field": {"HierarchyLevel": {"Expression": {"Hierarchy": {"Expression": {"SourceRef": {"Entity": "Sales"}},
-                                                               "Hierarchy": "Geo"}}, "Level": "Country"}}},
+    {"field": {"HierarchyLevel": {"Expression": {"Hierarchy": {"Expression": {"SourceRef": {}},
+                                                               "Hierarchy": "Geography"}}, "Level": "Country"}}},
+    {"field": {"HierarchyLevel": {"Expression": {"Hierarchy": {"Expression": {"SourceRef": {"Entity": "Sales"}}}},
+                                  "Level": "Country"}}},
     {"field": {"HierarchyLevel": "Year"}},
-], ids=["no-level", "no-table", "non-string-column", "user-hierarchy", "string"])
+], ids=["no-level", "no-table", "non-string-column", "hierarchy-no-table", "hierarchy-no-name", "string"])
 def test_unknown_hierarchy_shapes_are_skipped(tmp_path: Path, projection: dict):
     assert _fields_of(tmp_path, [projection]) == []
 
@@ -141,3 +143,15 @@ def test_unknown_hierarchy_shapes_are_skipped(tmp_path: Path, projection: dict):
 ], ids=["no-function", "bool", "string", "over-measure", "empty-expression", "list", "field-string"])
 def test_malformed_aggregation_is_skipped(tmp_path: Path, projection: dict):
     assert _fields_of(tmp_path, [projection]) == []
+
+
+def test_model_hierarchy_levels_are_read(tmp_path: Path):
+    # probe 16 step 03: the Geography hierarchy built in the Data pane, on a column chart's X-axis
+    def level(name):
+        return {"field": {"HierarchyLevel": {"Expression": {"Hierarchy": {
+            "Expression": {"SourceRef": {"Entity": "Sales"}}, "Hierarchy": "Geography"}}, "Level": name}},
+            "queryRef": f"Sales.Geography.{name}", "nativeQueryRef": f"Geography {name}"}
+    fields = _fields_of(tmp_path, [level("Country"), level("Region")])
+    assert [(f.kind, f.table, f.name, f.level, str(f)) for f in fields] == [
+        ("hierarchy_level", "Sales", "Geography", "Country", "Sales[Geography].Country"),
+        ("hierarchy_level", "Sales", "Geography", "Region", "Sales[Geography].Region")]

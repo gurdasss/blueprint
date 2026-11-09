@@ -59,22 +59,23 @@ class Field:
     """A field a visual is bound to."""
 
     # "measure" | "column" | "aggregation" (an implicit aggregate of a column) | "date_level" (one
-    # level of a date column's automatic date hierarchy)
+    # level of a date column's automatic date hierarchy; name is the column) | "hierarchy_level" (one
+    # level of a hierarchy built in the model; name is the hierarchy)
     kind: str
     table: str | None
     name: str
     function: str | None = None  # aggregation only, e.g. "Sum"
-    level: str | None = None  # date_level only, e.g. "Year"
+    level: str | None = None  # date_level/hierarchy_level only, e.g. "Year", "Country"
 
     def __str__(self) -> str:
         # Spec/manifest syntax (README): [Measure], Table[Column]. Manifest only:
-        # Sum(Table[Column]) and Table[Column].Year
+        # Sum(Table[Column]), Table[Column].Year (a date level) and Table[Hierarchy].Level
         if self.kind == "measure":
             return f"[{self.name}]"
         column = f"{self.table}[{self.name}]"
         if self.kind == "aggregation":
             return f"{self.function}({column})"
-        return f"{column}.{self.level}" if self.kind == "date_level" else column
+        return f"{column}.{self.level}" if self.kind in ("date_level", "hierarchy_level") else column
 
 
 @dataclass(frozen=True)

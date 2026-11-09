@@ -13,6 +13,12 @@ TMDL shapes relied on, as seen in the fixture and the sample model (``definition
 
 Names are bare, or single-quoted with ``''`` for a literal quote. Only lines indented by exactly
 one tab are table members; deeper lines are properties and expressions.
+
+Hierarchies built in the model (probe 16) are table members too, with their levels two tabs in:
+
+    \thierarchy Geography
+    \t\tlevel Country
+    \t\t\tcolumn: Country
 """
 
 from __future__ import annotations
@@ -24,6 +30,8 @@ from pathlib import Path
 _NAME = r"(?:'(?P<q>(?:[^']|'')+)'|(?P<b>[^\s=']+(?: [^\s=']+)*?))"
 _TABLE = re.compile(rf"^table {_NAME}\s*$")
 _MEMBER = re.compile(rf"^\t(?P<kind>measure|column) {_NAME}(?:\s*=.*)?\s*$")
+_HIERARCHY = re.compile(rf"^\thierarchy {_NAME}\s*$")
+_LEVEL = re.compile(rf"^\t\tlevel {_NAME}\s*$")
 
 
 class ModelError(Exception):
@@ -34,6 +42,7 @@ class ModelError(Exception):
 class SemanticModel:
     tables: dict[str, set[str]] = field(default_factory=dict)  # table -> columns
     measures: dict[str, list[str]] = field(default_factory=dict)  # measure -> home table(s)
+    hierarchies: dict[tuple[str, str], tuple[str, ...]] = field(default_factory=dict)  # (table, name) -> levels
 
     def measure_table(self, name: str) -> str:
         homes = self.measures.get(name, [])
@@ -50,6 +59,15 @@ class SemanticModel:
                              f"(tables: {', '.join(sorted(self.tables)) or 'none'})")
         if column not in self.tables[table]:
             raise ModelError(f"table {table!r} has no column {column!r}")
+
+    def check_hierarchy_level(self, table: str, hierarchy: str, level: str) -> None:
+        if table not in self.tables:
+            raise ModelError(f"no table {table!r} in the semantic model")
+        levels = self.hierarchies.get((table, hierarchy))
+        if levels is None:
+            raise ModelError(f"table {table!r} has no hierarchy {hierarchy!r}")
+        if level not in levels:
+            raise ModelError(f"hierarchy {hierarchy!r} has no level {level!r} (levels: {', '.join(levels)})")
 
 
 def _name(m: re.Match) -> str:
@@ -72,6 +90,24 @@ def parse_table(text: str, source: str = "<tmdl>") -> tuple[str, set[str], set[s
     return _name(m), columns, measures
 
 
+def parse_hierarchies(text: str) -> dict[str, tuple[str, ...]]:
+    """Hierarchy name -> its levels in order, from one ``tables/<name>.tmdl`` file (probe 16)."""
+    out: dict[str, list[str]] = {}
+    current: list[str] | None = None
+    for line in text.replace("\r\n", "\n").split("\n"):
+        h = _HIERARCHY.match(line)
+        if h:
+            current = out.setdefault(_name(h), [])
+            continue
+        if line.startswith("\t") and not line.startswith("\t\t") and line.strip():
+            current = None  # another table member: the hierarchy ended
+            continue
+        lv = _LEVEL.match(line)
+        if lv and current is not None:
+            current.append(_name(lv))
+    return {name: tuple(levels) for name, levels in out.items()}
+
+
 def load(model_dir: Path) -> SemanticModel:
     if not (model_dir / "definition").is_dir():
         raise ModelError(f"{model_dir}: no definition folder (is it a TMDL semantic model?)")
@@ -86,6 +122,8 @@ def load(model_dir: Path) -> SemanticModel:
             raise ModelError(f"{f.name}: can't read the model file ({exc})") from exc
         table, columns, measures = parse_table(text, f.name)
         model.tables[table] = columns
+        for name, levels in parse_hierarchies(text).items():
+            model.hierarchies[(table, name)] = levels
         for m in sorted(measures):
             model.measures.setdefault(m, []).append(table)
     return model

@@ -316,7 +316,7 @@ def _field(f: dict) -> Field | None:
             return Field(kind, src.get("Entity"), f[key].get("Property", ""))
     level = f.get("HierarchyLevel")
     if isinstance(level, dict):
-        return _date_level(level)
+        return _hierarchy_level(level)
     agg = f.get("Aggregation")
     if isinstance(agg, dict):
         inner = _field(agg.get("Expression") or {})
@@ -333,16 +333,26 @@ def _path(node: Any, *keys: str) -> Any:
     return node
 
 
-def _date_level(level: dict) -> Field | None:
-    """A level of a date column's automatic date hierarchy (probe 13): ``{"HierarchyLevel":
-    {"Expression": {"Hierarchy": {"Expression": {"PropertyVariationSource": {"Expression":
-    {"SourceRef": {"Entity": T}}, "Name": "Variation", "Property": C}}, "Hierarchy": "Date
-    Hierarchy"}}, "Level": L}}``. Other hierarchies (user-defined ones) were not probed: skipped."""
-    source = _path(level, "Expression", "Hierarchy", "Expression", "PropertyVariationSource")
-    table = _path(source, "Expression", "SourceRef", "Entity")
-    column, lvl = _path(source, "Property"), level.get("Level")
-    if all(isinstance(v, str) for v in (table, column, lvl)):
-        return Field("date_level", table, column, level=lvl)
+def _hierarchy_level(level: dict) -> Field | None:
+    """One level of a hierarchy, in either verified shape. ``Level`` is the level's name.
+
+    - probe 13, a date column's automatic date hierarchy: ``{"Expression": {"Hierarchy":
+      {"Expression": {"PropertyVariationSource": {"Expression": {"SourceRef": {"Entity": T}},
+      "Name": "Variation", "Property": C}}, "Hierarchy": "Date Hierarchy"}}, "Level": L}``
+      -> ``date_level`` (T, column C, L);
+    - probe 16, a hierarchy built in the model: ``{"Expression": {"Hierarchy": {"Expression":
+      {"SourceRef": {"Entity": T}}, "Hierarchy": H}}, "Level": L}`` -> ``hierarchy_level``
+      (T, hierarchy H, L).
+    """
+    hier = _path(level, "Expression", "Hierarchy")
+    lvl = level.get("Level")
+    source = _path(hier, "Expression", "PropertyVariationSource")
+    if source is not None:
+        table, name, kind = _path(source, "Expression", "SourceRef", "Entity"), _path(source, "Property"), "date_level"
+    else:
+        table, name, kind = _path(hier, "Expression", "SourceRef", "Entity"), _path(hier, "Hierarchy"), "hierarchy_level"
+    if all(isinstance(v, str) for v in (table, name, lvl)):
+        return Field(kind, table, name, level=lvl)
     return None
 
 

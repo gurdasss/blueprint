@@ -45,7 +45,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PROBES = ROOT / "docs" / "probes"
 FIXTURE = ROOT / "fixtures" / "02-card-and-chart"
 GUIDE = ROOT / "guidelines" / "example.yaml"
-REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 # Probes whose report Blueprint built and Desktop then opened and saved.
 ACCEPTANCE = [5, 6, 9, 14]
 
@@ -183,6 +183,8 @@ def test_bound_fields_resolve_against_the_probes_model(replays, probe):
                     for f in fields:
                         if f.kind == "measure":
                             assert model.measure_table(f.name) == f.table, f"{step}: {f}"
+                        elif f.kind == "hierarchy_level":
+                            model.check_hierarchy_level(f.table, f.name, f.level)
                         else:  # column, aggregation, date_level: all over a model column
                             model.check_column(f.table, f.name)
 
@@ -274,6 +276,12 @@ def test_wells_as_the_user_saw_them(replays):
                                                         "Y": "[Total Amount]"}]
     assert _slots(_last(replays, 13), "tableEx") == [{"Values": ["Sales[Country]", "Average(Sales[Amount])",
                                                                  "Count(Sales[Region])"]}]
+    # 16: the Geography hierarchy on a column chart (drill-down), and both its levels in a table
+    # although only Region was dragged
+    geography = ["Sales[Geography].Country", "Sales[Geography].Region"]
+    column = [s for s in _slots(_last(replays, 16), "clusteredColumnChart") if "Sales[Country]" not in str(s)]
+    assert column == [{"Category": geography, "Y": "[Total Amount]"}]
+    assert _slots(_last(replays, 16), "tableEx") == [{"Values": [*geography, "[Total Amount]"]}]
 
 
 def test_15_theme_defaults_as_the_user_saw_them(replays):

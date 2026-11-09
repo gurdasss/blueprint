@@ -43,3 +43,29 @@ def test_errors(tmp_path: Path):
         semantic.model_dir_for(tmp_path, {"datasetReference": {"byConnection": {}}})
     with pytest.raises(semantic.ModelError, match="not found"):
         semantic.model_dir_for(tmp_path, {"datasetReference": {"byPath": {"path": "../Nope.SemanticModel"}}})
+
+
+# probe 16: the hierarchy Desktop wrote into Sales.tmdl
+HIERARCHY_TMDL = (
+    "table Sales\r\n\tcolumn Country\r\n\t\tdataType: string\r\n\r\n\tcolumn Region\r\n\r\n"
+    "\thierarchy Geography\r\n\t\tlineageTag: 1c532aa5-8b4d-4377-a0d9-2f88cbfd471d\r\n\r\n"
+    "\t\tlevel Country\r\n\t\t\tlineageTag: 96a8fc60-b3a4-4c8d-ba60-fb8924982fbf\r\n\t\t\tcolumn: Country\r\n\r\n"
+    "\t\tlevel Region\r\n\t\t\tlineageTag: 10795807-315b-45b3-ab90-5d16ec8ee6e2\r\n\t\t\tcolumn: Region\r\n\r\n"
+    "\tpartition Sales = m\r\n\t\tmode: import\r\n"
+)
+
+
+def test_hierarchies_and_levels_are_parsed():
+    assert semantic.parse_hierarchies(HIERARCHY_TMDL) == {"Geography": ("Country", "Region")}
+    assert semantic.parse_table(HIERARCHY_TMDL)[1] == {"Country", "Region"}  # levels aren't columns
+    quoted = "table T\n\thierarchy 'Sales Geo'\n\t\tlevel 'Sub Region'\n\tmeasure M = 1\n\t\tlevel X\n"
+    assert semantic.parse_hierarchies(quoted) == {"Sales Geo": ("Sub Region",)}  # X isn't a level of it
+
+
+def test_check_hierarchy_level(tmp_path: Path):
+    m = semantic.SemanticModel(tables={"Sales": {"Country"}}, hierarchies={("Sales", "Geography"): ("Country", "Region")})
+    m.check_hierarchy_level("Sales", "Geography", "Region")
+    for args, match in ((("Nope", "Geography", "Region"), "no table"), (("Sales", "Geo", "Region"), "no hierarchy"),
+                        (("Sales", "Geography", "City"), "no level 'City'")):
+        with pytest.raises(semantic.ModelError, match=match):
+            m.check_hierarchy_level(*args)
