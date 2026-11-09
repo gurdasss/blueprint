@@ -264,7 +264,28 @@ What follows for a typography check:
   corruption.
 - *Customize current theme* → Text changes (General Segoe UI 11, Title Segoe UI Semibold 16)
   **did not persist** on a report whose custom theme (`Concourse`) has no file. Where a
-  customised theme's text classes are saved is **still open**.
+  customised theme's text classes are saved was answered in phase 3 below.
+
+**Verified 2026-11-09, probe 03 phase 3** (evidence `docs/probes/03-typography-phase3.diff`).
+Switching to the built-in **Bloom** theme and then *Customize current theme* → Text (General
+Segoe UI 11, Title Segoe UI Semibold 16):
+
+- A **customised theme is saved as a new custom theme file**:
+  `StaticResources/RegisteredResources/Bloom03249907182487033.json` (base name plus a generated
+  number). `report.json` sets `customTheme = {"name": "Bloom03249907182487033.json", "type":
+  "RegisteredResources"}` (the *name* includes `.json`) and adds a `RegisteredResources` item
+  `{name, path, type: "CustomTheme"}`. The **base theme file was embedded this time**
+  (`SharedResources/BaseThemes/Fluent2-CY26SU10.json`) with its `resourcePackages` entry.
+- The file stores **only the overrides on top of the base theme**: `name: "Bloom"`, `dataColors` (480
+  entries), `tableAccent`, `maximum`/`center`/`minimum`, `visualStyles`, and `textClasses`
+  `{"label": {"fontSize": 11}, "title": {"fontFace": "'Segoe UI Semibold', wf_segoe-ui_semibold,
+  helvetica, arial, sans-serif", "fontSize": 16}}`. This confirms the layering: custom fields override
+  base fields. Values equal to the base (label font Segoe UI) are omitted.
+- **"General" in the UI is `textClasses.label`**, and "Title" is `textClasses.title`.
+- **Theme `fontFace` comes in two forms:** a plain name in the base theme (`"Segoe UI Semibold"`,
+  `"DIN"`) and a CSS font stack in the customised theme. Neither is wrapped in quote characters the
+  way formatting-object literals are. The first family in the stack is the face.
+- The file is 3.2 MB in Desktop's JSON format and round-trips through `jsonfmt`.
 
 ## Field bindings
 
