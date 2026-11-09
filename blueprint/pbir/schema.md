@@ -564,8 +564,24 @@ content, so Blueprint's theme file matches Desktop's format exactly.
   `Function: 5`. Desktop kept the field's old `queryRef` (`Sum(Sales.Amount)` on the Average,
   `Sales.Region` on the Count), so a `queryRef` says nothing reliable about the aggregation.
 - The reader reads these as `date_level` fields (`Sales[Order Date].Year` in the manifest) and
-  `aggregation` fields (`Average(Sales[Amount])`). User-defined hierarchies weren't probed and are
-  still skipped.
+  `aggregation` fields (`Average(Sales[Amount])`).
+
+**Verified 2026-11-09, probe 16** (`scripts/probe_user_hierarchy.py`; evidence
+`docs/probes/16-user-hierarchy.diff`, fixture 02, all content invented). A hierarchy built in the
+Data pane (Create hierarchy on Country, renamed Geography, then Region added):
+
+- **TMDL:** a table member `hierarchy Geography` (one tab, with a `lineageTag`) holding `level
+  Country` and `level Region` (two tabs), each with `lineageTag` and `column: <column>`, in level
+  order. `semantic.py` reads it as `hierarchies[("Sales", "Geography")] = ("Country", "Region")`.
+- **In a visual each level is its own projection**, the same `HierarchyLevel` as a date hierarchy
+  but on the table directly: `{"HierarchyLevel": {"Expression": {"Hierarchy": {"Expression":
+  {"SourceRef": {"Entity": "Sales"}}, "Hierarchy": "Geography"}}, "Level": "Country"}}`,
+  `"queryRef": "Sales.Geography.Country"`, `"nativeQueryRef": "Geography Country"`. On a column
+  chart's X-axis the levels are a drill-down (Country `active`, Region not). `sortDefinition` sorts by
+  the same `HierarchyLevel` fields.
+- **Dragging one level into a table added the whole hierarchy** (Country and Region, no `active`).
+- The reader reads these as `hierarchy_level` fields, shown as `Sales[Geography].Country`. Specs
+  can't bind a hierarchy (`apply` treats one added in Desktop as a changed binding).
 
 ## Schema versions
 
