@@ -1,9 +1,10 @@
 # Slot contract for spec type `bar`. Verified in probe 12: `clusteredBarChart`, stored like the
 # column chart: the categories (drawn on the Y-axis) in role `Category`, where an ordered list is a
-# drill-down, and the measure (drawn on the X-axis) in role `Y`.
+# drill-down, and the measure (drawn on the X-axis) in role `Y`. Probe 18: a hierarchy built in the
+# model binds its levels there as a drill-down.
 type: bar
 visual_type: clusteredBarChart
 region: main
 slots:
-  category: { role: Category, accepts: column, required: true, ordered: true }
+  category: { role: Category, accepts: [column, hierarchy], required: true, ordered: true }
   value:    { role: Y, accepts: measure, required: true }

@@ -1,11 +1,12 @@
 # Slot contract for spec type `pie`. Verified in probe 08 (pbir/schema.md "Creating pages and
 # visuals"): `pieChart`, Values in role `Y`, and the well Desktop calls Legend in role `Category`
 # (named `category` here, like the column chart's). Probe 11: an ordered list of Legend columns is a
-# drill-down, and Details is role `Series` (one column probed, so it takes one).
+# drill-down, and Details is role `Series` (one column probed, so it takes one). Probe 18: a
+# hierarchy built in the model binds its levels in the Legend as a drill-down.
 type: pie
 visual_type: pieChart
 region: main
 slots:
-  category: { role: Category, accepts: column, required: true, ordered: true }
+  category: { role: Category, accepts: [column, hierarchy], required: true, ordered: true }
   value:    { role: Y, accepts: measure, required: true }
   details:  { role: Series, accepts: column }

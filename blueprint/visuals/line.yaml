@@ -1,10 +1,11 @@
 # Slot contract for spec type `line`. Verified in probe 12 (pbir/schema.md "Creating pages and
 # visuals"): `lineChart`, X-axis in role `Category`, Y-axis in role `Y`, Legend in role `Series`.
-# Only one X-axis column and one Legend column were probed, so each takes one.
+# Only one X-axis column and one Legend column were probed, so each takes one. Probe 18: the X-axis
+# also takes a hierarchy built in the model (one field, binding its levels as a drill-down).
 type: line
 visual_type: lineChart
 region: main
 slots:
-  category: { role: Category, accepts: column, required: true }
+  category: { role: Category, accepts: [column, hierarchy], required: true }
   value:    { role: Y, accepts: measure, required: true }
   legend:   { role: Series, accepts: column }

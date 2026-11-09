@@ -45,7 +45,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PROBES = ROOT / "docs" / "probes"
 FIXTURE = ROOT / "fixtures" / "02-card-and-chart"
 GUIDE = ROOT / "guidelines" / "example.yaml"
-REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
 # Probes whose report Blueprint built and Desktop then opened and saved.
 ACCEPTANCE = [5, 6, 9, 14, 17]
 
@@ -213,9 +213,9 @@ def _desktop_visuals(replays):
                 doc = v.source.data
                 if v.visual_type not in shipped or v.spec_id is not None or not v.fields:
                     continue
-                if any(f.kind not in ("measure", "column") for fs in v.fields.values() for f in fs):
+                if any(f.kind not in ("measure", "column", "hierarchy_level") for fs in v.fields.values() for f in fs):
                     continue
-                key = jsonfmt.dumps(doc["visual"]["query"]["queryState"])
+                key = (v.visual_type, jsonfmt.dumps(doc["visual"]["query"]["queryState"]))
                 if key not in seen:
                     seen.add(key)
                     yield step, v, shipped[v.visual_type]
@@ -229,7 +229,7 @@ def test_rendering_desktops_bindings_gives_desktops_query(replays):
         roles = {s.role for s in contract.slots.values()}
         assert set(desktop) <= roles, f"{step}: {v.visual_type} role(s) {set(desktop) - roles} have no slot"
         # reversed: a spec may list slots in any order, and Desktop's order must still come out
-        bindings = {role: [render.Binding(f.kind, f.table, f.name) for f in fs]
+        bindings = {role: [render.Binding(f.kind, f.table, f.name, f.level) for f in fs]
                     for role, fs in reversed(list(v.fields.items()))}
         ours = render.visual("x", v.visual_type, Rect(0, 0, 10, 10), 0, 0, "s", "r",
                              bindings=bindings)["visual"]["query"]["queryState"]
@@ -237,8 +237,8 @@ def test_rendering_desktops_bindings_gives_desktops_query(replays):
         assert _without_active(ours) == _without_active(desktop), f"{step}: {v.visual_type}"
         checked += 1
     # card + column (fixture), pie/table/kpi (08), kpi with target (10), pie drill + details (11),
-    # line, line + legend, bar drill (12): at least one per shipped chart type.
-    assert checked >= 10
+    # line, line + legend, bar drill (12), column/table/bar/pie/line on a hierarchy (16, 18)
+    assert checked >= 15
 
 
 # --- what the user saw ---------------------------------------------------------------------
@@ -414,8 +414,8 @@ def test_spec_hierarchy_binds_what_desktop_bound(replays, tmp_path, capsys):
 
 
 @pytest.mark.parametrize(("slot", "match"), [
-    ('{type: pie, slots: {category: "Sales[Geography]", value: "[Total Amount]"}}',
-     "Sales\\[Geography\\] is a hierarchy, but pie's category doesn't take one"),
+    ('{type: kpi, slots: {value: "[Total Amount]", trend: "Sales[Geography]"}}',
+     "Sales\\[Geography\\] is a hierarchy, but kpi's trend doesn't take one"),
     ('{type: line, slots: {category: "Sales[Country]", value: "[Total Amount]", legend: "Sales[Geography]"}}',
      "Sales\\[Geography\\] is a hierarchy, but line's legend doesn't take one"),
 ])
@@ -427,3 +427,17 @@ def test_spec_hierarchy_refused_where_unverified(replays, tmp_path, capsys, slot
     assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) != 0
     assert re.search(match, capsys.readouterr().err)
     assert {p: p.read_bytes() for p in proj.rglob("*") if p.is_file()} == before  # nothing written
+
+
+@pytest.mark.parametrize(("spec_type", "visual_type", "slots"), [
+    ("bar", "clusteredBarChart", '{category: "Sales[Geography]", value: "[Total Amount]"}'),
+    ("pie", "pieChart", '{category: "Sales[Geography]", value: "[Total Amount]"}'),
+    ("line", "lineChart", '{category: "Sales[Geography]", value: "[Total Amount]"}'),
+])
+def test_spec_hierarchy_on_bar_pie_line_matches_probe_18(replays, tmp_path, spec_type, visual_type, slots):
+    proj = _copy(replays[18][0], tmp_path)  # fixture 02 plus the Geography hierarchy
+    spec = tmp_path / f"{spec_type}.yaml"
+    spec.write_text(f"page: P\nlayout: standard-4-up\nvisuals:\n  - type: {spec_type}\n    slots: {slots}\n")
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+    # exactly what Desktop wrote when Geography was dragged onto that chart, active flags included
+    assert _query(proj / "Fixture.Report", visual_type, True) == _query(_last(replays, 18).report, visual_type, False)

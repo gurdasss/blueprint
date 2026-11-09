@@ -583,8 +583,8 @@ Data pane (Create hierarchy on Country, renamed Geography, then Region added):
 - The reader reads these as `hierarchy_level` fields, shown as `Sales[Geography].Country`. A spec
   binds one by writing it like a column (`Sales[Geography]`). `apply` expands it to these level
   projections, matching Desktop's step 03 and 04 queries exactly (first level `active` in `Category`,
-  no `active` in a table's `Values`). It's allowed only in the column chart's category and the table's
-  columns; elsewhere it's refused as unverified.
+  no `active` in a table's `Values`). It's allowed in the column chart's category and the table's
+  columns, and (probe 18) in the bar, pie and line charts' categories; elsewhere it's refused as unverified.
 - **Desktop accepts these as written (probe 17,** `scripts/probe_apply_hierarchy.py`; evidence
   `docs/probes/17-apply-hierarchy.diff`). Probe 16's hierarchy was added to fixture 02's TMDL, then
   `bp apply` ran with a column chart and a table on `Sales[Geography]`. Both were drawn: the column

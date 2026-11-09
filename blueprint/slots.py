@@ -15,8 +15,9 @@ from pathlib import Path
 import yaml
 
 VISUALS_DIR = Path(__file__).resolve().parent / "visuals"
-# "hierarchy": a hierarchy built in the model, written like a column (Table[Hierarchy]); it binds
-# all its levels in order (probe 16), so only an ordered slot can take one.
+# "hierarchy": a hierarchy built in the model, written like a column (Table[Hierarchy]). It's one
+# field, as in Desktop's wells, that binds all its levels in order (probes 16, 18). So a slot that
+# takes a single field can take one, without also allowing a list of columns there.
 KINDS = ("measure", "column", "hierarchy")
 
 
@@ -53,9 +54,6 @@ def _load(path: Path) -> Contract:
                 raise ContractError(f"{where}: slot {name}: accepts must be from {KINDS}")
             slots[name] = Slot(name, spec["role"], accepts, bool(spec.get("required", False)),
                                bool(spec.get("ordered", False)))
-            if "hierarchy" in accepts and not slots[name].ordered:
-                raise ContractError(f"{where}: slot {name}: a hierarchy binds several levels, so the "
-                                    "slot must be ordered")
         contract = Contract(data["type"], data["visual_type"], data["region"], slots)
     except (KeyError, TypeError, AttributeError) as exc:
         raise ContractError(f"{where}: malformed contract ({exc})") from exc
