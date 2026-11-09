@@ -159,13 +159,18 @@ def effective_theme(themes: list[Theme]) -> Theme | None:
         return None
     eff = found[0]
     for t in found[1:]:
-        classes = dict(eff.text_classes)
-        for name, cls in t.text_classes.items():
-            base = classes.get(name, TextClass())
-            classes[name] = TextClass(cls.font or base.font, cls.size if cls.size is not None else base.size)
         eff = Theme(t.name, t.layer, False, t.builtin, t.data_colors or eff.data_colors,
-                    t.foreground or eff.foreground, t.background or eff.background, classes)
+                    t.foreground or eff.foreground, t.background or eff.background,
+                    _merge(eff.text_classes, t.text_classes), _merge(eff.visual_text, t.visual_text))
     return eff
+
+
+def _merge(base: dict[str, TextClass], over: dict[str, TextClass]) -> dict[str, TextClass]:
+    out = dict(base)
+    for name, cls in over.items():
+        b = out.get(name, TextClass())
+        out[name] = TextClass(cls.font or b.font, cls.size if cls.size is not None else b.size)
+    return out
 
 
 def _check_palette(report: Report, rules: Guidelines, c: _Collector) -> None:
@@ -231,9 +236,21 @@ def _check_theme(theme: Theme, pal, c: _Collector) -> None:
 
 # --- typography --------------------------------------------------------------------------
 
-# Theme text classes that govern a typography role when a visual doesn't set its own value
-# (probe 03: "Title" in Desktop's theme dialog is textClasses.title).
-THEME_CLASS = {"title": "title", "callout": "callout"}
+# Where a theme sets each typography role's default, as (textClasses name, visualStyles card).
+# probe 03: Desktop's "Title" is textClasses.title. probe 06: visualStyles["*"]["*"].title
+# (and .subTitle) outrank textClasses, so a size set there is the one visuals actually get.
+THEME_SOURCES = {"title": ("title", "title"), "subtitle": (None, "subTitle"), "callout": ("callout", None)}
+
+
+def theme_font(theme: Theme, role: str) -> TextClass | None:
+    """The effective theme default for a typography role: visualStyles over textClasses."""
+    cls_name, card = THEME_SOURCES[role]
+    cls = theme.text_classes.get(cls_name) if cls_name else None
+    vis = theme.visual_text.get(card) if card else None
+    if cls is None and vis is None:
+        return None
+    cls, vis = cls or TextClass(), vis or TextClass()
+    return TextClass(vis.font or cls.font, vis.size if vis.size is not None else cls.size)
 # Family names seen in reports but not offered by Desktop's font list (probe 03); they look
 # like theme font tokens. Reported as unresolved rather than as violations.
 UNRESOLVED_FAMILIES = frozenset({"Heading"})
@@ -259,15 +276,15 @@ def _check_typography(report: Report, rules: Guidelines, c: _Collector) -> None:
     roles = rules.typography
     theme = effective_theme(report.themes)
     if theme is None:
-        if any(r in THEME_CLASS for r in roles):
+        if any(r in THEME_SOURCES for r in roles):
             c.result.notes.append("theme text classes not checked (no readable theme)")
     else:
-        for role, cls_name in THEME_CLASS.items():
-            cls = theme.text_classes.get(cls_name)
-            if role in roles and cls is not None:
-                problems = _font_problems(cls, roles[role])
+        for role in THEME_SOURCES:
+            font = theme_font(theme, role) if role in roles else None
+            if font is not None:
+                problems = _font_problems(font, roles[role])
                 if problems:
-                    c.add("typography", f"theme {theme.name!r} {cls_name} text: " + "; ".join(problems))
+                    c.add("typography", f"theme {theme.name!r} {role} text: " + "; ".join(problems))
 
     unresolved: set[str] = set()
     for page in report.pages:

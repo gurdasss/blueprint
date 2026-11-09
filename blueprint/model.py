@@ -79,6 +79,9 @@ class Theme:
     foreground: str | None = None
     background: str | None = None
     text_classes: dict[str, TextClass] = field(default_factory=dict)  # title, label, callout, …
+    # visualStyles["*"]["*"].<card> defaults for every visual: "title", "subTitle". These outrank
+    # textClasses (probe 06: base theme title fontSize 15 beat textClasses.title 18).
+    visual_text: dict[str, TextClass] = field(default_factory=dict)
 
 
 @dataclass

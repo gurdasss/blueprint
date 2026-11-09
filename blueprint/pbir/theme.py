@@ -12,7 +12,10 @@ Shapes come from what Desktop wrote (schema.md "Colours, fonts and theme" and "T
   ``background``, ``textClasses.{callout,title,header,label}.{fontFace,fontSize,color}``) in
   Desktop's JSON format; base themes use plain face names (``"Segoe UI Semibold"``).
 
-Open until probe 06: whether Desktop accepts a theme file Blueprint wrote, as written.
+- probe 06: Desktop accepted a Blueprint-written theme file as written (name, colours and title
+  face applied), but titles came out at 15pt, not 18: the base theme's
+  ``visualStyles["*"]["*"].title.fontSize`` outranks ``textClasses``. So sizes are also written
+  there. Open until probe 06 phase 2: that this takes effect and titles still show.
 """
 
 from __future__ import annotations
@@ -29,6 +32,10 @@ REL_PATH = Path("StaticResources") / PACKAGE / FILE_NAME
 TEXT_CLASSES = ("callout", "title", "header", "label")
 # Guideline typography role -> theme text class (probe 03; subtitle/textbox have none).
 ROLE_TO_CLASS = {"title": "title", "callout": "callout"}
+# Guideline role -> visualStyles["*"]["*"] card. Probe 06: the base theme sets title fontSize 15
+# there, which outranks textClasses.title, so a guideline size must also be written here. Only
+# fontSize is set at this level: it's the only key observed there (base theme, probe 06).
+ROLE_TO_VISUAL_CARD = {"title": "title", "subtitle": "subTitle"}
 
 
 class ThemeError(Exception):
@@ -47,10 +54,18 @@ def build(rules: Guidelines) -> tuple[dict[str, Any], list[str]]:
         theme["background"] = pal.background
 
     classes: dict[str, dict[str, Any]] = {}
+    visual_cards: dict[str, dict[str, Any]] = {}
     for role, rule in rules.typography.items():
+        card = ROLE_TO_VISUAL_CARD.get(role)
+        if card is not None and rule.sizes:
+            size = rule.sizes[0]
+            visual_cards[card] = {"fontSize": int(size) if size.is_integer() else size}
         cls = ROLE_TO_CLASS.get(role)
         if cls is None:
-            notes.append(f"typography.{role}: no theme text class for it; visuals are still checked")
+            if card is None or rule.fonts:
+                what = "font" if card is not None else "font or size"
+                notes.append(f"typography.{role}: the theme can't set its {what} (unverified); "
+                             "visuals are still checked")
             continue
         entry: dict[str, Any] = {}
         if rule.fonts:
@@ -71,6 +86,9 @@ def build(rules: Guidelines) -> tuple[dict[str, Any], list[str]]:
             classes.setdefault(cls, {})["color"] = pal.text
     if classes:
         theme["textClasses"] = {k: classes[k] for k in TEXT_CLASSES if k in classes}
+    if visual_cards:
+        theme["visualStyles"] = {"*": {"*": {card: [visual_cards[card]] for card in
+                                             ("title", "subTitle") if card in visual_cards}}}
 
     if len(theme) == 1:
         raise ThemeError("guidelines set no palette or theme typography; nothing to put in a theme")

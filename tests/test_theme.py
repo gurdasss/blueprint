@@ -38,13 +38,15 @@ def test_example_guidelines_theme():
         "textClasses": {"callout": {"color": "#333333"},
                         "title": {"fontFace": "Segoe UI Semibold", "fontSize": 18, "color": "#333333"},
                         "header": {"color": "#333333"}, "label": {"color": "#333333"}},
+        # probe 06: the base theme's visualStyles title size outranks textClasses, so set it too
+        "visualStyles": {"*": {"*": {"title": [{"fontSize": 18}], "subTitle": [{"fontSize": 12}]}}},
     }
-    assert notes == ["typography.subtitle: no theme text class for it; visuals are still checked"]
+    assert notes == ["typography.subtitle: the theme can't set its font (unverified); visuals are still checked"]
 
 
 def test_typography_only_and_first_choice_notes(tmp_path: Path):
     doc, notes = theme.build(_rules(tmp_path, "name: T\ntypography:\n  callout: {font: [DIN, Arial], size: [28, 32], bold: true}\n"))
-    assert doc == {"name": "T", "textClasses": {"callout": {"fontFace": "DIN", "fontSize": 28}}}
+    assert doc == {"name": "T", "textClasses": {"callout": {"fontFace": "DIN", "fontSize": 28}}}  # no card
     assert any("first allowed font, 'DIN'" in n for n in notes)
     assert any("first allowed size, 28pt" in n for n in notes)
     assert any("bold: not expressible" in n for n in notes)
@@ -131,3 +133,29 @@ def test_written_theme_file_is_desktop_formatted(report: Path):
     main(["theme", "--report", str(report), "--guidelines", str(GUIDE)])
     raw = (report / theme.REL_PATH).read_bytes()
     assert b"\r\n" in raw and not raw.endswith(b"\n") and jsonfmt.dump_bytes(jsonfmt.loads_bytes(raw)) == raw
+
+
+def test_base_visual_styles_title_size_outranks_text_classes(tmp_path: Path):
+    """Probe 06: textClasses.title 18 in our theme, but the base theme's visualStyles title 15 won."""
+    from blueprint.validate import check_report
+    from tests.builders import add_theme, make_report
+    rd = make_report(tmp_path / "r", {"p": []})
+    add_theme(rd, "base", "B", {"textClasses": {"title": {"fontSize": 12, "fontFace": "DIN"}},
+                                "visualStyles": {"*": {"*": {"title": [{"show": True, "fontSize": 15}]}}}},
+              folder="BaseThemes")
+    add_theme(rd, "custom", "C", {"textClasses": {"title": {"fontSize": 18, "fontFace": "Segoe UI Semibold"}}},
+              package="RegisteredResources", folder="t")
+    rules = _rules(tmp_path, "typography: {title: {font: Segoe UI Semibold, size: 18}}\n")
+    found = [f.message for f in check_report(read_report(rd), rules).findings if f.rule == "typography"]
+    assert found == ["theme 'C' title text: size 15pt (allowed: 18)"]  # the false pass, now caught
+
+    # Writing the size at the visualStyles level too (what bp theme now does) fixes it.
+    add_theme(rd, "custom", "C2", {"textClasses": {"title": {"fontSize": 18, "fontFace": "Segoe UI Semibold"}},
+                                   "visualStyles": {"*": {"*": {"title": [{"fontSize": 18}]}}}},
+              package="RegisteredResources", folder="t")
+    assert [f for f in check_report(read_report(rd), rules).findings if f.rule == "typography"] == []
+
+
+def test_fixture_base_theme_visual_text(blank_fixture: Path):
+    [base] = read_report(blank_fixture).themes
+    assert base.visual_text["title"].size == 15 and base.visual_text["subTitle"].size == 12

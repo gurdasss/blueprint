@@ -115,7 +115,8 @@ def theme_from(layer: str, name: str, data: Any, builtin: bool = False) -> Theme
 
     data = data if isinstance(data, dict) else {}
     return Theme(name, layer, False, builtin, hexes(data.get("dataColors")),
-                 one(data.get("foreground")), one(data.get("background")), text_classes(data))
+                 one(data.get("foreground")), one(data.get("background")), text_classes(data),
+                 visual_text(data))
 
 
 # --- fonts (probe 03) ----------------------------------------------------------------------
@@ -218,4 +219,23 @@ def text_classes(data: Any) -> dict[str, TextClass]:
             face = cls.get("fontFace")
             out[name] = TextClass(first_family(face) if isinstance(face, str) else None,
                                   parse_size(cls.get("fontSize")))
+    return out
+
+
+VISUAL_TEXT_CARDS = ("title", "subTitle")
+
+
+def visual_text(data: Any) -> dict[str, TextClass]:
+    """``visualStyles["*"]["*"].{title,subTitle}[0]`` font defaults for every visual (probe 06)."""
+    star = (((data or {}).get("visualStyles") or {}).get("*") or {}).get("*") or {}
+    out: dict[str, TextClass] = {}
+    for card in VISUAL_TEXT_CARDS:
+        entries = star.get(card)
+        entry = entries[0] if isinstance(entries, list) and entries and isinstance(entries[0], dict) else None
+        if entry is None:
+            continue
+        face = entry.get("fontFamily")
+        size = parse_size(entry.get("fontSize"))
+        if isinstance(face, str) or size is not None:
+            out[card] = TextClass(first_family(face) if isinstance(face, str) else None, size)
     return out
