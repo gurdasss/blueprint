@@ -22,8 +22,16 @@ from blueprint.pbir import formatting, jsonfmt, schemas
 # The page and visualContainer schemas cap `name` at 50 characters.
 NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,50}$")
 
-# Desktop ignores `annotations`, so Blueprint's own markers live there.
+# Desktop ignores `annotations` and keeps them across saves (probe 01), so Blueprint's own
+# markers live there.
 IGNORE_ANNOTATION = "blueprint.ignore"
+PAGE_ANNOTATION = "blueprint.page"  # on a page Blueprint created: the spec's `page:` name
+VISUAL_ANNOTATION = "blueprint.visual"  # on a visual Blueprint created: the spec visual id
+
+
+def annotations(doc: dict) -> dict[str, str]:
+    return {a["name"]: a.get("value") for a in doc.get("annotations", [])
+            if isinstance(a, dict) and isinstance(a.get("name"), str)}
 
 PAGES = Path("definition/pages")
 
@@ -206,6 +214,7 @@ class _Reader:
             width=d.get("width"),
             height=d.get("height"),
             display_option=d.get("displayOption", ""),
+            spec_page=annotations(d).get(PAGE_ANNOTATION),
             colors=formatting.colors_in(d),
             source=doc,
         )
@@ -225,7 +234,7 @@ class _Reader:
             self.warnings.append(f"{doc.path}: visual name {d.get('name')!r} differs from folder")
         pos = d.get("position", {})
         visual = d.get("visual") or {}
-        notes = {a.get("name"): a.get("value") for a in d.get("annotations", []) if isinstance(a, dict)}
+        notes = annotations(d)
         return Visual(
             name=folder,
             visual_type=visual.get("visualType"),
@@ -237,6 +246,7 @@ class _Reader:
             hidden=bool(d.get("isHidden", False)),
             bound=_bound(visual),
             ignored=str(notes.get(IGNORE_ANNOTATION, "")).lower() == "true",
+            spec_id=notes.get(VISUAL_ANNOTATION),
             colors=formatting.colors_in(visual),
             fonts=formatting.fonts_in(visual),
             source=doc,

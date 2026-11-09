@@ -80,6 +80,7 @@ class Visual:
     hidden: bool = False
     bound: bool = False  # has at least one field projection (measure/column)
     ignored: bool = False  # `blueprint: ignore` escape hatch
+    spec_id: str | None = None  # set when Blueprint created it: the spec visual id it came from
     colors: list[ColorUse] = field(default_factory=list)
     fonts: list[FontUse] = field(default_factory=list)
     source: Any = field(default=None, repr=False, compare=False)
@@ -93,6 +94,7 @@ class Page:
     height: float | None
     display_option: str
     visuals: list[Visual] = field(default_factory=list)
+    spec_page: str | None = None  # set when Blueprint created it: the spec `page:` it came from
     colors: list[ColorUse] = field(default_factory=list)
     source: Any = field(default=None, repr=False, compare=False)
 
