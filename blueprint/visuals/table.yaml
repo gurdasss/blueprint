@@ -1,0 +1,7 @@
+# Slot contract for spec type `table`. Verified in probe 08: `tableEx`, every column and measure in
+# role `Values`, in the order given (reordering the well only reorders the projections).
+type: table
+visual_type: tableEx
+region: main
+slots:
+  columns: { role: Values, accepts: [column, measure], required: true, ordered: true }

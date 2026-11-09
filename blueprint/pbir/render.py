@@ -47,13 +47,17 @@ class Binding:
         key = "Measure" if self.kind == "measure" else "Column"
         return {key: {"Expression": {"SourceRef": {"Entity": self.table}}, "Property": self.name}}
 
-    def projection(self) -> dict:
-        # probe 04: category columns carried "active": true; measures had no "active" key.
+    def projection(self, role: str) -> dict:
         p: dict[str, Any] = {"field": self.field(), "queryRef": f"{self.table}.{self.name}",
                              "nativeQueryRef": self.name}
-        if self.kind == "column":
+        if self.kind == "column" and role in ACTIVE_ROLES:
             p["active"] = True
         return p
+
+
+# Roles whose column projections Desktop marks "active": true: the column chart's and the pie's
+# Category (probes 04, 08). A table's Values and a KPI's TrendLine columns don't carry it (probe 08).
+ACTIVE_ROLES = frozenset({"Category"})
 
 
 def _literal(value: str) -> dict:
@@ -153,7 +157,7 @@ def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec
     """A visual container. ``bindings``: query role -> ordered fields. ``text``: textbox content."""
     body: dict[str, Any] = {"visualType": visual_type}
     if bindings:
-        body["query"] = {"queryState": {role: {"projections": [b.projection() for b in fields]}
+        body["query"] = {"queryState": {role: {"projections": [b.projection(role) for b in fields]}
                                         for role, fields in bindings.items()}}
     if text is not None:
         body["objects"] = textbox_objects(text, text_style)

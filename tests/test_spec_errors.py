@@ -61,8 +61,8 @@ def test_ignored_visual_needs_no_slots():
     ({"page": "P"}, ["visuals: required, a non-empty list"]),
     ({"page": "P", "visuals": [], "colour": 1}, ["colour: unknown key (expected: id, layout, page, visuals)",
                                                  "visuals: required, a non-empty list"]),
-    ({"page": "P", "visuals": [{"type": "pie"}]},
-     ["visuals[0].type: 'pie' is not a supported visual type (supported: card, column, header)"]),
+    ({"page": "P", "visuals": [{"type": "donut"}]},
+     ["visuals[0].type: 'donut' is not a supported visual type (supported: card, column, header, kpi, pie, table)"]),
     ({"page": "P", "visuals": [{"type": "header"}]},
      ["visuals[0].title: a header needs a title (it is the header's text)"]),
     ({"page": "P", "visuals": [{"type": "card"}]}, ["visuals[0].slots.value: required by card"]),
@@ -87,7 +87,7 @@ def test_invalid_specs(data, expected):
 
 
 def test_all_problems_reported_together():
-    found = problems({"page": "", "visuals": [{"type": "pie"}, {"type": "card"}, "x"]})
+    found = problems({"page": "", "visuals": [{"type": "donut"}, {"type": "card"}, "x"]})
     assert len(found) == 4 and found[0].startswith("page:")
 
 

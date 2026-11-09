@@ -1,0 +1,10 @@
+# Slot contract for spec type `pie`. Verified in probe 08 (pbir/schema.md "Creating pages and
+# visuals"): `pieChart`, Values in role `Y`, and the well Desktop calls Legend in role `Category`
+# (named `category` here, like the column chart's). Only one Legend column was probed, so it
+# takes a single column.
+type: pie
+visual_type: pieChart
+region: main
+slots:
+  category: { role: Category, accepts: column, required: true }
+  value:    { role: Y, accepts: measure, required: true }
