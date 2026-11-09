@@ -80,10 +80,17 @@ def _check_schema(doc: Document, data: dict, *, force_schema: bool) -> None:
             f"{doc.path}: schema {res.declared.url} has an unknown major version; "
             "refusing to write (pass --force-schema to override)"
         )
-    errors = schemas.validate(data, res)
-    if errors:
-        detail = "\n  ".join(errors[:10])
-        raise WriteError(f"{doc.path}: change would make the file schema-invalid:\n  {detail}")
+    # Block only on errors this change introduces. A file can already fail validation without
+    # being broken: Desktop writes schema versions before Microsoft publishes them, and a newer
+    # minor version may add properties the nearest vendored schema doesn't know. Desktop accepts
+    # those files, and refusing to touch them would stop Blueprint every time Desktop updates.
+    # The baseline is the file as read from disk, not the in-memory document, so an in-memory
+    # edit that breaks the schema is still caught.
+    before = set(schemas.validate(jsonfmt.loads_bytes(doc.raw), res)) if doc.raw else set()
+    introduced = [e for e in schemas.validate(data, res) if e not in before]
+    if introduced:
+        detail = "\n  ".join(introduced[:10])
+        raise WriteError(f"{doc.path}: this change would introduce schema errors:\n  {detail}")
 
 
 def apply(plan: Plan) -> None:

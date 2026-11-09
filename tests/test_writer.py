@@ -78,7 +78,7 @@ def test_schema_invalid_change_refused(tmp_path: Path):
     _, r = _report(tmp_path)
     r.page("p").visuals[0].source.data["bogus"] = 1  # simulate a bad in-memory edit
     r.page("p").visuals[0].rect = Rect(0, 0, 8, 8)
-    with pytest.raises(writer.WriteError, match="schema-invalid"):
+    with pytest.raises(writer.WriteError, match="would introduce schema errors"):
         writer.plan_writes(r)
 
 
@@ -92,3 +92,33 @@ def test_unknown_schema_major_needs_force(tmp_path: Path):
     with pytest.raises(writer.WriteError, match="unknown major"):
         writer.plan_writes(r)
     assert len(writer.plan_writes(r, force_schema=True).writes) == 1
+
+
+def _future_visual(tmp_path: Path, version: str = "2.99.0"):
+    """A visual declaring a schema newer than any vendored one, with a property the vendored
+    schema doesn't know: what Desktop writes before Microsoft publishes the schema."""
+    rd = make_report(tmp_path, {"p": []})
+    v = visual("v1", 3, 3, 64, 64)
+    v["$schema"] = f"{S}/visualContainer/{version}/schema.json"
+    v["someFutureProperty"] = True
+    write(rd / "definition/pages/p/visuals/v1/visual.json", v)
+    return rd
+
+
+def test_newer_minor_with_unknown_property_can_still_be_written(tmp_path: Path):
+    rd = _future_visual(tmp_path)
+    r = read_report(rd)
+    r.page("p").visuals[0].rect = Rect(0, 0, 64, 64)
+    plan = writer.plan_writes(r)
+    writer.apply(plan)
+    text = (rd / plan.writes[0].path).read_text()
+    assert '"someFutureProperty": true' in text and '"x": 0' in text
+
+
+def test_change_that_adds_a_new_error_is_still_refused_on_newer_minor(tmp_path: Path):
+    r = read_report(_future_visual(tmp_path))
+    v = r.page("p").visuals[0]
+    v.source.data["position"] = {**v.source.data["position"], "bogus": 1}  # new error
+    v.rect = Rect(0, 0, 64, 64)
+    with pytest.raises(writer.WriteError, match="would introduce schema errors"):
+        writer.plan_writes(r)
