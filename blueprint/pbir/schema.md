@@ -593,6 +593,12 @@ Data pane (Create hierarchy on Country, renamed Geography, then Region added):
   kept the annotations, and added only the automatic `filterConfig` filters. It also raised both visuals'
   `$schema` from 2.13.0 to 2.14.0, so a re-apply rewrites **only the manifest**, which records schema
   versions and is now stale.
+- **Bar, pie and line charts bind it the same way (probe 18,** `scripts/probe_bar_pie_hierarchy.py`;
+  evidence `docs/probes/18-bar-pie-hierarchy.diff`). With Geography dragged onto a clustered bar
+  chart's Y-axis, a pie's Legend and a line chart's X-axis, each got `Category` = the two
+  `HierarchyLevel` projections (Country `active`, Region not) plus `Y` = the measure, the same as the
+  column chart in probe 16. All three drilled from Country to Region. On the line chart this verifies a
+  drill-down only *through a hierarchy*: a list of plain columns on its X-axis is still open.
 
 ## Schema versions
 
