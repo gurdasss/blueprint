@@ -42,6 +42,10 @@ python scripts/vendor_schemas.py <$schema URL>    # vendor a schema + its $refs 
 - A guideline key the docs describe but no code implements goes in `guidelines.NOT_IMPLEMENTED`, so `check` reports it as unchecked instead of passing silently. Only check what `schema.md` marks as verified.
 - `grid.py` snaps each of a visual's four edges to the nearest grid line, rounding halves up. It skips `blueprint.ignore` visuals silently. It skips, with a warning, pages with no fixed size (`DeprecatedDynamic`) and grouped visuals (group-relative positioning is unverified).
 
+- **Robustness rules (fuzz audit):** report-level files that are unreadable or not JSON objects raise `ReportFormatError` (exit 2). A broken `page.json` or `visual.json` is a warning and is skipped (`reader.load_part`). A visual with a missing or non-numeric position is `positioned=False`, and nothing writes it: the writer would otherwise overwrite it with a placeholder. `OSError` is caught in `cli.main` (exit 2, "nothing was changed"). `writer.apply` removes temp files and any folders it created if writing fails. Malformed-input cases live in `tests/test_robustness.py`. Add to it rather than assuming well-formed files.
+- `apply` refuses a layout whose regions are off the guidelines grid or inside the margin (`layouts.conflicts`); otherwise `apply` and `fmt` would undo each other forever.
+- Schema validation dominates run time (about 10 ms per document, even with the shared in-memory registry `schemas._registry`). Don't add validations you don't need. The writer validates "after" first and checks "before" only on errors.
+
 ## Design rules (from README; load-bearing)
 
 - Deterministic, byte-identical output. No LLM, randomness or timestamps in the generation path, apart from the manifest's `generated_at`. `bp fmt` must be idempotent.
