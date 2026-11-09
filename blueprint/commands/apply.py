@@ -83,7 +83,8 @@ STEP = 1000
 
 
 def _next(page: Page | None, key: str) -> int:
-    values = [v.source.data.get("position", {}).get(key) for v in (page.visuals if page else [])]
+    positions = [v.source.data.get("position") for v in (page.visuals if page else [])]
+    values = [p.get(key) for p in positions if isinstance(p, dict)]
     nums = [int(x) for x in values if isinstance(x, (int, float)) and not isinstance(x, bool)]
     return (max(nums) // STEP + 1) * STEP if nums else 0
 
@@ -154,6 +155,7 @@ def build_plan(args: argparse.Namespace) -> Plan:
                                 "Desktop and re-apply)")
                 continue
             current.rect = rect
+            current.positioned = True  # the layout owns this visual's position: restore it
             if current.region != p.region.key:
                 current.source.data = render.with_annotations(
                     current.source.data, render.visual_annotations(vs.id, p.region.key))
@@ -180,7 +182,7 @@ def build_plan(args: argparse.Namespace) -> Plan:
                           f"{rect.x},{rect.y} {rect.width}x{rect.height}")
         z, tab = z + STEP, tab + STEP
         for other in hand_placed:
-            if _intersects(rect, other.rect):
+            if other.positioned and _intersects(rect, other.rect):
                 plan.warnings.append(f"{vs.id}: overlaps hand-placed visual {other.name} "
                                      f"({other.visual_type})")
     if problems:

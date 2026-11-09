@@ -52,7 +52,8 @@ def _visual(v: Visual) -> dict[str, Any]:
         out["region"] = v.region
     if v.ignored:
         out["ignored"] = True
-    out["position"] = {"x": _num(r.x), "y": _num(r.y), "w": _num(r.width), "h": _num(r.height)}
+    out["position"] = ({"x": _num(r.x), "y": _num(r.y), "w": _num(r.width), "h": _num(r.height)}
+                       if v.positioned else None)
     out["slots"] = {role_to_slot.get(role, role): _refs(fs) for role, fs in v.fields.items()}
     return out
 

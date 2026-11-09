@@ -87,6 +87,10 @@ def main(argv: list[str] | None = None) -> int:
             RegistryError, ThemeError, apply_cmd.ApplyError) as exc:
         print(f"bp: error: {exc}", file=sys.stderr)
         return 2
+    except OSError as exc:  # e.g. permission denied, read-only folder, disk full
+        where = f" ({exc.filename})" if getattr(exc, "filename", None) else ""
+        print(f"bp: error: {exc.strerror or exc}{where}; nothing was changed", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

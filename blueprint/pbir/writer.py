@@ -37,6 +37,8 @@ def plan_writes(report: Report, *, force_schema: bool = False) -> Plan:
         for visual in page.visuals:
             if visual.source is None:
                 continue  # not on disk yet; created through add_create
+            if not visual.positioned:
+                continue  # its position is unreadable: never overwrite it with a placeholder
             write = _visual_write(visual, force_schema=force_schema)
             if write is not None:
                 plan.writes.append(write)
@@ -48,13 +50,15 @@ _FIELDS = ("x", "y", "width", "height")
 
 def _visual_write(visual: Visual, *, force_schema: bool) -> FileWrite | None:
     doc: Document = visual.source
-    pos = doc.data.get("position", {})
+    pos = doc.data.get("position")
+    pos = pos if isinstance(pos, dict) else {}
     changes = []
     new_pos = dict(pos)
     for key in _FIELDS:
         new = getattr(visual.rect, key)
         old = pos.get(key)
-        if old is None or float(old) != float(new):
+        numeric = isinstance(old, (int, float)) and not isinstance(old, bool)
+        if not numeric or float(old) != float(new):
             new_pos[key] = new
             changes.append(f"{key} {_fmt(old)} -> {_fmt(new)}")
     # doc.data may already carry in-memory edits (e.g. bp apply updating annotations); position

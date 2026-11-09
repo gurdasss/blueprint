@@ -109,8 +109,8 @@ def snap_report(report: Report, grid: int, max_resize: float | None = None) -> S
 
 def _eligible(page: Page, v: Visual, result: SnapResult) -> bool:
     where = f"{page.display_name} / {v.name}"
-    if v.ignored:
-        return False
+    if v.ignored or not v.positioned:
+        return False  # unpositioned: the reader already warned
     if v.is_group or v.parent_group:
         # Open question in schema.md: are grouped visuals positioned relative to the group?
         result.warnings.append(f"{where}: skipped (grouped visuals are not supported yet)")

@@ -214,7 +214,8 @@ def fonts_in(visual: Any) -> list[FontUse]:
 def text_classes(data: Any) -> dict[str, TextClass]:
     """Theme ``textClasses``. ``fontFace`` is a plain name or a CSS font stack (not quoted)."""
     out: dict[str, TextClass] = {}
-    for name, cls in ((data or {}).get("textClasses") or {}).items():
+    classes = (data or {}).get("textClasses") if isinstance(data, dict) else None
+    for name, cls in (classes.items() if isinstance(classes, dict) else []):
         if isinstance(cls, dict):
             face = cls.get("fontFace")
             out[name] = TextClass(first_family(face) if isinstance(face, str) else None,
@@ -227,7 +228,10 @@ VISUAL_TEXT_CARDS = ("title", "subTitle")
 
 def visual_text(data: Any) -> dict[str, TextClass]:
     """``visualStyles["*"]["*"].{title,subTitle}[0]`` font defaults for every visual (probe 06)."""
-    star = (((data or {}).get("visualStyles") or {}).get("*") or {}).get("*") or {}
+    star = data.get("visualStyles") if isinstance(data, dict) else None
+    for key in ("*", "*"):
+        star = star.get(key) if isinstance(star, dict) else None
+    star = star if isinstance(star, dict) else {}
     out: dict[str, TextClass] = {}
     for card in VISUAL_TEXT_CARDS:
         entries = star.get(card)

@@ -102,6 +102,8 @@ class Visual:
     fields: dict[str, list[Field]] = field(default_factory=dict)  # query role -> bound fields
     colors: list[ColorUse] = field(default_factory=list)
     fonts: list[FontUse] = field(default_factory=list)
+    # False when position is missing or not numeric: no layout step touches it (reported instead)
+    positioned: bool = True
     source: Any = field(default=None, repr=False, compare=False)
 
 

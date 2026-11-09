@@ -33,8 +33,14 @@ REGION_ANNOTATION = "blueprint.region"  # on a Blueprint visual: "<role>#<n>" (n
 
 
 def annotations(doc: dict) -> dict[str, str]:
-    return {a["name"]: a.get("value") for a in doc.get("annotations", [])
+    notes = doc.get("annotations", [])
+    return {a["name"]: a.get("value") for a in (notes if isinstance(notes, list) else [])
             if isinstance(a, dict) and isinstance(a.get("name"), str)}
+
+
+def _number(v):
+    """A JSON number (not a bool), else None."""
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
 
 PAGES = Path("definition/pages")
 
@@ -102,11 +108,16 @@ class _Reader:
         return sorted(p.name for p in full.iterdir() if p.is_dir()) if full.is_dir() else []
 
     def load(self, rel: Path) -> Document:
-        raw = (self.dir / rel).read_bytes()
+        try:
+            raw = (self.dir / rel).read_bytes()
+        except OSError as exc:
+            raise ReportFormatError(f"{rel}: can't read: {exc.strerror or exc}") from exc
         try:
             data = jsonfmt.loads_bytes(raw)
-        except ValueError as exc:
+        except ValueError as exc:  # includes UnicodeDecodeError
             raise ReportFormatError(f"{rel}: invalid JSON: {exc}") from exc
+        if not isinstance(data, dict):
+            raise ReportFormatError(f"{rel}: expected a JSON object, got {type(data).__name__}")
         res = None
         url = data.get("$schema") if isinstance(data, dict) else None
         ref = schemas.parse_url(url) if isinstance(url, str) else None
@@ -130,6 +141,15 @@ class _Reader:
             self.warnings.append(f"{rel}: missing (required)")
             return None
         return self.load(rel)
+
+    def load_part(self, rel: Path) -> Document | None:
+        """A page or visual document: unreadable or malformed ones become a warning and are
+        skipped (so nothing touches them), rather than making the whole report unreadable."""
+        try:
+            return self.load_required(rel)
+        except ReportFormatError as exc:
+            self.warnings.append(f"{exc}; skipped")
+            return None
 
     # -- report --------------------------------------------------------------
 
@@ -205,7 +225,7 @@ class _Reader:
         return themes
 
     def read_page(self, rel_dir: Path) -> Page | None:
-        doc = self.load_required(rel_dir / "page.json")
+        doc = self.load_part(rel_dir / "page.json")
         if doc is None:
             return None
         d = doc.data
@@ -214,8 +234,8 @@ class _Reader:
         page = Page(
             name=rel_dir.name,
             display_name=d.get("displayName", ""),
-            width=d.get("width"),
-            height=d.get("height"),
+            width=self.size(d, "width", rel_dir),
+            height=self.size(d, "height", rel_dir),
             display_option=d.get("displayOption", ""),
             spec_page=annotations(d).get(PAGE_ANNOTATION),
             layout=annotations(d).get(LAYOUT_ANNOTATION),
@@ -228,22 +248,41 @@ class _Reader:
             if not NAME_RE.match(folder):
                 self.warnings.append(f"{vrel}: invalid folder name; Desktop ignores it")
                 continue
-            vdoc = self.load_required(vrel / "visual.json")
+            vdoc = self.load_part(vrel / "visual.json")
             if vdoc is not None:
                 page.visuals.append(self.read_visual(vdoc, folder))
         return page
+
+    def size(self, d: dict, key: str, rel_dir: Path):
+        v = d.get(key)
+        if v is None:
+            return None
+        n = _number(v)
+        if n is None or n <= 0:
+            self.warnings.append(f"{rel_dir}/page.json: {key} {v!r} is not a positive number; "
+                                 "the page is treated as having no fixed size")
+            return None
+        return n
 
     def read_visual(self, doc: Document, folder: str) -> Visual:
         d = doc.data
         if d.get("name") != folder:
             self.warnings.append(f"{doc.path}: visual name {d.get('name')!r} differs from folder")
-        pos = d.get("position", {})
-        visual = d.get("visual") or {}
-        notes = annotations(d)
+        pos = d.get("position")
+        pos = pos if isinstance(pos, dict) else {}
+        coords = {k: _number(pos.get(k)) for k in ("x", "y", "width", "height")}
+        bad = [k for k, v in coords.items() if v is None or (k in ("width", "height") and v < 0)]
+        if bad:
+            self.warnings.append(f"{doc.path}: position {', '.join(bad)} missing or not a valid "
+                                 "number; the visual is left out of layout")
+        visual = d.get("visual")
+        visual = visual if isinstance(visual, dict) else {}
+        notes = annotations(d) if isinstance(d.get("annotations", []), list) else {}
         return Visual(
             name=folder,
             visual_type=visual.get("visualType"),
-            rect=Rect(pos.get("x", 0), pos.get("y", 0), pos.get("width", 0), pos.get("height", 0)),
+            rect=Rect(*(coords[k] if k not in bad else 0 for k in ("x", "y", "width", "height"))),
+            positioned=not bad,
             z=pos.get("z"),
             title=_title(visual),
             text=_textbox_text(visual) if visual.get("visualType") == "textbox" else None,

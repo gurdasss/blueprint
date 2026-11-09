@@ -80,7 +80,11 @@ def load(model_dir: Path) -> SemanticModel:
     if not tables_dir.is_dir():
         return model  # a new report's model has no tables yet (fixtures/01-blank-report)
     for f in sorted(tables_dir.glob("*.tmdl")):
-        table, columns, measures = parse_table(f.read_text(encoding="utf-8-sig"), f.name)
+        try:
+            text = f.read_text(encoding="utf-8-sig")
+        except (OSError, UnicodeDecodeError) as exc:
+            raise ModelError(f"{f.name}: can't read the model file ({exc})") from exc
+        table, columns, measures = parse_table(text, f.name)
         model.tables[table] = columns
         for m in sorted(measures):
             model.measures.setdefault(m, []).append(table)

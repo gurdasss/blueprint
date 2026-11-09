@@ -88,8 +88,8 @@ def _check_geometry(page: Page, rules: Guidelines, c: _Collector) -> None:
     candidates: list[Visual] = []
     grouped = 0
     for v in page.visuals:
-        if v.ignored:
-            continue
+        if v.ignored or not v.positioned:
+            continue  # unpositioned visuals are reported as format problems
         if v.is_group or v.parent_group:
             grouped += 1
             continue

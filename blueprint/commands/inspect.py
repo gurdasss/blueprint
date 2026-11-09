@@ -35,7 +35,7 @@ def to_text(report: Report) -> str:
         for v in visuals:
             r = v.rect
             flags = [f for f, on in (("group", v.is_group), ("hidden", v.hidden),
-                                     ("ignored", v.ignored)) if on]
+                                     ("ignored", v.ignored), ("unpositioned", not v.positioned)) if on]
             if v.parent_group:
                 flags.append(f"in:{v.parent_group}")
             lines.append(
