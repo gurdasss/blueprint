@@ -62,6 +62,12 @@ def find(name: str, search_path: tuple[Path, ...]) -> Path:
     raise LayoutError(f"layout {name!r} not found in {where}")
 
 
+def available(search_path: tuple[Path, ...]) -> list[str]:
+    """Names of the layouts on the search path, sorted. A name found in several directories is
+    listed once (the first one wins, as in :func:`find`)."""
+    return sorted({p.stem for d in search_path if d.is_dir() for p in d.glob("*.yaml")})
+
+
 def load(name: str, search_path: tuple[Path, ...]) -> Layout:
     path = find(name, search_path)
     try:

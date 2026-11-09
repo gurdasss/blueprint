@@ -1,4 +1,8 @@
-"""`bp apply <spec>`: create or update one page from a page spec.
+"""`bp apply <spec>...`: create or update pages from page specs, one page per spec.
+
+Several specs (or folders of ``*.yaml`` specs) can be given at once. All of them are checked
+first (spec, layout, bindings, page ownership), and if any can't be applied nothing is written
+and every problem is reported. Then they're applied in order and the manifest is regenerated once.
 
 First run: a new page (sized to the layout's canvas) is created and registered in pages.json,
 and one visual per placed spec entry, in the layout region it was assigned.
@@ -121,8 +125,8 @@ def _next(page: Page | None, key: str) -> int:
     return (max(nums) // STEP + 1) * STEP if nums else 0
 
 
-def build_plan(args: argparse.Namespace) -> Plan:
-    page_spec = spec.load(args.spec)
+def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
+    page_spec = spec.load(spec_path)
     report = read_report(args.report)
     rules = guidelines.load(args.guidelines, report.root)
     layout_name = page_spec.layout or rules.layouts.default
@@ -247,21 +251,93 @@ def build_plan(args: argparse.Namespace) -> Plan:
     return plan
 
 
+def spec_paths(items: list[Path]) -> list[Path]:
+    """Spec files from the command line: files as given, folders as their ``*.yaml``, sorted."""
+    out: list[Path] = []
+    for item in items:
+        if item.is_dir():
+            found = sorted(item.glob("*.yaml"))
+            if not found:
+                raise ApplyError(f"{item}: folder has no *.yaml page specs")
+            out.extend(found)
+        else:
+            out.append(item)
+    seen: set[Path] = set()
+    return [p for p in out if not (p.resolve() in seen or seen.add(p.resolve()))]
+
+
+def _print(paths: list[Path], plans: list[Plan]) -> None:
+    if len(plans) == 1:
+        print(plans[0].render())
+        return
+    print("\n\n".join(f"== {path}\n{plan.render()}" for path, plan in zip(paths, plans, strict=True)))
+
+
+_SPEC_PROBLEMS = (spec.SpecError, layouts.LayoutError, semantic.ModelError, ApplyError)
+
+
+def _same_page_twice(paths: list[Path]) -> list[str]:
+    """Two specs in one run that would build the same page: the second would fail half-way."""
+    problems, ids_seen, pages_seen = [], {}, {}
+    for path in paths:
+        try:
+            s = spec.load(path)
+        except spec.SpecError:
+            continue  # reported by the pre-flight
+        for key, seen, what in ((s.id, ids_seen, "spec id"), (s.page, pages_seen, "page")):
+            if key in seen:
+                problems.append(f"{path}: {what} {key!r} is also used by {seen[key]}")
+            seen.setdefault(key, path)
+    return problems
+
+
 def run(args: argparse.Namespace) -> int:
-    plan = build_plan(args)
+    paths = spec_paths(args.spec)
+    # Pre-flight: every spec against the report as it is now. Nothing is written unless all pass.
+    problems = _same_page_twice(paths)
+    plans: list[Plan] = []
+    for path in paths:
+        try:
+            plans.append(build_plan(args, path))
+        except _SPEC_PROBLEMS as exc:
+            problems.append(str(exc) if str(exc).startswith(str(path)) else f"{path}: {exc}")
+    if problems:
+        if len(paths) == 1:
+            raise ApplyError(problems[0])
+        raise ApplyError(f"{len(problems)} problem(s) in {len(paths)} spec(s); nothing was "
+                         "written:\n" + "\n".join(problems))
+
+    multi = len(paths) > 1
     if args.dry_run:
-        if plan.writes:
-            plan.warnings.append(f"{manifest.FILE} would be regenerated after these writes")
+        if any(p.writes for p in plans):
+            plans[-1].warnings.append(f"{manifest.FILE} would be regenerated after these writes"
+                                      + ("; later specs were checked against the report as it is "
+                                         "now, before the earlier ones" if multi else ""))
+        _print(paths, plans)
+        return 0
+
+    for i, path in enumerate(paths):
+        if i:  # the first plan is still current; later ones must see what earlier specs wrote
+            plans[i] = build_plan(args, path)
+        try:
+            writer.apply(plans[i])
+        except Exception as exc:
+            if i:
+                done = ", ".join(str(p) for p in paths[:i])
+                raise ApplyError(f"{path}: {exc}\n(already applied: {done}; the rest were not)") from exc
+            raise
+    # The manifest describes the report after the writes, so it's rebuilt from disk.
+    report = read_report(args.report)
+    follow = manifest_cmd.plan_for(report, guidelines.load(args.guidelines, report.root))
+    writer.apply(follow)
+    if multi:
+        _print([*paths, Path("manifest")], [*plans, follow])
     else:
-        writer.apply(plan)
-        # The manifest describes the report after the writes, so it's rebuilt from disk.
-        report = read_report(args.report)
-        follow = manifest_cmd.plan_for(report, guidelines.load(args.guidelines, report.root))
-        writer.apply(follow)
-        plan.writes.extend(follow.writes)
-    print(plan.render())
-    if plan.writes and not args.dry_run:
-        print(f"\nWrote {len(plan.writes)} file(s). If the report is open in Power BI Desktop, "
+        plans[0].writes.extend(follow.writes)
+        _print(paths, plans)
+    written = sum(len(p.writes) for p in plans) + (len(follow.writes) if multi else 0)
+    if written:
+        print(f"\nWrote {written} file(s). If the report is open in Power BI Desktop, "
               "accept 'Apply external changes' (unsaved Desktop edits will be overwritten).",
               file=sys.stderr)
     return 0

@@ -9,6 +9,7 @@ from pathlib import Path
 from blueprint import __version__
 from blueprint.commands import apply as apply_cmd
 from blueprint.commands import check as check_cmd
+from blueprint.commands import describe as describe_cmd
 from blueprint.commands import fmt as fmt_cmd
 from blueprint.commands import inspect as inspect_cmd
 from blueprint.commands import manifest as manifest_cmd
@@ -43,8 +44,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--strict", action="store_true", help="exit 1 on warnings too")
     p.set_defaults(func=check_cmd.run)
 
-    p = sub.add_parser("apply", help="create or update a page from a page spec")
-    p.add_argument("spec", type=Path, help="page spec YAML")
+    p = sub.add_parser("describe", help="what a page spec can use: syntax, visual types, layouts, "
+                                        "guideline limits and, with --report, model fields (read-only)")
+    p.add_argument("--report", type=Path, help=REPORT_HELP + "; adds its model fields and pages")
+    p.add_argument("--guidelines", type=Path, help="guidelines file (default: $BLUEPRINT_GUIDELINES)")
+    p.add_argument("--json", action="store_true", help="machine-readable output")
+    p.set_defaults(func=describe_cmd.run)
+
+    p = sub.add_parser("apply", help="create or update pages from page specs (one page per spec)")
+    p.add_argument("spec", type=Path, nargs="+",
+                   help="page spec YAML file(s), or folders of them; all are checked before any is written")
     p.add_argument("--report", type=Path, required=True, help=REPORT_HELP)
     p.add_argument("--guidelines", type=Path, help="guidelines file (default: $BLUEPRINT_GUIDELINES)")
     p.add_argument("--dry-run", action="store_true", help="print the planned writes; change nothing")

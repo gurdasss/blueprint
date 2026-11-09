@@ -79,7 +79,7 @@ report. Neither one writes PBIR JSON by hand.
 
 - Create pages from a declarative spec
 - Place visuals according to named layouts (`standard-4-up`, `kpi-row-plus-detail`, …)
-- Snap existing visuals to a grid and normalise their sizes (`bp fmt`)
+- Snap existing visuals to a grid (`bp fmt`; each edge to the nearest grid line)
 - Enforce palette, margins, title placement and page density from a guidelines file
 - Validate a report against guidelines without changing it (`bp check`)
 - Emit a manifest mapping visual IDs to types, pages, titles and field bindings
@@ -190,13 +190,19 @@ Then open the report in Power BI Desktop and look at it.
 |---|---|
 | `bp inspect` | Print the report's pages, visuals, IDs and positions. Read-only. |
 | `bp check` | Validate against guidelines. Read-only. Non-zero exit on violations. |
-| `bp fmt` | Snap existing visuals to grid, normalise sizes. Idempotent. |
-| `bp apply <spec>` | Create or update pages from a page spec. |
+| `bp fmt` | Snap existing visuals to the grid (each edge to the nearest line). Idempotent. |
+| `bp describe` | Everything a spec can use: spec syntax, visual types and slots, layouts and regions, guideline limits, and with `--report`, the model's fields in spec syntax and the pages specs built. Read-only. |
+| `bp apply <spec>...` | Create or update pages from page specs (files or folders of them). All are checked before anything is written. |
 | `bp manifest` | (Re)generate the manifest from the report's current state. |
 | `bp theme` | Write a custom theme from the guidelines (palette, text colour, title/callout/card label fonts) and make the report use it. |
 
 `--dry-run` is available on every mutating command and prints the planned file writes
-without performing them.
+without performing them. `inspect`, `check` and `describe` take `--json`.
+
+**For agents writing specs:** run `bp describe --report <report> --json` first. It's the whole
+vocabulary in one call: which types, slots, layouts and fields exist, written the way a spec uses
+them. `bp apply` reports every problem with its location (`visuals[2].slots.value: …`), and
+`bp check --json` validates the result.
 
 ---
 

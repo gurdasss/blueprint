@@ -1,0 +1,211 @@
+"""`bp describe`: everything needed to write a valid page spec, in one read-only call.
+
+Meant for whoever writes specs, usually an LLM agent: the spec syntax, the visual types and their
+slots, the layouts the guidelines can use (with their regions), the guideline limits a page must
+respect, and, with ``--report``, the model's fields written in spec syntax and the pages specs
+have already built. ``--json`` gives the same content in machine-readable form.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+from typing import Any
+
+from blueprint import guidelines, layouts
+from blueprint.guidelines import Guidelines
+from blueprint.model import Report
+from blueprint.pbir import semantic
+from blueprint.pbir.reader import read_report
+from blueprint.slots import contracts
+
+SPEC_SYNTAX = {
+    "page_keys": {
+        "page": "required; the page's display name",
+        "layout": "optional; a layout name (default: the guidelines' layouts.default)",
+        "id": "optional; the spec's stable identity (default: the file name). Lowercase letters, "
+              "digits, hyphens. Re-applying a spec updates the page it built",
+        "visuals": "required; a list. Visuals fill free layout regions of their role in list order",
+    },
+    "visual_keys": {
+        "type": "required; one of the visual types",
+        "id": "optional; stable identity within the page (default: <type>-<n>)",
+        "title": "optional text; required for header (it is the header's text)",
+        "region": "optional; a region role in the layout, overriding the type's default role",
+        "slots": "mapping of slot name -> field reference, or a list where the slot allows one",
+        "blueprint": "`ignore`: leave this visual alone (it takes no region)",
+    },
+    "fields": {
+        "Table[Column]": "a column ('Table name'[Column] when the name has spaces or symbols)",
+        "[Measure]": "a measure; its table is found in the model",
+        "Table[Hierarchy]": "a hierarchy built in the model; binds all its levels in order",
+    },
+    "example": (
+        "page: Sales Overview\n"
+        "layout: standard-4-up\n"
+        "visuals:\n"
+        "  - type: header\n"
+        "    title: Sales Overview\n"
+        "  - type: card\n"
+        "    title: Total\n"
+        "    region: kpi-row\n"
+        "    slots: {value: \"[Total Amount]\"}\n"
+        "  - type: column\n"
+        "    title: By Country\n"
+        "    slots: {category: [\"Sales[Country]\", \"Sales[Region]\"], value: \"[Total Amount]\"}\n"
+    ),
+}
+
+
+def run(args: argparse.Namespace) -> int:
+    report = read_report(args.report) if args.report else None
+    rules = guidelines.load(args.guidelines, report.root if report else None)
+    data = describe(rules, report)
+    print(json.dumps(data, indent=2, ensure_ascii=False) if args.json else to_text(data))
+    return 0
+
+
+def describe(rules: Guidelines, report: Report | None) -> dict[str, Any]:
+    data: dict[str, Any] = {
+        "spec": SPEC_SYNTAX,
+        "guidelines": _guidelines(rules),
+        "types": _types(),
+        "layouts": _layouts(rules),
+    }
+    if report is not None:
+        data["model"] = _model(report)
+        data["pages"] = [{"name": p.display_name, "id": p.name, "spec": p.spec, "layout": p.layout,
+                          "size": [p.width, p.height]} for p in report.pages]
+    return data
+
+
+def _guidelines(rules: Guidelines) -> dict[str, Any]:
+    return {
+        "name": rules.name, "version": rules.version, "sources": list(rules.sources),
+        "canvas": {"width": rules.canvas.width, "height": rules.canvas.height,
+                   "margin": rules.canvas.margin, "gutter": rules.canvas.gutter},
+        "grid": rules.grid.size,
+        "max_visuals": rules.page.max_visuals,
+        "density_policy": rules.page.density_policy,
+        "default_layout": rules.layouts.default,
+    }
+
+
+def _types() -> dict[str, Any]:
+    out = {}
+    for name, c in contracts().items():
+        out[name] = {
+            "visual_type": c.visual_type,
+            "region": c.region,
+            "slots": {s.name: {"accepts": list(s.accepts), "required": s.required, "list": s.ordered}
+                      for s in c.slots.values()},
+        }
+    return out
+
+
+def _layouts(rules: Guidelines) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for name in layouts.available(rules.layouts.search_path):
+        entry: dict[str, Any] = {"default": name == rules.layouts.default}
+        try:
+            layout = layouts.load(name, rules.layouts.search_path)
+        except layouts.LayoutError as exc:
+            out[name] = {**entry, "usable": False, "problems": [str(exc)]}
+            continue
+        problems = layouts.conflicts(layout, rules.grid.size, rules.canvas.margin, rules.canvas.gutter)
+        roles: dict[str, int] = {}
+        for r in layout.regions:
+            roles[r.role] = roles.get(r.role, 0) + 1
+        out[name] = {**entry, "usable": not problems, "problems": problems,
+                     "canvas": [layout.width, layout.height], "roles": roles,
+                     "regions": [{"key": r.key, "role": r.role, "x": r.rect.x, "y": r.rect.y,
+                                  "w": r.rect.width, "h": r.rect.height} for r in layout.regions]}
+    return out
+
+
+def _quote(table: str) -> str:
+    return table if table.replace("_", "a").isalnum() else "'" + table.replace("'", "''") + "'"
+
+
+def _model(report: Report) -> dict[str, Any]:
+    pbir = report.source.documents.get(Path("definition.pbir"))
+    try:
+        model = semantic.load(semantic.model_dir_for(report.root, pbir.data if pbir else {}))
+    except semantic.ModelError as exc:
+        return {"available": False, "problem": str(exc), "tables": {}}
+    tables: dict[str, Any] = {}
+    for table in sorted(model.tables):
+        q = _quote(table)
+        measures = sorted(m for m, homes in model.measures.items() if table in homes)
+        tables[table] = {
+            "columns": [f"{q}[{c}]" for c in sorted(model.tables[table])],
+            "measures": [f"[{m}]" + ("" if len(model.measures[m]) == 1 else "  (ambiguous: in "
+                                     + ", ".join(model.measures[m]) + ")") for m in measures],
+            "hierarchies": {f"{q}[{h}]": list(levels)
+                            for (t, h), levels in sorted(model.hierarchies.items()) if t == table},
+        }
+    return {"available": True, "tables": tables}
+
+
+def to_text(data: dict[str, Any]) -> str:
+    g = data["guidelines"]
+    c = g["canvas"]
+    lines = [f"Guidelines: {g['name'] or '(unnamed)'} v{g['version']}  [{' < '.join(g['sources'])}]",
+             (f"  canvas {c['width'] or '*'}x{c['height'] or '*'}, grid {g['grid']}px, margin {c['margin']}px, "
+             f"gutter {c['gutter']}px, max_visuals {g['max_visuals'] or 'none'} "
+             f"(policy {g['density_policy']})"), ""]
+
+    s = data["spec"]
+    lines.append("Spec syntax (YAML)")
+    lines += [f"  {k}: {v}" for k, v in s["page_keys"].items()]
+    lines.append("  each visual:")
+    lines += [f"    {k}: {v}" for k, v in s["visual_keys"].items()]
+    lines.append("  field references:")
+    lines += [f"    {k:<17} {v}" for k, v in s["fields"].items()]
+    lines.append("  example:")
+    lines += [f"    {ln}" for ln in s["example"].splitlines()]
+    lines.append("")
+
+    lines.append("Visual types (type -> default region; slots: accepted kinds, * required, [] list allowed)")
+    for name, t in data["types"].items():
+        slots = ", ".join(f"{n}{'*' if sl['required'] else ''}{'[]' if sl['list'] else ''}: "
+                          f"{'|'.join(sl['accepts'])}" for n, sl in t["slots"].items())
+        lines.append(f"  {name:<7} region {t['region']:<8} {slots or '(no slots)'}")
+    lines.append("")
+
+    lines.append("Layouts")
+    if not data["layouts"]:
+        lines.append("  (none: layouts.search_path is empty)")
+    for name, lay in data["layouts"].items():
+        flag = " (default)" if lay["default"] else ""
+        if "canvas" not in lay:
+            lines.append(f"  {name}{flag}: unusable: {lay['problems'][0]}")
+            continue
+        roles = ", ".join(f"{n} {r}" for r, n in lay["roles"].items())
+        w, h = lay["canvas"]
+        lines.append(f"  {name}{flag}: {w}x{h}; {roles}")
+        lines += [f"    unusable with these guidelines: {p}" for p in lay["problems"]]
+    lines.append("")
+
+    if "model" in data:
+        m = data["model"]
+        lines.append("Model fields")
+        if not m["available"]:
+            lines.append(f"  not available: {m['problem']}")
+        for table, t in m["tables"].items():
+            lines.append(f"  {table}")
+            if t["measures"]:
+                lines.append(f"    measures: {', '.join(t['measures'])}")
+            if t["columns"]:
+                lines.append(f"    columns:  {', '.join(t['columns'])}")
+            for h, levels in t["hierarchies"].items():
+                lines.append(f"    hierarchy {h}: {' > '.join(levels)}")
+        lines.append("")
+        lines.append("Pages (spec = the spec id that built it)")
+        for p in data["pages"]:
+            w, h = p["size"]
+            size = f"{w:g}x{h:g}" if w is not None and h is not None else "no fixed size"
+            built = f"spec {p['spec']}, layout {p['layout']}" if p["spec"] else "not built by a spec"
+            lines.append(f"  {p['name']}  ({size}; {built})")
+    return "\n".join(lines).rstrip()
