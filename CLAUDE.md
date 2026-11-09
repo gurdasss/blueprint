@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `pbir/writer`, `model`, `plan`, `guidelines`, `policies`, `grid`, `validate`, `pbir/formatting`, `bp inspect`, `bp fmt` and `bp check` (including the palette and typography rules). Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
+Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `pbir/writer`, `model`, `plan`, `guidelines`, `policies`, `grid`, `validate`, `pbir/formatting`, `bp inspect`, `bp fmt` and `bp check` (including the palette and typography rules). Foundation for `bp apply` (v0.3): `spec`, `slots` (+ `blueprint/visuals/*.yaml`), `layouts`, `pbir/ids`, `pbir/registry`. Still to come: visual templates/render, the writer's create path, the `apply` command, and a Desktop probe of Blueprint-created output. Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
 
 ## Commands
 
@@ -46,9 +46,14 @@ python scripts/vendor_schemas.py <$schema URL>    # vendor a schema + its $refs 
 - Config over code. Guidelines YAML never contains conditionals; branching logic is a named policy in `policies.py`. Guideline layers, from lowest to highest priority: `blueprint/defaults.yaml`, then `guidelines/<name>.yaml`, then `<report>/.blueprint.yaml`, then CLI flags.
 - No premature abstraction (`create_page()` and `create_visual()` stay separate).
 
+- **Specs → placement:** `spec.parse` returns typed `PageSpec`/`VisualSpec`/`FieldRef`. Field syntax: `Table[Column]` is a column and `[Name]` is a measure. Every problem is collected with its location. Visual types are YAML contracts in `blueprint/visuals/`. Only ship a type whose PBIR shape a probe has verified, and cite the probe in the YAML. `layouts.place` fills regions of the matching role in declaration order. Running out of regions is a `LayoutError`, never a reflow.
+- `layouts.search_path` entries resolve relative to the guidelines file that declares them (`guidelines._anchor`), not the current directory.
+- New object names come from `pbir/ids.py`: 20 hex characters derived from a stable key (never random), so output is deterministic. `pbir/registry.py` is the only code that changes `pages.json` `pageOrder`. The page folder and the registry must change together.
+
 ## Test data
 
 - `docs/probes/` holds raw diffs from Desktop probes, which are the evidence cited in `schema.md`. Probes are built with `scripts/probe_*.py` on the Windows drive (`/mnt/c/...`). After the user opens and saves in Desktop, read the diff with `git -C <probe> diff`.
 - `samples/` holds real reports for format study. It is gitignored (except its README). Tests reach it through the `retail_report` fixture in `tests/conftest.py`, which skips when it's missing.
-- `tests/builders.py` builds minimal synthetic PBIR reports in `tmp_path`, so the core tests don't depend on samples. `fixtures/` (committed, built from scratch) is planned.
+- `fixtures/` holds committed PBIP projects built from scratch in Desktop (probe 04), byte-identical to Desktop output, with all content invented. Tests use them through `blank_fixture`/`card_chart_fixture` in `tests/conftest.py`. Never edit them by hand: copy one into `tmp_path` first. `fixtures/README.md` says how to rebuild them.
+- `tests/builders.py` builds minimal synthetic PBIR reports in `tmp_path` for edge cases.
 - Never commit real report files, client measure or table names, or data. `visual.json` and bookmark files can contain data values from the model.
