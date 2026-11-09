@@ -599,6 +599,11 @@ Data pane (Create hierarchy on Country, renamed Geography, then Region added):
   `HierarchyLevel` projections (Country `active`, Region not) plus `Y` = the measure, the same as the
   column chart in probe 16. All three drilled from Country to Region. On the line chart this verifies a
   drill-down only *through a hierarchy*: a list of plain columns on its X-axis is still open.
+- **Desktop accepts Blueprint's bar, pie and line charts on a hierarchy (probe 19,**
+  `scripts/probe_apply_hierarchy_charts.py`; evidence `docs/probes/19-apply-hierarchy-charts.diff`).
+  All three were drawn with their titles, showed UK and FR, and drilled to regions and back. On save
+  Desktop kept their queries apart from the drill `active` flags, kept the annotations, and added only
+  the automatic `filterConfig` filters.
 
 ## Schema versions
 

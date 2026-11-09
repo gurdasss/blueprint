@@ -45,9 +45,9 @@ ROOT = Path(__file__).resolve().parent.parent
 PROBES = ROOT / "docs" / "probes"
 FIXTURE = ROOT / "fixtures" / "02-card-and-chart"
 GUIDE = ROOT / "guidelines" / "example.yaml"
-REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
 # Probes whose report Blueprint built and Desktop then opened and saved.
-ACCEPTANCE = [5, 6, 9, 14, 17]
+ACCEPTANCE = [5, 6, 9, 14, 17, 19]
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git to apply the evidence")
 
@@ -312,6 +312,7 @@ def test_blueprint_annotations_survive_every_desktop_save(replays, probe):
     (9, [ROOT / "examples" / "sales-mix.yaml"]),
     (14, ["specs/dates-and-bars.yaml", "specs/pies-and-lines.yaml"]),
     (17, ["specs/geography.yaml"]),
+    (19, ["specs/geo-bar-pie.yaml", "specs/geo-line.yaml"]),
 ])
 def test_reapply_after_desktop_saved_changes_nothing(replays, probe, specs, tmp_path, capsys):
     """Nothing but the manifest: Desktop's save can raise files' $schema versions, which the
