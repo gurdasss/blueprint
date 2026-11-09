@@ -45,8 +45,15 @@ SNAP = """#!/usr/bin/env bash
 #   bash snap.sh "02 add page"
 set -euo pipefail
 cd "$(dirname "$0")"
+msg="${1:?usage: bash snap.sh \\"<step message>\\"}"
 git add -A
-git commit -q -m "${1:?usage: bash snap.sh \\"<step message>\\"}"
+if git diff --cached --quiet; then
+  # An unchanged save is a result too: Desktop rewrote nothing. Record the step anyway.
+  git commit -q --allow-empty -m "$msg (no changes)"
+  echo "No changes since the last step; recorded as an empty step."
+else
+  git commit -q -m "$msg"
+fi
 git log --oneline -1
 """
 
