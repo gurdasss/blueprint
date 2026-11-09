@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 
 from blueprint import grid
 from blueprint.guidelines import Guidelines
-from blueprint.model import Page, Rect, Report, Visual
+from blueprint.model import ColorUse, Page, Rect, Report, Theme, Visual
 from blueprint.policies import DENSITY
 
 
@@ -35,7 +35,8 @@ def _fmt(v: float) -> str:
 
 class _Collector:
     def __init__(self, rules: Guidelines, result: CheckResult) -> None:
-        self.severity = rules.check.severity
+        # palette's severity comes from palette.enforce (README), not check.severity.
+        self.severity = {**rules.check.severity, "palette": rules.palette.severity}
         self.result = result
 
     def on(self, rule: str) -> bool:
@@ -53,6 +54,8 @@ def check_report(report: Report, rules: Guidelines) -> CheckResult:
     c = _Collector(rules, result)
     for page in report.pages:
         _check_page(page, rules, c)
+    if rules.palette.categorical and c.on("palette"):
+        _check_palette(report, rules, c)
     return result
 
 
@@ -142,3 +145,76 @@ def _contains(outer: Rect, inner: Rect) -> bool:
     e = grid.EPS
     return (outer.x - e <= inner.x and outer.y - e <= inner.y
             and inner.right <= outer.right + e and inner.bottom <= outer.bottom + e)
+
+
+# --- palette ---------------------------------------------------------------------------
+
+
+def effective_theme(themes: list[Theme]) -> Theme | None:
+    """Custom theme fields override base theme fields. None if no theme file was readable."""
+    found = [t for t in themes if not t.missing]
+    if not found:
+        return None
+    eff = found[0]
+    for t in found[1:]:
+        eff = Theme(t.name, t.layer, False, t.data_colors or eff.data_colors,
+                    t.foreground or eff.foreground, t.background or eff.background)
+    return eff
+
+
+def _check_palette(report: Report, rules: Guidelines, c: _Collector) -> None:
+    pal = rules.palette
+    for t in report.themes:
+        if t.missing:
+            c.add("palette", f"{t.layer} theme {t.name!r} is referenced but its file is missing; "
+                             "theme colours can't be checked")
+    theme = effective_theme(report.themes)
+    if theme is not None:
+        _check_theme(theme, pal, c)
+
+    allowed = pal.allowed
+    theme_refs = expressions = 0
+    off_text: list[list[ColorUse]] = []
+    for page in report.pages:
+        uses: list[tuple[Visual | None, ColorUse]] = [(None, u) for u in page.colors]
+        uses += [(v, u) for v in page.visuals if not v.ignored for u in v.colors]
+        off: dict[str | None, list[ColorUse]] = {}
+        owner: dict[str | None, Visual | None] = {}
+        for v, u in uses:
+            if u.kind == "theme":
+                theme_refs += 1
+            elif u.kind == "expression":
+                expressions += 1
+            elif u.value not in allowed:
+                key = v.name if v else None
+                off.setdefault(key, []).append(u)
+                owner[key] = v
+        off_text.extend(off.values())
+        for key, bad in off.items():
+            listed = ", ".join(f"{u.where} {u.value}" for u in bad)
+            c.add("palette", f"colours not in the palette: {listed}", page, owner[key])
+
+    if any(u.where == "text" for bad in off_text for u in bad):
+        c.result.notes.append("textbox colours picked from the theme are stored as resolved hex; "
+                              "add approved shades to palette.extra")
+    if theme_refs and theme is None:
+        c.result.notes.append(f"{theme_refs} theme colour reference(s) not checked (no readable theme)")
+    if expressions:
+        c.result.notes.append(f"{expressions} colour expression(s) not checked "
+                              "(e.g. conditional formatting)")
+
+
+def _check_theme(theme: Theme, pal, c: _Collector) -> None:
+    want = pal.categorical
+    have = theme.data_colors[:len(want)]
+    diffs = [f"{i + 1}: {h} (palette {w})" for i, (h, w) in enumerate(zip(have, want, strict=False))
+             if h != w]
+    if len(have) < len(want):
+        diffs.append(f"theme has only {len(have)} data colours, palette has {len(want)}")
+    if diffs:
+        c.add("palette", f"theme {theme.name!r} data colours differ from palette.categorical at "
+                         + "; ".join(diffs))
+    for label, got, expected in (("background", theme.background, pal.background),
+                                 ("foreground", theme.foreground, pal.text)):
+        if expected and got != expected:
+            c.add("palette", f"theme {theme.name!r} {label} is {got}, palette says {expected}")

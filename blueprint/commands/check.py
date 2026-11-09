@@ -48,7 +48,7 @@ def to_text(report: Report, rules: Guidelines, result: CheckResult) -> str:
     for f in _ordered(report, result.findings):
         if f.page != current:
             current = f.page
-            header = "Report files" if f.page is None else f"{names.get(f.page, f.page)} ({f.page})"
+            header = "Report" if f.page is None else f"{names.get(f.page, f.page)} ({f.page})"
             lines.append(header)
         target = f.visual or "(page)" if f.page is not None else ""
         lines.append(f"  {f.severity:<7}  {f.rule:<9}  {target:<18}  {f.message}".rstrip())
