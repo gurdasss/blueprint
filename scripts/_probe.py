@@ -16,11 +16,13 @@ def git(dest: Path, *args: str) -> None:
     subprocess.run(["git", "-C", str(dest), *args], check=True, stdout=subprocess.DEVNULL)
 
 
-def make_probe(src: Path, dest: Path, steps: str) -> int:
+def make_probe(src: Path, dest: Path, steps: str, *, snap: bool = False) -> int:
     if dest.exists():
         sys.exit(f"{dest} already exists; remove it first")
     shutil.copytree(src, dest)
     (dest / "STEPS.md").write_text(steps, encoding="utf-8")
+    if snap:
+        (dest / "snap.sh").write_bytes(SNAP.encode())  # LF endings: bash on WSL needs them
     git(dest, "init", "-q")
     # Keep the diff honest when the folder lives on a Windows drive (/mnt/c).
     git(dest, "config", "core.autocrlf", "false")
