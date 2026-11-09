@@ -1,0 +1,633 @@
+# Probe 13: date hierarchy and aggregation fields. Desktop 2.159.1231.0, 2026-11-09 (scripts/probe_field_shapes.py), on fixture 02.
+# User saw: step 2 Order Date had a Date Hierarchy (Year, Quarter, Month, Day); steps 3-4 one diagonal line; step 5 'Average of Amount' and 'Count of Region'. All content invented.
+
+######## 01 open and save
+
+diff --git a/Fixture.Report/definition/report.json b/Fixture.Report/definition/report.json
+index 6b0944f..502857b 100644
+--- a/Fixture.Report/definition/report.json
++++ b/Fixture.Report/definition/report.json
+@@ -24,6 +24,19 @@
+           }
+         }
+       }
++    ],
++    "outspacePane": [
++      {
++        "properties": {
++          "expanded": {
++            "expr": {
++              "Literal": {
++                "Value": "false"
++              }
++            }
++          }
++        }
++      }
+     ]
+   },
+   "resourcePackages": [
+
+######## 02 new date column
+
+diff --git a/Fixture.SemanticModel/definition/model.tmdl b/Fixture.SemanticModel/definition/model.tmdl
+index db0ec5d..0e83a28 100644
+--- a/Fixture.SemanticModel/definition/model.tmdl
++++ b/Fixture.SemanticModel/definition/model.tmdl
+@@ -14,6 +14,8 @@ annotation PBI_ProTooling = ["DevMode"]
+ annotation PBI_QueryOrder = ["Sales"]
+ 
+ ref table Sales
++ref table DateTableTemplate_1e5dd81f-fd61-41e7-81b7-f62b55711494
++ref table LocalDateTable_c84d04d5-008b-4d60-9892-e54a9c59f4bc
+ 
+ ref cultureInfo en-IN
+ 
+diff --git a/Fixture.SemanticModel/definition/relationships.tmdl b/Fixture.SemanticModel/definition/relationships.tmdl
+new file mode 100644
+index 0000000..7fb5072
+--- /dev/null
++++ b/Fixture.SemanticModel/definition/relationships.tmdl
+@@ -0,0 +1,5 @@
++relationship adecb440-ff36-479e-ab4e-0255a9b95d3c
++	joinOnDateBehavior: datePartOnly
++	fromColumn: Sales.'Order Date'
++	toColumn: LocalDateTable_c84d04d5-008b-4d60-9892-e54a9c59f4bc.Date
++
+diff --git a/Fixture.SemanticModel/definition/tables/DateTableTemplate_1e5dd81f-fd61-41e7-81b7-f62b55711494.tmdl b/Fixture.SemanticModel/definition/tables/DateTableTemplate_1e5dd81f-fd61-41e7-81b7-f62b55711494.tmdl
+new file mode 100644
+index 0000000..2a7d126
+--- /dev/null
++++ b/Fixture.SemanticModel/definition/tables/DateTableTemplate_1e5dd81f-fd61-41e7-81b7-f62b55711494.tmdl
+@@ -0,0 +1,118 @@
++table DateTableTemplate_1e5dd81f-fd61-41e7-81b7-f62b55711494
++	isHidden
++	isPrivate
++	lineageTag: 1c76997a-9463-4a99-a576-855fe44f15a5
++
++	column Date
++		dataType: dateTime
++		isHidden
++		formatString: General Date
++		lineageTag: 45570904-6bac-4d4d-a707-db3f87659a4d
++		dataCategory: PaddedDateTableDates
++		summarizeBy: none
++		isNameInferred
++		sourceColumn: [Date]
++
++		annotation SummarizationSetBy = User
++
++	column Year = YEAR([Date])
++		dataType: int64
++		isHidden
++		formatString: 0
++		lineageTag: 7d0dcdf9-1353-45f2-8674-bb2300c499dc
++		dataCategory: Years
++		summarizeBy: none
++
++		annotation SummarizationSetBy = User
++
++		annotation TemplateId = Year
++
++	column MonthNo = MONTH([Date])
++		dataType: int64
++		isHidden
++		formatString: 0
++		lineageTag: a46c7bbb-492c-4f6a-9e1c-7daf6ca15238
++		dataCategory: MonthOfYear
++		summarizeBy: none
++
++		annotation SummarizationSetBy = User
++
++		annotation TemplateId = MonthNumber
++
++	column Month = FORMAT([Date], "MMMM")
++		dataType: string
++		isHidden
++		lineageTag: 80f94890-1e34-4010-8a33-304c54b26207
++		dataCategory: Months
++		summarizeBy: none
++		sortByColumn: MonthNo
++
++		annotation SummarizationSetBy = User
++
++		annotation TemplateId = Month
++
++	column QuarterNo = INT(([MonthNo] + 2) / 3)
++		dataType: int64
++		isHidden
++		formatString: 0
++		lineageTag: 0b3ce557-e3d6-4278-ba1c-5b6c3b3569db
++		dataCategory: QuarterOfYear
++		summarizeBy: none
++
++		annotation SummarizationSetBy = User
++
++		annotation TemplateId = QuarterNumber
++
++	column Quarter = "Qtr " & [QuarterNo]
++		dataType: string
++		isHidden
++		lineageTag: 97362cf3-4312-46ed-91de-f697f388c497
++		dataCategory: Quarters
++		summarizeBy: none
++		sortByColumn: QuarterNo
++
++		annotation SummarizationSetBy = User
++
++		annotation TemplateId = Quarter
++
++	column Day = DAY([Date])
++		dataType: int64
++		isHidden
++		formatString: 0
++		lineageTag: 82d7a427-e57c-419d-93f8-2eb8ab059300
++		dataCategory: DayOfMonth
++		summarizeBy: none
++
++		annotation SummarizationSetBy = User
++
++		annotation TemplateId = Day
++
++	hierarchy 'Date Hierarchy'
++		lineageTag: 7739afb6-fa8c-41af-a8a5-0c663e756333
++
++		level Year
++			lineageTag: 5bf504b7-64d0-4b91-8907-010203b73763
++			column: Year
++
++		level Quarter
++			lineageTag: ee6fa294-58d1-4671-9c95-c86453778616
++			column: Quarter
++
++		level Month
++			lineageTag: efc088b3-7965-4d62-9b6a-82f94db57d73
++			column: Month
++
++		level Day
++			lineageTag: 993b7b5e-80c4-4ead-add8-baea7d96965a
++			column: Day
++
++		annotation TemplateId = DateHierarchy
++
++	partition DateTableTemplate_1e5dd81f-fd61-41e7-81b7-f62b55711494 = calculated
++		mode: import
++		source = Calendar(Date(2015,1,1), Date(2015,1,1))
++
++	annotation __PBI_TemplateDateTable = true
++
++	annotation DefaultItem = DateHierarchy
++
+diff --git a/Fixture.SemanticModel/definition/tables/LocalDateTable_c84d04d5-008b-4d60-9892-e54a9c59f4bc.tmdl b/Fixture.SemanticModel/definition/tables/LocalDateTable_c84d04d5-008b-4d60-9892-e54a9c59f4bc.tmdl
+new file mode 100644
+index 0000000..e94532d
+--- /dev/null
++++ b/Fixture.SemanticModel/definition/tables/LocalDateTable_c84d04d5-008b-4d60-9892-e54a9c59f4bc.tmdl
+@@ -0,0 +1,116 @@
++table LocalDateTable_c84d04d5-008b-4d60-9892-e54a9c59f4bc
++	isHidden
++	showAsVariationsOnly
++	lineageTag: 505dde31-c6db-46cc-9ac5-face57159037
++
++	column Date
++		dataType: dateTime
++		isHidden
++		formatString: General Date
++		lineageTag: 91575399-c2ea-4118-9f06-468367c76e92
++		dataCategory: PaddedDateTableDates
++		summarizeBy: none
++		isNameInferred
++		sourceColumn: [Date]
++
++		annotation SummarizationSetBy = User
++
++	column Year = YEAR([Date])
++		dataType: int64
++		isHidden
++		formatString: 0
++		lineageTag: 61337ca4-bf12-4af3-9895-e43c6a313889
++		dataCategory: Years
++		summarizeBy: none
++
++		annotation SummarizationSetBy = User
++
++		annotation TemplateId = Year
++
++	column MonthNo = MONTH([Date])
++		dataType: int64
++		isHidden
++		formatString: 0
++		lineageTag: 6ad62852-39ba-400d-967b-2e50ad239ae0
++		dataCategory: MonthOfYear
++		summarizeBy: none
++
++		annotation SummarizationSetBy = User
++
++		annotation TemplateId = MonthNumber
++
++	column Month = FORMAT([Date], "MMMM")
++		dataType: string
++		isHidden
++		lineageTag: ab834711-4beb-424a-a01f-f4dd3be8b1cd
++		dataCategory: Months
++		summarizeBy: none
++		sortByColumn: MonthNo
++
++		annotation SummarizationSetBy = User
++
++		annotation TemplateId = Month
++
++	column QuarterNo = INT(([MonthNo] + 2) / 3)
++		dataType: int64
++		isHidden
++		formatString: 0
++		lineageTag: 49cd241c-b8c1-49d5-8dbb-7fcba858cb57
++		dataCategory: QuarterOfYear
++		summarizeBy: none
++
++		annotation SummarizationSetBy = User
++
++		annotation TemplateId = QuarterNumber
++
++	column Quarter = "Qtr " & [QuarterNo]
++		dataType: string
++		isHidden
++		lineageTag: baafd035-bda2-4778-abab-7e5add0d1c76
++		dataCategory: Quarters
++		summarizeBy: none
++		sortByColumn: QuarterNo
++
++		annotation SummarizationSetBy = User
++
++		annotation TemplateId = Quarter
++
++	column Day = DAY([Date])
++		dataType: int64
++		isHidden
++		formatString: 0
++		lineageTag: 113b3852-acf8-42cf-836d-24de93768fac
++		dataCategory: DayOfMonth
++		summarizeBy: none
++
++		annotation SummarizationSetBy = User
++
++		annotation TemplateId = Day
++
++	hierarchy 'Date Hierarchy'
++		lineageTag: b46a595c-acc2-4ec2-b001-9e0007d4ab97
++
++		level Year
++			lineageTag: 5f13fe43-3ab5-41dc-af63-71a53f1be2e3
++			column: Year
++
++		level Quarter
++			lineageTag: 81aeb615-1ec5-480c-88a4-58b1b1a43b48
++			column: Quarter
++
++		level Month
++			lineageTag: b8423e41-e655-4ac9-ae6a-cd6379b46f90
++			column: Month
++
++		level Day
++			lineageTag: 1add846c-0d45-4d41-98d6-bc695ae2e3e6
++			column: Day
++
++		annotation TemplateId = DateHierarchy
++
++	partition LocalDateTable_c84d04d5-008b-4d60-9892-e54a9c59f4bc = calculated
++		mode: import
++		source = Calendar(Date(Year(MIN('Sales'[Order Date])), 1, 1), Date(Year(MAX('Sales'[Order Date])), 12, 31))
++
++	annotation __PBI_LocalDateTable = true
++
+diff --git a/Fixture.SemanticModel/definition/tables/Sales.tmdl b/Fixture.SemanticModel/definition/tables/Sales.tmdl
+index 4b3c8d8..4360e74 100644
+--- a/Fixture.SemanticModel/definition/tables/Sales.tmdl
++++ b/Fixture.SemanticModel/definition/tables/Sales.tmdl
+@@ -30,6 +30,18 @@ table Sales
+ 
+ 		annotation SummarizationSetBy = Automatic
+ 
++	column 'Order Date' = DATE(2026, LEN(Sales[Region]), 1)
++		formatString: General Date
++		lineageTag: 5df9c12a-c1c3-4e2f-9b10-d5733738eeff
++		summarizeBy: none
++
++		variation Variation
++			isDefault
++			relationship: adecb440-ff36-479e-ab4e-0255a9b95d3c
++			defaultHierarchy: LocalDateTable_c84d04d5-008b-4d60-9892-e54a9c59f4bc.'Date Hierarchy'
++
++		annotation SummarizationSetBy = Automatic
++
+ 	partition Sales = m
+ 		mode: import
+ 		source =
+
+######## 03 line by date hierarchy
+
+diff --git a/Fixture.Report/definition/pages/d86da6e29441106e7220/page.json b/Fixture.Report/definition/pages/d86da6e29441106e7220/page.json
+new file mode 100644
+index 0000000..58b8084
+--- /dev/null
++++ b/Fixture.Report/definition/pages/d86da6e29441106e7220/page.json
+@@ -0,0 +1,8 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
++  "name": "d86da6e29441106e7220",
++  "displayName": "Fields",
++  "displayOption": "FitToPage",
++  "height": 1080,
++  "width": 1920
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/d86da6e29441106e7220/visuals/f056435c567e994e3e3d/visual.json b/Fixture.Report/definition/pages/d86da6e29441106e7220/visuals/f056435c567e994e3e3d/visual.json
+new file mode 100644
+index 0000000..467c0ca
+--- /dev/null
++++ b/Fixture.Report/definition/pages/d86da6e29441106e7220/visuals/f056435c567e994e3e3d/visual.json
+@@ -0,0 +1,146 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
++  "name": "f056435c567e994e3e3d",
++  "position": {
++    "x": 10,
++    "y": 0,
++    "z": 0,
++    "height": 280,
++    "width": 280,
++    "tabOrder": 0
++  },
++  "visual": {
++    "visualType": "lineChart",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "HierarchyLevel": {
++                  "Expression": {
++                    "Hierarchy": {
++                      "Expression": {
++                        "PropertyVariationSource": {
++                          "Expression": {
++                            "SourceRef": {
++                              "Entity": "Sales"
++                            }
++                          },
++                          "Name": "Variation",
++                          "Property": "Order Date"
++                        }
++                      },
++                      "Hierarchy": "Date Hierarchy"
++                    }
++                  },
++                  "Level": "Year"
++                }
++              },
++              "queryRef": "Sales.Order Date.Variation.Date Hierarchy.Year",
++              "nativeQueryRef": "Order Date Year",
++              "active": true
++            },
++            {
++              "field": {
++                "HierarchyLevel": {
++                  "Expression": {
++                    "Hierarchy": {
++                      "Expression": {
++                        "PropertyVariationSource": {
++                          "Expression": {
++                            "SourceRef": {
++                              "Entity": "Sales"
++                            }
++                          },
++                          "Name": "Variation",
++                          "Property": "Order Date"
++                        }
++                      },
++                      "Hierarchy": "Date Hierarchy"
++                    }
++                  },
++                  "Level": "Quarter"
++                }
++              },
++              "queryRef": "Sales.Order Date.Variation.Date Hierarchy.Quarter",
++              "nativeQueryRef": "Order Date Quarter",
++              "active": false
++            },
++            {
++              "field": {
++                "HierarchyLevel": {
++                  "Expression": {
++                    "Hierarchy": {
++                      "Expression": {
++                        "PropertyVariationSource": {
++                          "Expression": {
++                            "SourceRef": {
++                              "Entity": "Sales"
++                            }
++                          },
++                          "Name": "Variation",
++                          "Property": "Order Date"
++                        }
++                      },
++                      "Hierarchy": "Date Hierarchy"
++                    }
++                  },
++                  "Level": "Month"
++                }
++              },
++              "queryRef": "Sales.Order Date.Variation.Date Hierarchy.Month",
++              "nativeQueryRef": "Order Date Month",
++              "active": false
++            },
++            {
++              "field": {
++                "HierarchyLevel": {
++                  "Expression": {
++                    "Hierarchy": {
++                      "Expression": {
++                        "PropertyVariationSource": {
++                          "Expression": {
++                            "SourceRef": {
++                              "Entity": "Sales"
++                            }
++                          },
++                          "Name": "Variation",
++                          "Property": "Order Date"
++                        }
++                      },
++                      "Hierarchy": "Date Hierarchy"
++                    }
++                  },
++                  "Level": "Day"
++                }
++              },
++              "queryRef": "Sales.Order Date.Variation.Date Hierarchy.Day",
++              "nativeQueryRef": "Order Date Day",
++              "active": false
++            }
++          ]
++        },
++        "Y": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      }
++    },
++    "drillFilterOtherVisuals": true
++  }
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/pages.json b/Fixture.Report/definition/pages/pages.json
+index e28de5a..f262629 100644
+--- a/Fixture.Report/definition/pages/pages.json
++++ b/Fixture.Report/definition/pages/pages.json
+@@ -1,7 +1,8 @@
+ {
+   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.1.0/schema.json",
+   "pageOrder": [
+-    "6a692d13619c1d4c0146"
++    "6a692d13619c1d4c0146",
++    "d86da6e29441106e7220"
+   ],
+-  "activePageName": "6a692d13619c1d4c0146"
++  "activePageName": "d86da6e29441106e7220"
+ }
+\ No newline at end of file
+
+######## 04 line by plain date
+
+diff --git a/Fixture.Report/definition/pages/d86da6e29441106e7220/visuals/f056435c567e994e3e3d/visual.json b/Fixture.Report/definition/pages/d86da6e29441106e7220/visuals/f056435c567e994e3e3d/visual.json
+index 467c0ca..e61793f 100644
+--- a/Fixture.Report/definition/pages/d86da6e29441106e7220/visuals/f056435c567e994e3e3d/visual.json
++++ b/Fixture.Report/definition/pages/d86da6e29441106e7220/visuals/f056435c567e994e3e3d/visual.json
+@@ -65,7 +65,7 @@
+               },
+               "queryRef": "Sales.Order Date.Variation.Date Hierarchy.Quarter",
+               "nativeQueryRef": "Order Date Quarter",
+-              "active": false
++              "active": true
+             },
+             {
+               "field": {
+@@ -91,7 +91,7 @@
+               },
+               "queryRef": "Sales.Order Date.Variation.Date Hierarchy.Month",
+               "nativeQueryRef": "Order Date Month",
+-              "active": false
++              "active": true
+             },
+             {
+               "field": {
+@@ -117,7 +117,7 @@
+               },
+               "queryRef": "Sales.Order Date.Variation.Date Hierarchy.Day",
+               "nativeQueryRef": "Order Date Day",
+-              "active": false
++              "active": true
+             }
+           ]
+         },
+
+######## 05 table average and count
+
+diff --git a/Fixture.Report/definition/pages/d86da6e29441106e7220/visuals/9d92e2d6b64536035c0e/visual.json b/Fixture.Report/definition/pages/d86da6e29441106e7220/visuals/9d92e2d6b64536035c0e/visual.json
+new file mode 100644
+index 0000000..d349ae7
+--- /dev/null
++++ b/Fixture.Report/definition/pages/d86da6e29441106e7220/visuals/9d92e2d6b64536035c0e/visual.json
+@@ -0,0 +1,76 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
++  "name": "9d92e2d6b64536035c0e",
++  "position": {
++    "x": 10,
++    "y": 290,
++    "z": 1,
++    "height": 280,
++    "width": 280,
++    "tabOrder": 1
++  },
++  "visual": {
++    "visualType": "tableEx",
++    "query": {
++      "queryState": {
++        "Values": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country"
++            },
++            {
++              "field": {
++                "Aggregation": {
++                  "Expression": {
++                    "Column": {
++                      "Expression": {
++                        "SourceRef": {
++                          "Entity": "Sales"
++                        }
++                      },
++                      "Property": "Amount"
++                    }
++                  },
++                  "Function": 1
++                }
++              },
++              "queryRef": "Sum(Sales.Amount)",
++              "nativeQueryRef": "Average of Amount"
++            },
++            {
++              "field": {
++                "Aggregation": {
++                  "Expression": {
++                    "Column": {
++                      "Expression": {
++                        "SourceRef": {
++                          "Entity": "Sales"
++                        }
++                      },
++                      "Property": "Region"
++                    }
++                  },
++                  "Function": 5
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Count of Region"
++            }
++          ]
++        }
++      }
++    },
++    "drillFilterOtherVisuals": true
++  }
++}
+\ No newline at end of file
+

@@ -423,8 +423,8 @@ README Q1–Q3 and Q5–Q11. Every file Desktop wrote validates and round-trips 
   - **Target also accepts a column**, which Desktop stores as an implicit aggregation: `{"field":
     {"Aggregation": {"Expression": {"Column": {"Expression": {"SourceRef": {"Entity": "Sales"}},
     "Property": "Amount"}}, "Function": 0}}, "queryRef": "Sum(Sales.Amount)", "nativeQueryRef":
-    "Sum of Amount"}` (Desktop shows "Sum of Amount"; `Function` 0 is Sum, and other functions
-    weren't observed). Specs have no syntax for this, so the `target` slot accepts measures only. The
+    "Sum of Amount"}` (Desktop shows "Sum of Amount"; `Function` 0 is Sum, and probe 13 adds 1 for
+    Average and 5 for Count). Specs have no syntax for this, so the `target` slot accepts measures only. The
     reader reads it as an `aggregation` field, shown as `Sum(Sales[Amount])` in the manifest.
   - **`queryState` roles are written in alphabetical order**, not well order: `Goal`, `Indicator`,
     `TrendLine` (the wells read Value, Trend axis, Target). That matches every type seen so far
@@ -523,6 +523,31 @@ content, so Blueprint's theme file matches Desktop's format exactly.
 - Measures and columns are both bound with their **home table** (`Entity`). So a spec
   that says `"[Total Sales]"` needs the semantic model to find that table.
 - The semantic model is TMDL: `tables/<Table>.tmdl` with `measure <Name> = …` lines.
+
+**Verified 2026-11-09, probe 13** (`scripts/probe_field_shapes.py`; evidence
+`docs/probes/13-field-shapes.diff`, fixture 02 with automatic date/time on, all content invented):
+
+- **A calculated date column** (`Order Date = DATE(…)`, added in Desktop) is written to TMDL as
+  `column 'Order Date' = DATE(…)` with a `variation Variation` block (`isDefault`, a `relationship`,
+  `defaultHierarchy: LocalDateTable_<guid>.'Date Hierarchy'`). Desktop also added two hidden tables,
+  `DateTableTemplate_<guid>` and `LocalDateTable_<guid>`, plus their `ref table` lines in
+  `model.tmdl` and a `relationships.tmdl`. `semantic.py` reads this model and resolves
+  `Sales[Order Date]`.
+- **Dragging the date column into an axis binds its date hierarchy, one projection per level**:
+  `{"field": {"HierarchyLevel": {"Expression": {"Hierarchy": {"Expression":
+  {"PropertyVariationSource": {"Expression": {"SourceRef": {"Entity": "Sales"}}, "Name":
+  "Variation", "Property": "Order Date"}}, "Hierarchy": "Date Hierarchy"}}, "Level": "Year"}},
+  "queryRef": "Sales.Order Date.Variation.Date Hierarchy.Year", "nativeQueryRef": "Order Date
+  Year"}`, then Quarter, Month and Day. Only Year was `active` at first. Choosing *Order Date* in the
+  well's menu set every level `active` (expand) and **did not switch to the plain column**. So how a
+  date column is bound without its hierarchy is still **open**, and Blueprint binds `Table[Column]`
+  as a plain `Column` (an open item for date columns).
+- **Aggregation codes:** "Average of Amount" is `Function: 1` and "Count of Region" (a text column) is
+  `Function: 5`. Desktop kept the field's old `queryRef` (`Sum(Sales.Amount)` on the Average,
+  `Sales.Region` on the Count), so a `queryRef` says nothing reliable about the aggregation.
+- The reader reads these as `date_level` fields (`Sales[Order Date].Year` in the manifest) and
+  `aggregation` fields (`Average(Sales[Amount])`). User-defined hierarchies weren't probed and are
+  still skipped.
 
 ## Schema versions
 
