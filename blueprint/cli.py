@@ -50,6 +50,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true", help="print the planned writes; change nothing")
     p.add_argument("--force-schema", action="store_true",
                    help="write even when a file's schema major version is unknown")
+    p.add_argument("--take-over", action="store_true",
+                   help="build a page that another spec built (it becomes this spec's page)")
     p.set_defaults(func=apply_cmd.run)
 
     p = sub.add_parser("manifest", help="(re)generate the manifest from the report's current state")

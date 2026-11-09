@@ -61,6 +61,7 @@ def _visual(v: Visual) -> dict[str, Any]:
 def _page(p: Page) -> dict[str, Any]:
     out: dict[str, Any] = {"id": p.name, "name": p.display_name}
     if p.spec_page is not None:
+        out["spec"] = p.spec
         out["spec_page"] = p.spec_page
         out["layout"] = p.layout
         out["built_with"] = p.guidelines

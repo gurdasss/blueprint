@@ -73,6 +73,7 @@
     {
       "id": "b1df9ce53010a81607ce",
       "name": "Sales Overview",
+      "spec": "sales-overview",
       "spec_page": "Sales Overview",
       "layout": "standard-4-up",
       "built_with": "Example Corp Reporting Standard@1",

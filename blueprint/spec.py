@@ -2,6 +2,8 @@
 
 A page spec describes *intent* (README "Page specs"):
 
+    id: sales-overview             # optional; defaults to the file name. Links this spec to its
+                                   # page, so renaming `page:` renames the page (no duplicate)
     page: Sales Overview
     layout: standard-4-up          # optional; defaults to the guidelines' layouts.default
     visuals:
@@ -35,7 +37,7 @@ from blueprint.slots import Contract, contracts
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
 _COLUMN = re.compile(r"^(?:'(?P<qt>(?:[^']|'')+)'|(?P<t>[A-Za-z_][\w ]*?))\[(?P<c>[^\]]+)\]$")
 _MEASURE = re.compile(r"^\[(?P<m>[^\]]+)\]$")
-_SPEC_KEYS = {"page", "layout", "visuals"}
+_SPEC_KEYS = {"id", "page", "layout", "visuals"}
 _VISUAL_KEYS = {"type", "id", "title", "slots", "blueprint"}
 
 
@@ -71,6 +73,13 @@ class PageSpec:
     layout: str | None
     visuals: tuple[VisualSpec, ...]
     source: str = "<spec>"
+    id: str = "spec"  # stable identity: links the spec to the page it builds, across renames
+
+
+def default_id(path: Path) -> str:
+    """A spec's default id: its file name, e.g. sales-overview.yaml -> "sales-overview"."""
+    slug = re.sub(r"[^a-z0-9]+", "-", path.stem.lower()).strip("-")[:40].strip("-")
+    return slug or "spec"
 
 
 def parse_field(text: Any) -> FieldRef | None:
@@ -90,10 +99,10 @@ def load(path: Path) -> PageSpec:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
     except (OSError, yaml.YAMLError) as exc:
         raise SpecError(str(path), [str(exc)]) from exc
-    return parse(data, str(path))
+    return parse(data, str(path), default_id=default_id(path))
 
 
-def parse(data: Any, source: str = "<spec>") -> PageSpec:
+def parse(data: Any, source: str = "<spec>", default_id: str = "spec") -> PageSpec:
     problems: list[str] = []
     if not isinstance(data, dict):
         raise SpecError(source, ["top level must be a mapping with page, layout and visuals"])
@@ -106,6 +115,9 @@ def parse(data: Any, source: str = "<spec>") -> PageSpec:
     layout = data.get("layout")
     if layout is not None and (not isinstance(layout, str) or not layout.strip()):
         problems.append("layout: must be a layout name")
+    spec_id = data.get("id", default_id)
+    if not isinstance(spec_id, str) or not ID_RE.match(spec_id):
+        problems.append(f"id: {spec_id!r} must be lowercase letters, digits and hyphens (max 40)")
 
     raw_visuals = data.get("visuals")
     visuals: list[VisualSpec] = []
@@ -126,7 +138,7 @@ def parse(data: Any, source: str = "<spec>") -> PageSpec:
 
     if problems:
         raise SpecError(source, problems)
-    return PageSpec(page.strip(), layout.strip() if layout else None, tuple(visuals), source)
+    return PageSpec(page.strip(), layout.strip() if layout else None, tuple(visuals), source, spec_id)
 
 
 def _visual(i: int, raw: Any, known: dict[str, Contract], counts: dict[str, int],

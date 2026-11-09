@@ -87,7 +87,7 @@ def test_reapply_restores_layout_position_and_updates_title(tmp_path: Path, caps
     doc["visual"]["visualContainerObjects"]["title"][0]["properties"]["fontColor"] = {
         "solid": {"color": {"expr": {"Literal": {"Value": "'#333333'"}}}}}
     write(path, doc)
-    retitled = tmp_path / "s.yaml"
+    retitled = tmp_path / "sales-overview.yaml"
     retitled.write_text(SPEC.read_text().replace("title: Total", "title: Grand total"))
     capsys.readouterr()
     assert _apply(report, spec=retitled) == 0
@@ -117,7 +117,7 @@ def test_hand_placed_visuals_on_the_fixture_are_never_touched(tmp_path: Path):
 def test_bindings_are_checked_against_the_model_before_writing(tmp_path: Path, capsys, old, new, match):
     report = _copy_fixture(tmp_path)
     before = _snapshot(report)
-    spec = tmp_path / "s.yaml"
+    spec = tmp_path / "sales-overview.yaml"
     spec.write_text(SPEC.read_text().replace(old, new, 1))
     assert _apply(report, spec=spec) == 2
     assert re.search(match, capsys.readouterr().err)
@@ -127,7 +127,7 @@ def test_bindings_are_checked_against_the_model_before_writing(tmp_path: Path, c
 def test_changed_bindings_or_type_are_refused(tmp_path: Path, capsys):
     report = _copy_fixture(tmp_path)
     _apply(report)
-    spec = tmp_path / "s.yaml"
+    spec = tmp_path / "sales-overview.yaml"
     spec.write_text(SPEC.read_text().replace('        - "Sales[Region]"\n', ""))
     assert _apply(report, spec=spec) == 2
     assert "field bindings differ from the report" in capsys.readouterr().err
@@ -141,7 +141,7 @@ def test_changed_bindings_or_type_are_refused(tmp_path: Path, capsys):
 def test_visual_removed_from_spec_is_kept_with_a_warning(tmp_path: Path, capsys):
     report = _copy_fixture(tmp_path)
     _apply(report)
-    spec = tmp_path / "s.yaml"
+    spec = tmp_path / "sales-overview.yaml"
     text = SPEC.read_text()
     spec.write_text(text[: text.index("  - type: column")])
     capsys.readouterr()
@@ -152,7 +152,7 @@ def test_visual_removed_from_spec_is_kept_with_a_warning(tmp_path: Path, capsys)
 
 def test_ignored_entries_are_not_created(tmp_path: Path):
     report = _copy_fixture(tmp_path)
-    spec = tmp_path / "s.yaml"
+    spec = tmp_path / "sales-overview.yaml"
     spec.write_text(SPEC.read_text().replace("  - type: column\n", "  - type: column\n    blueprint: ignore\n"))
     _apply(report, spec=spec)
     page = next(p for p in read_report(report).pages if p.spec_page)
@@ -175,7 +175,7 @@ def test_overlap_with_hand_placed_visual_warns(tmp_path: Path, capsys):
     page = next(p for p in read_report(report).pages if p.spec_page)
     hand = visual("handplaced00000000aa", 20, 240, 100, 100)
     write(report / "definition/pages" / page.name / "visuals" / hand["name"] / "visual.json", hand)
-    spec = tmp_path / "s.yaml"
+    spec = tmp_path / "sales-overview.yaml"
     spec.write_text(SPEC.read_text().replace("type: card\n", "type: card\n    id: kpi\n"))
     capsys.readouterr()
     assert _apply(report, spec=spec) == 0
@@ -186,7 +186,7 @@ def test_overlap_with_hand_placed_visual_warns(tmp_path: Path, capsys):
 
 def test_no_layout_and_by_connection_are_errors(tmp_path: Path, capsys):
     report = _copy_fixture(tmp_path)
-    spec = tmp_path / "s.yaml"
+    spec = tmp_path / "sales-overview.yaml"
     spec.write_text(SPEC.read_text().replace("layout: standard-4-up\n", ""))
     assert _apply(report, spec=spec, guide=None) == 2
     assert "no layout" in capsys.readouterr().err

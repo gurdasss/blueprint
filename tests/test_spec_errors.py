@@ -59,7 +59,7 @@ def test_ignored_visual_needs_no_slots():
     ("not a mapping", ["top level must be a mapping with page, layout and visuals"]),
     ({"visuals": [{"type": "header", "title": "x"}]}, ["page: required, a non-empty page name"]),
     ({"page": "P"}, ["visuals: required, a non-empty list"]),
-    ({"page": "P", "visuals": [], "colour": 1}, ["colour: unknown key (expected: layout, page, visuals)",
+    ({"page": "P", "visuals": [], "colour": 1}, ["colour: unknown key (expected: id, layout, page, visuals)",
                                                  "visuals: required, a non-empty list"]),
     ({"page": "P", "visuals": [{"type": "pie"}]},
      ["visuals[0].type: 'pie' is not a supported visual type (supported: card, column, header)"]),

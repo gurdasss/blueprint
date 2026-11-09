@@ -11,6 +11,10 @@
       "value": "Sales Overview"
     },
     {
+      "name": "blueprint.spec",
+      "value": "sales-overview"
+    },
+    {
       "name": "blueprint.layout",
       "value": "standard-4-up"
     },

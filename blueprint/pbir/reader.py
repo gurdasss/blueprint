@@ -26,6 +26,7 @@ NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,50}$")
 # markers live there.
 IGNORE_ANNOTATION = "blueprint.ignore"
 PAGE_ANNOTATION = "blueprint.page"  # on a page Blueprint created: the spec's `page:` name
+SPEC_ANNOTATION = "blueprint.spec"  # on a Blueprint page: id of the spec that builds it
 VISUAL_ANNOTATION = "blueprint.visual"  # on a visual Blueprint created: the spec visual id
 LAYOUT_ANNOTATION = "blueprint.layout"  # on a Blueprint page: layout name used by bp apply
 GUIDELINES_ANNOTATION = "blueprint.guidelines"  # on a Blueprint page: "<name>@<version>"
@@ -238,6 +239,7 @@ class _Reader:
             height=self.size(d, "height", rel_dir),
             display_option=d.get("displayOption", ""),
             spec_page=annotations(d).get(PAGE_ANNOTATION),
+            spec=annotations(d).get(SPEC_ANNOTATION),
             layout=annotations(d).get(LAYOUT_ANNOTATION),
             guidelines=annotations(d).get(GUIDELINES_ANNOTATION),
             colors=formatting.colors_in(d),

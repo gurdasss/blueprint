@@ -68,7 +68,7 @@ def test_apply_writes_header_style_and_check_passes(report: Path, capsys):
 
 def test_reapply_updates_header_text_and_style(report: Path, tmp_path: Path, capsys):
     main(["apply", str(SPEC), "--report", str(report), "--guidelines", str(GUIDE)])
-    spec = tmp_path / "s.yaml"
+    spec = tmp_path / "sales-overview.yaml"
     spec.write_text(SPEC.read_text().replace("title: Sales Overview", "title: Sales at a Glance"))
     g = _guide(tmp_path, "{ font: Segoe UI, size: 24, bold: true }")
     capsys.readouterr()

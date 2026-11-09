@@ -116,6 +116,7 @@ class Page:
     display_option: str
     visuals: list[Visual] = field(default_factory=list)
     spec_page: str | None = None  # set when Blueprint created it: the spec `page:` it came from
+    spec: str | None = None  # set by bp apply: the id of the spec that builds this page
     layout: str | None = None  # set by bp apply: the layout it was built with
     guidelines: str | None = None  # set by bp apply: "<name>@<version>" it was built against
     colors: list[ColorUse] = field(default_factory=list)

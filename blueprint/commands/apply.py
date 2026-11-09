@@ -69,12 +69,33 @@ def _resolve(placements: list[layouts.Placement], report: Report) -> dict[str, d
     return out
 
 
-def _find_page(report: Report, name: str) -> Page | None:
-    pages = [p for p in report.pages if p.spec_page == name]
-    if len(pages) > 1:
+def _find_page(report: Report, page_spec: spec.PageSpec, take_over: bool) -> Page | None:
+    """The page this spec builds: by spec id first (so renaming `page:` renames the page instead of
+    creating a second one), then by page name for pages made before spec ids existed."""
+    sid, name = page_spec.id, page_spec.page
+    mine = [p for p in report.pages if p.spec == sid]
+    if len(mine) > 1:
+        raise ApplyError(f"several pages are marked as built by spec {sid!r}: "
+                         + ", ".join(f"{p.display_name!r} ({p.name})" for p in mine))
+    named = [p for p in report.pages if p.spec_page == name and p not in mine]
+    if mine:
+        if named:
+            other = named[0]
+            raise ApplyError(f"spec {sid!r} renames its page to {name!r}, but another Blueprint page "
+                             f"already has that name (built by spec {other.spec!r}); choose another name")
+        return mine[0]
+    if len(named) > 1:
         raise ApplyError(f"several pages are marked as Blueprint page {name!r}: "
-                         + ", ".join(p.name for p in pages))
-    return pages[0] if pages else None
+                         + ", ".join(p.name for p in named))
+    if not named:
+        return None
+    page = named[0]
+    if page.spec is None or page.spec == sid or take_over:
+        return page  # a page made before spec ids (adopted), or a deliberate take-over
+    raise ApplyError(
+        f"page {name!r} is built by spec {page.spec!r}, not {sid!r}. If it's the same spec (e.g. "
+        f"the file was renamed), set `id: {page.spec}` in it; otherwise use another page name, or "
+        "pass --take-over to make this spec build that page")
 
 
 # Desktop renumbers z and tabOrder in steps of 1000 when it saves a page (probe 05: 0, 1, 2
@@ -113,12 +134,12 @@ def build_plan(args: argparse.Namespace) -> Plan:
                                      rule.sizes[0] if rule and rule.sizes else None,
                                      rule.bold if rule else None)
 
-    page = _find_page(report, page_spec.page)
+    page = _find_page(report, page_spec, getattr(args, "take_over", False))
     if page is None:
         pid = ids.page_id(page_spec.page, {p.name for p in report.pages})
         writer.add_create(plan, PAGES / pid / "page.json",
                           render.page(pid, page_spec.page, layout.width, layout.height, page_spec.page,
-                                      layout.name, built_with),
+                                      layout.name, built_with, page_spec.id),
                           f"new page {page_spec.page!r} ({layout.width}x{layout.height}, layout {layout.name})")
         registry_doc = report.source.documents.get(PAGES / "pages.json")
         if registry_doc is None:
@@ -132,11 +153,22 @@ def build_plan(args: argparse.Namespace) -> Plan:
             raise ApplyError(f"page {page.display_name!r} is {page.width}x{page.height} but layout "
                              f"{layout.name!r} is {layout.width}x{layout.height}; Blueprint doesn't "
                              "scale layouts. Resize the page in Desktop or choose a matching layout.")
-        if (page.layout, page.guidelines) != (layout.name, built_with):
-            writer.add_modify(plan, page.source, render.with_annotations(
-                page.source.data, render.page_annotations(page_spec.page, layout.name, built_with)),
-                f"page built with layout {layout.name}, guidelines {built_with} "
-                f"(was {page.layout}, {page.guidelines})", force_schema=args.force_schema)
+        have = (page.spec_page, page.spec, page.layout, page.guidelines)
+        want = (page_spec.page, page_spec.id, layout.name, built_with)
+        if have != want:
+            data = render.with_annotations(page.source.data, render.page_annotations(
+                page_spec.page, layout.name, built_with, page_spec.id))
+            notes = []
+            if page.spec_page != page_spec.page:
+                data = {**data, "displayName": page_spec.page}
+                notes.append(f"rename page {page.display_name!r} -> {page_spec.page!r}")
+            if page.spec != page_spec.id:
+                notes.append(f"built by spec {page_spec.id!r}" + (f" (was {page.spec!r})" if page.spec else ""))
+            if (page.layout, page.guidelines) != (layout.name, built_with):
+                notes.append(f"layout {layout.name}, guidelines {built_with} "
+                             f"(was {page.layout}, {page.guidelines})")
+            writer.add_modify(plan, page.source, data, "page: " + "; ".join(notes),
+                              force_schema=args.force_schema)
 
     existing: dict[str, Visual] = {v.spec_id: v for v in (page.visuals if page else []) if v.spec_id}
     hand_placed = [v for v in (page.visuals if page else []) if not v.spec_id]

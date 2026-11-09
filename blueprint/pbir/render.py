@@ -22,6 +22,7 @@ from blueprint.pbir.reader import (
     LAYOUT_ANNOTATION,
     PAGE_ANNOTATION,
     REGION_ANNOTATION,
+    SPEC_ANNOTATION,
     VISUAL_ANNOTATION,
 )
 
@@ -63,8 +64,9 @@ def _quote(text: str) -> str:
     return "'" + text.replace("'", "''") + "'"
 
 
-def page_annotations(spec_page: str, layout: str, guidelines: str) -> list[dict]:
+def page_annotations(spec_page: str, layout: str, guidelines: str, spec: str) -> list[dict]:
     return [{"name": PAGE_ANNOTATION, "value": spec_page},
+            {"name": SPEC_ANNOTATION, "value": spec},
             {"name": LAYOUT_ANNOTATION, "value": layout},
             {"name": GUIDELINES_ANNOTATION, "value": guidelines}]
 
@@ -81,7 +83,7 @@ def with_annotations(doc: dict, wanted: list[dict]) -> dict:
 
 
 def page(name: str, display_name: str, width: int, height: int, spec_page: str, layout: str,
-         guidelines: str) -> dict:
+         guidelines: str, spec: str) -> dict:
     return {
         "$schema": schema_url("page"),
         "name": name,
@@ -89,7 +91,7 @@ def page(name: str, display_name: str, width: int, height: int, spec_page: str, 
         "displayOption": "FitToPage",
         "height": height,
         "width": width,
-        "annotations": page_annotations(spec_page, layout, guidelines),
+        "annotations": page_annotations(spec_page, layout, guidelines, spec),
     }
 
 
