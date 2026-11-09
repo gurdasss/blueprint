@@ -195,6 +195,8 @@ def _options(at: str, raw: Any, contract: Contract, problems: list[str]) -> dict
         return {}
     out = {}
     for name, value in raw.items():
+        if isinstance(value, bool):  # YAML 1.1 reads an unquoted on/off as true/false
+            value = "on" if value else "off"
         option = contract.options.get(name)
         if option is None:
             allowed = ", ".join(contract.options) or "none"

@@ -1,11 +1,20 @@
-# Slot contract for spec type `stacked-bar` (stacked bar). Verified in probe 22 (pbir/schema.md "Creating pages
-# and visuals"): `barChart` with the clustered chart's roles, X axis `Category` ("active": true) and
-# `Y`, plus Legend `Series` (a column, no "active"). Desktop drew it stacking the Legend within each
-# category and found nothing to rewrite. Only one category column and one measure were probed.
+# Slot contract for spec type `stacked-bar` (stacked bar). Verified in probes 22 and 23 (pbir/schema.md
+# "Creating pages and visuals"): `barChart` with the clustered chart's roles, X axis `Category`
+# ("active": true; an ordered list is a drill-down, probe 23) and `Y` (a list: one series per
+# measure, probe 23), plus Legend `Series` (a column, no "active", probe 22). Several measures
+# together with a Legend weren't probed, so they're refused.
 type: stacked-bar
 visual_type: barChart
 region: main
 slots:
-  category: { role: Category, accepts: column, required: true }
-  value:    { role: Y, accepts: measure, required: true }
+  category: { role: Category, accepts: column, required: true, ordered: true }
+  value:    { role: Y, accepts: measure, required: true, ordered: true, list_excludes: [legend] }
   legend:   { role: Series, accepts: column }
+options:
+  # Probe 23: objects.labels[0].properties.show = true showed data labels on column, stacked
+  # column, 100% stacked column and stacked bar charts. Left out: Desktop's default (off).
+  labels: { object: labels, property: show, values: { "on": "true" } }
+  # Probe 23: objects.legend[0].properties.position moved the legend: 'Right' and 'Top' on a column
+  # chart, 'Top' on a 100% stacked column, 'Left' on a stacked bar. 'Bottom' couldn't be told from
+  # the theme default (bottom), so it isn't offered. Left out: the theme's default.
+  legend: { object: legend, property: position, values: { top: "'Top'", left: "'Left'", right: "'Right'" } }

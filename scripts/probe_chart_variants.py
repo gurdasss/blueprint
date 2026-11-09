@@ -77,14 +77,17 @@ def spec_id(doc: dict) -> str | None:
     return next((a["value"] for a in doc.get("annotations", []) if a.get("name") == "blueprint.visual"), None)
 
 
-def make_candidates(report: Path) -> list[str]:
+def make_candidates(report: Path, candidates: dict | None = None) -> list[str]:
+    """Change each visual whose spec id is in ``candidates`` (default: this probe's CANDIDATES):
+    spec id -> (visualType, add a Legend (Series = Region)?, visual.objects to set or None)."""
+    candidates = CANDIDATES if candidates is None else candidates
     changed = []
     for f in sorted(report.glob("definition/pages/*/visuals/*/visual.json")):
         doc = jsonfmt.load(f)
         sid = spec_id(doc)
-        if sid not in CANDIDATES:
+        if sid not in candidates:
             continue
-        vtype, legend, objects = CANDIDATES[sid]
+        vtype, legend, objects = candidates[sid]
         body = doc["visual"]
         body["visualType"] = vtype
         if legend:
@@ -94,7 +97,7 @@ def make_candidates(report: Path) -> list[str]:
         if objects:
             body["objects"] = objects
         f.write_bytes(jsonfmt.dump_bytes(doc))
-        changed.append(f"{sid} -> {vtype}{' + Legend Region' if legend else ''}{' + Dropdown' if objects else ''}")
+        changed.append(f"{sid} -> {vtype}{' + Legend Region' if legend else ''}{' + objects ' + ', '.join(objects) if objects else ''}")
     return changed
 
 

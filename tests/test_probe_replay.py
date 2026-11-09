@@ -45,9 +45,9 @@ ROOT = Path(__file__).resolve().parent.parent
 PROBES = ROOT / "docs" / "probes"
 FIXTURE = ROOT / "fixtures" / "02-card-and-chart"
 GUIDE = ROOT / "guidelines" / "example.yaml"
-REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
+REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
 # Probes whose report Blueprint built and Desktop then opened and saved.
-ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22]
+ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23]
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git to apply the evidence")
 
@@ -551,3 +551,53 @@ def test_22_dropdown_option_writes_what_desktop_drew(replays, tmp_path):
     [ours] = [v.source.data for v in page.visuals if v.visual_type == "slicer"]
     assert ours["visual"]["objects"] == desktop["visual"]["objects"]
     assert ours["visual"]["query"] == desktop["visual"]["query"]
+
+
+# Probe 23: what Desktop drew in each round, as spec visuals. Key: (round step, the probe's visual
+# id); value: the spec visual that must write exactly that visual (query and objects).
+P23_ROUND1 = "probe: change visuals to the candidates"
+P23_FINAL = "probe: data labels on the stacked bar and stacked column"
+PROBE_23 = {
+    (P23_ROUND1, "stacked-drill"):
+        '{type: stacked-column, slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}}',
+    (P23_ROUND1, "donut-drill"):
+        '{type: donut, slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}}',
+    (P23_ROUND1, "area-measures"):
+        '{type: area, slots: {category: "Sales[Country]", value: ["[Total Amount]", "[Target Amount]"]}}',
+    (P23_FINAL, "donut-details"):
+        '{type: donut, slots: {category: "Sales[Country]", value: "[Total Amount]", details: "Sales[Region]"}}',
+    (P23_FINAL, "stacked-drill"):
+        '{type: stacked-column-100, slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}}',
+    (P23_FINAL, "donut-drill"):
+        '{type: stacked-bar, slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}}',
+    (P23_FINAL, "stacked-bar-measures"):
+        '{type: stacked-bar, options: {legend: left, labels: on}, '
+        'slots: {category: "Sales[Country]", value: ["[Total Amount]", "[Target Amount]"]}}',
+    (P23_FINAL, "area-measures"):
+        '{type: stacked-column, options: {labels: on}, '
+        'slots: {category: "Sales[Country]", value: ["[Total Amount]", "[Target Amount]"]}}',
+    (P23_FINAL, "labels-legend"):
+        '{type: stacked-column-100, options: {labels: on, legend: top}, '
+        'slots: {category: "Sales[Country]", value: ["[Total Amount]", "[Target Amount]"]}}',
+}
+
+
+def _by_spec_id(report: Path) -> dict[str, dict]:
+    return {a["value"]: d for d in _visual_docs(report) for a in d.get("annotations", [])
+            if a.get("name") == "blueprint.visual"}
+
+
+@pytest.mark.parametrize(("step_name", "sid"), list(PROBE_23))
+def test_23_specs_write_what_desktop_drew(replays, tmp_path, step_name, sid):
+    steps = {s.name: s for s in replays[23]}
+    drawn = _by_spec_id(steps[step_name].report)[sid]["visual"]
+    proj = _copy(_last(replays, 23), tmp_path)
+    spec = tmp_path / "x.yaml"
+    spec.write_text(f"page: X\nlayout: standard-4-up\nvisuals:\n  - {{type: header, title: X}}\n"
+                    f"  - {{id: x, {PROBE_23[(step_name, sid)][1:]}\n")
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+    [page] = [p for p in read_report(proj / "Fixture.Report").pages if p.display_name == "X"]
+    [ours] = [v.source.data["visual"] for v in page.visuals if v.spec_id == "x"]
+    assert ours["visualType"] == drawn["visualType"]
+    assert ours["query"] == drawn["query"]
+    assert ours.get("objects") == drawn.get("objects")

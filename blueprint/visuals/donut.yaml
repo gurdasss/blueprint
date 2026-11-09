@@ -1,10 +1,10 @@
-# Slot contract for spec type `donut`. Verified in probe 22 (pbir/schema.md "Creating pages and
-# visuals"): `donutChart` with the pie's roles, Legend `Category` ("active": true) and Values `Y`.
-# Desktop drew it (shares around the total) and found nothing to rewrite. Only one Legend column was
-# probed, and no Details, so neither a drill-down list nor details is accepted yet.
+# Slot contract for spec type `donut`. Verified in probes 22 and 23 (pbir/schema.md "Creating pages
+# and visuals"): `donutChart` with the pie's roles, Legend `Category` ("active": true; an ordered
+# list is a drill-down, probe 23), Values `Y` and Details `Series` (probe 23). Desktop drew each.
 type: donut
 visual_type: donutChart
 region: main
 slots:
-  category: { role: Category, accepts: column, required: true }   # "Legend"
+  category: { role: Category, accepts: column, required: true, ordered: true }   # "Legend"
   value:    { role: Y, accepts: measure, required: true }
+  details:  { role: Series, accepts: column }                                    # "Details"

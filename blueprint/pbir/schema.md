@@ -654,6 +654,23 @@ Data pane (Create hierarchy on Country, renamed Geography, then Region added):
   wrote nothing: **an untouched open isn't dirty, so it doesn't save** (probe 21's first save
   attempt was the same). So the evidence is "drawn as written, nothing to change", not a save
   diff. Verified only as probed: one category column, one measure, the donut without Details.
+- **Drill-downs, measure lists, Details, data labels and legend position on candidates (probe 23,**
+  `scripts/probe_chart_options.py`; evidence `docs/probes/23-chart-options.diff`). Opened through
+  the bridge, then changed on disk and **reloaded** (`file.reload`) four times, one page capture per
+  round; every candidate drew as written, with no error and nothing dirty.
+
+  | Verified | On | How Desktop drew it |
+  |---|---|---|
+  | `Category` drill list (Country, Region, both `active`) | `columnChart`, `hundredPercentStackedColumnChart`, `barChart`, `donutChart` | expanded to Country > Region |
+  | `Y` with two measures | `barChart`, `columnChart`, `hundredPercentStackedColumnChart`, `areaChart` | the measures stacked (100%: as percentages), or two areas |
+  | Details `Series` = Region | `donutChart` | Region segments within each country |
+  | `objects.labels[0].properties.show = Literal "true"` | `clusteredColumnChart`, `columnChart`, `hundredPercentStackedColumnChart`, `barChart` | data labels on the bars |
+  | `objects.legend[0].properties.position = Literal "'Right'"`, `"'Top'"`, `"'Left'"` | Right and Top on `clusteredColumnChart`, Top on `hundredPercentStackedColumnChart`, Left on `barChart` | the legend moved there |
+
+  - `'Bottom'` drew like every other chart because the theme's default is bottom: **open** whether
+    it's the right literal, so it isn't offered. The three positions are treated as verified on the
+    three chart types they were seen on (the property is the same object on each).
+  - Not probed, so refused: several measures together with a Legend on the stacked and area charts.
 
 ## Schema versions
 

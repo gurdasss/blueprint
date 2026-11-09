@@ -67,9 +67,13 @@ def _load(path: Path) -> Contract:
                 raise ContractError(f"{where}: slot {name}: accepts must be from {KINDS}")
             slots[name] = Slot(name, spec["role"], accepts, bool(spec.get("required", False)),
                                bool(spec.get("ordered", False)), tuple(spec.get("list_excludes", ())))
-        options = {name: Option(name, spec["object"], spec["property"],
-                                {str(k): str(v) for k, v in spec["values"].items()})
-                   for name, spec in (data.get("options") or {}).items()}
+        options = {}
+        for name, spec in (data.get("options") or {}).items():
+            if not all(isinstance(k, str) for k in spec["values"]):
+                # YAML 1.1 reads an unquoted on/off/yes/no as a boolean: quote it ("on")
+                raise ContractError(f"{where}: option {name}: values keys must be strings (quote \"on\")")
+            options[name] = Option(name, spec["object"], spec["property"],
+                                   {k: str(v) for k, v in spec["values"].items()})
         contract = Contract(data["type"], data["visual_type"], data["region"], slots, options)
         for slot in slots.values():
             unknown = [s for s in slot.list_excludes if s not in slots]

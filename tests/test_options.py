@@ -71,3 +71,22 @@ def test_changing_an_option_on_rerun_is_refused(tmp_path: Path, capsys):
     assert "objects" not in _slicer(tmp_path)["visual"]  # Desktop's default style
     code, out = _apply(tmp_path, ", options: {style: dropdown}", capsys)
     assert code == 2 and "option(s) style differ from the report" in out
+
+
+def test_unquoted_on_in_a_spec_means_on():
+    import yaml
+    raw = yaml.safe_load("page: P\nvisuals:\n  - {type: column, slots: {category: 'Sales[Country]', "
+                         "value: '[A]'}, options: {labels: on, legend: right}}\n")
+    [v] = spec.parse(raw, "p.yaml").visuals
+    assert v.options == {"labels": "on", "legend": "right"}
+    with pytest.raises(spec.SpecError, match=r"options\.labels: 'off' isn't one of on"):
+        spec.parse(yaml.safe_load("page: P\nvisuals:\n  - {type: column, slots: {category: 'S[C]', "
+                                  "value: '[A]'}, options: {labels: off}}\n"), "p.yaml")
+
+
+def test_contract_option_keys_must_be_strings(tmp_path, monkeypatch):
+    from blueprint import slots
+    (tmp_path / "x.yaml").write_text("type: x\nvisual_type: x\nregion: main\nslots: {}\n"
+                                     "options: {labels: {object: labels, property: show, values: {on: 'true'}}}\n")
+    with pytest.raises(slots.ContractError, match="values keys must be strings"):
+        slots._load(tmp_path / "x.yaml")

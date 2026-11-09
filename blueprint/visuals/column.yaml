@@ -7,3 +7,11 @@ region: main
 slots:
   category: { role: Category, accepts: [column, hierarchy], required: true, ordered: true }
   value:    { role: Y, accepts: measure, required: true, ordered: true }   # a list: one series each (probe 20)
+options:
+  # Probe 23: objects.labels[0].properties.show = true showed data labels on column, stacked
+  # column, 100% stacked column and stacked bar charts. Left out: Desktop's default (off).
+  labels: { object: labels, property: show, values: { "on": "true" } }
+  # Probe 23: objects.legend[0].properties.position moved the legend: 'Right' and 'Top' on a column
+  # chart, 'Top' on a 100% stacked column, 'Left' on a stacked bar. 'Bottom' couldn't be told from
+  # the theme default (bottom), so it isn't offered. Left out: the theme's default.
+  legend: { object: legend, property: position, values: { top: "'Top'", left: "'Left'", right: "'Right'" } }

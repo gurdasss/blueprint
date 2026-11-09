@@ -256,6 +256,10 @@ them). Leaving one out keeps Desktop's default:
     region: kpi-row
     options: { style: dropdown }   # the slicer as a dropdown (probes 20, 22)
     slots: { field: "Sales[Country]" }
+
+  - type: stacked-bar
+    options: { labels: on, legend: right }   # data labels on, legend on the right (probe 23)
+    slots: { category: "Sales[Country]", value: ["[Total Amount]", "[Target Amount]"] }
 ```
 
 ### Which page a spec builds
