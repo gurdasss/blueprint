@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `pbir/writer`, `model`, `plan`, `guidelines`, `policies`, `grid`, `validate`, `pbir/formatting`, `bp inspect`, `bp fmt` and `bp check` (including the palette rule). Typography is next and needs a Desktop probe first. Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
+Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `pbir/writer`, `model`, `plan`, `guidelines`, `policies`, `grid`, `validate`, `pbir/formatting`, `bp inspect`, `bp fmt` and `bp check` (including the palette and typography rules). Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
 
 ## Commands
 
@@ -35,6 +35,7 @@ python scripts/vendor_schemas.py <$schema URL>    # vendor a schema + its $refs 
 - `grid.off_grid_edges` is the only definition of "on grid", used by both `fmt` and `check`. A test asserts that `check` passes everything `fmt` produces.
 - `pbir/formatting.py` finds colours by **shape** (`solid.color.expr` anywhere, plus textbox `textStyle.color`), not by property name, and classifies each as `hex`, `theme` (`ThemeDataColor`) or `expression`. Themes resolve through `report.json` `resourcePackages` to `StaticResources/<package>/<path>`. A missing theme is data, not an error. Paths read from report files must never be followed out of the report folder (`_inside_report`).
 - The `palette` rule's severity comes from `palette.enforce` (strict/warn/off), not `check.severity`. Theme references pass because the theme itself is checked. Textbox colours picked from the theme are stored as resolved hex, so approved shades go in `palette.extra`.
+- Typography (`formatting.fonts_in`): roles are `title`/`subtitle` (`visualContainerObjects`), `callout` (a **card's** `labels` only; chart `labels` are data labels) and `textbox` runs. A font weight is part of the face name (`Segoe UI Semibold`), so guidelines use exact face names and `weight` is rejected. A value a visual doesn't write inherits from the theme and is never a violation. Built-in (`SharedResources`) themes may legitimately have no embedded file.
 - A guideline key the docs describe but no code implements goes in `guidelines.NOT_IMPLEMENTED`, so `check` reports it as unchecked instead of passing silently. Only check what `schema.md` marks as verified.
 - `grid.py` snaps each of a visual's four edges to the nearest grid line, rounding halves up. It skips `blueprint.ignore` visuals silently. It skips, with a warning, pages with no fixed size (`DeprecatedDynamic`) and grouped visuals (group-relative positioning is unverified).
 
