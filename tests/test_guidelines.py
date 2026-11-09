@@ -41,3 +41,17 @@ def test_invalid_values_rejected(tmp_path: Path, body: str):
     f.write_text(body)
     with pytest.raises(guidelines.GuidelinesError):
         guidelines.load(f)
+
+
+@pytest.mark.parametrize(("body", "match"), [
+    ("check: {severity: {colour: error}}", "unknown rule 'colour'"),
+    ("check: {severity: {grid: fatal}}", "check.severity.grid must be one of"),
+    ("page: {density_policy: lenient}", "page.density_policy must be one of all, data, visible"),
+    ("canvas: {margin: -1}", "canvas.margin"),
+    ("check: {decorative_types: image}", "decorative_types"),
+])
+def test_check_config_rejected(tmp_path: Path, body: str, match: str):
+    f = tmp_path / "g.yaml"
+    f.write_text(body)
+    with pytest.raises(guidelines.GuidelinesError, match=match):
+        guidelines.load(f)

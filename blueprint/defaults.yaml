@@ -1,5 +1,8 @@
 # Layer 1: built-in defaults. Organisation guidelines, per-report overrides and
 # command-line flags are layered on top (later wins). See README "Guidelines and layering".
+#
+# Defaults are deliberately permissive: anything organisation-specific (canvas size,
+# margins, density budgets) is off until a guidelines file turns it on.
 version: 1
 name: Blueprint defaults
 
@@ -9,3 +12,28 @@ grid:
   # Leave a visual alone (with a warning) if snapping would change its width or height
   # by more than this fraction. null disables the limit.
   max_resize: 0.25
+
+canvas:
+  width: null    # null: page size is not checked
+  height: null
+  margin: 0      # minimum distance from visual edges to the page edge
+
+page:
+  max_visuals: null        # null: no density budget
+  # How visuals are counted against max_visuals (see blueprint/policies.py):
+  #   all      every visual container except groups
+  #   visible  as `all`, minus hidden visuals
+  #   data     visible visuals bound to fields (excludes textboxes, images, shapes)
+  density_policy: visible
+
+check:
+  severity:            # error fails `bp check`; warning is reported; off is skipped
+    format: error      # schema-invalid files, names Desktop ignores, missing required files
+    bounds: error      # visual extends outside the page
+    grid: error        # an edge is off the grid (page edges count as grid lines)
+    margin: warning    # an edge is closer to the page edge than canvas.margin
+    overlap: warning   # visuals partially overlap
+    page-size: warning # page size differs from canvas.width/height
+    density: warning   # more visuals than page.max_visuals
+  # Visual types allowed to contain other visuals (backgrounds, panels); exempt from margin.
+  decorative_types: [image, shape, basicShape]
