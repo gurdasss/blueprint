@@ -397,8 +397,12 @@ changes, then dragged the card and saved:
   changed a category projection's `"active"` to `false`. Both are UI state. `apply` compares
   only which fields are bound, so neither affects a re-run.
 
-**Open (probe 06 phase 2):** whether writing `visualStyles["*"]["*"].title.fontSize` takes effect
-and keeps titles shown where the base theme shows them.
+**Verified, probe 06 phase 2:** with `visualStyles["*"]["*"].title = [{"fontSize": 18}]` (and
+`subTitle` 12) added to Blueprint's theme, titles show at **18pt** in Segoe UI Semibold. They're
+still shown on charts and the card and still hidden on the textbox, so the custom theme overrides
+only the keys it sets and the base theme's `show` survives. Opening and saving then produced
+**no diff at all**: Desktop re-serialised `blueprint-theme.json` (new mtime) to byte-identical
+content, so Blueprint's theme file matches Desktop's format exactly.
 
 ## Field bindings
 

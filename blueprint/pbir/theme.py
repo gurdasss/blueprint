@@ -15,7 +15,9 @@ Shapes come from what Desktop wrote (schema.md "Colours, fonts and theme" and "T
 - probe 06: Desktop accepted a Blueprint-written theme file as written (name, colours and title
   face applied), but titles came out at 15pt, not 18: the base theme's
   ``visualStyles["*"]["*"].title.fontSize`` outranks ``textClasses``. So sizes are also written
-  there. Open until probe 06 phase 2: that this takes effect and titles still show.
+  there. Probe 06 phase 2 confirmed it: titles at 18pt, still shown on charts and the card,
+  still hidden on the textbox. Desktop's save then left every file byte-identical (it rewrote
+  the theme file to the same bytes).
 """
 
 from __future__ import annotations
