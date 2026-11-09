@@ -41,7 +41,20 @@ Then **Save** and tell Claude "phase 1 done". Claude commits it before phase 2.
 |---|---|---|---|
 | 8 | View → Themes → **Customize current theme** → **Text** | **General**: font **Segoe UI**, size **11**. **Title**: font **Segoe UI Semibold**, size **16**. Click **Apply** | where a customised theme is saved, and its textClasses |
 
-**Save**, close Desktop and tell Claude "phase 2 done".
+**Save** and tell Claude "phase 2 done".
+
+
+## Phase 3: customise an embedded theme (after Claude has committed phase 2)
+
+Phase 2's customisation didn't persist, because the report's custom theme has no file. This
+time, switch to a built-in theme first so Desktop copies its file into the report.
+
+| # | Where | Change | Answers |
+|---|---|---|---|
+| 9 | View → Themes | pick **Default** (or the first built-in theme if "Default" isn't listed; note which) | embed a theme file |
+| 10 | View → Themes → **Customize current theme** → **Text** | **General**: **Segoe UI**, size **11**. **Title**: **Segoe UI Semibold**, size **16**. Click **Apply**. If an "Update" prompt appears, **don't click it**; note that it appeared | where customised text classes are saved |
+
+**Save**, close Desktop and tell Claude "phase 3 done".
 
 Note anything Desktop showed you (warnings, banners, a visual that changed by itself).
 """
