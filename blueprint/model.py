@@ -55,6 +55,19 @@ class TextClass:
 
 
 @dataclass(frozen=True)
+class Field:
+    """A field a visual is bound to."""
+
+    kind: str  # "measure" | "column"
+    table: str | None
+    name: str
+
+    def __str__(self) -> str:
+        # Spec/manifest syntax (README): [Measure], Table[Column]
+        return f"[{self.name}]" if self.kind == "measure" else f"{self.table}[{self.name}]"
+
+
+@dataclass(frozen=True)
 class Theme:
     name: str
     layer: str  # "base" | "custom"; custom overrides base
@@ -75,12 +88,15 @@ class Visual:
     rect: Rect
     z: float | None = None
     title: str | None = None
+    text: str | None = None  # a textbox's text (all runs of all paragraphs)
     is_group: bool = False
     parent_group: str | None = None
     hidden: bool = False
     bound: bool = False  # has at least one field projection (measure/column)
     ignored: bool = False  # `blueprint: ignore` escape hatch
     spec_id: str | None = None  # set when Blueprint created it: the spec visual id it came from
+    region: str | None = None  # set by bp apply: the layout region it was placed in, e.g. "main#2"
+    fields: dict[str, list[Field]] = field(default_factory=dict)  # query role -> bound fields
     colors: list[ColorUse] = field(default_factory=list)
     fonts: list[FontUse] = field(default_factory=list)
     source: Any = field(default=None, repr=False, compare=False)
@@ -95,6 +111,8 @@ class Page:
     display_option: str
     visuals: list[Visual] = field(default_factory=list)
     spec_page: str | None = None  # set when Blueprint created it: the spec `page:` it came from
+    layout: str | None = None  # set by bp apply: the layout it was built with
+    guidelines: str | None = None  # set by bp apply: "<name>@<version>" it was built against
     colors: list[ColorUse] = field(default_factory=list)
     source: Any = field(default=None, repr=False, compare=False)
 

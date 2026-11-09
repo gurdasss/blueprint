@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from blueprint.model import Page, Rect, Report, Theme, Visual
+from blueprint.model import Field, Page, Rect, Report, Theme, Visual
 from blueprint.pbir import formatting, jsonfmt, schemas
 
 # Microsoft Learn: object/folder names "must consist of one or more word characters
@@ -27,6 +27,9 @@ NAME_RE = re.compile(r"^[A-Za-z0-9_-]{1,50}$")
 IGNORE_ANNOTATION = "blueprint.ignore"
 PAGE_ANNOTATION = "blueprint.page"  # on a page Blueprint created: the spec's `page:` name
 VISUAL_ANNOTATION = "blueprint.visual"  # on a visual Blueprint created: the spec visual id
+LAYOUT_ANNOTATION = "blueprint.layout"  # on a Blueprint page: layout name used by bp apply
+GUIDELINES_ANNOTATION = "blueprint.guidelines"  # on a Blueprint page: "<name>@<version>"
+REGION_ANNOTATION = "blueprint.region"  # on a Blueprint visual: "<role>#<n>" (n-th region of role)
 
 
 def annotations(doc: dict) -> dict[str, str]:
@@ -215,6 +218,8 @@ class _Reader:
             height=d.get("height"),
             display_option=d.get("displayOption", ""),
             spec_page=annotations(d).get(PAGE_ANNOTATION),
+            layout=annotations(d).get(LAYOUT_ANNOTATION),
+            guidelines=annotations(d).get(GUIDELINES_ANNOTATION),
             colors=formatting.colors_in(d),
             source=doc,
         )
@@ -241,16 +246,43 @@ class _Reader:
             rect=Rect(pos.get("x", 0), pos.get("y", 0), pos.get("width", 0), pos.get("height", 0)),
             z=pos.get("z"),
             title=_title(visual),
+            text=_textbox_text(visual) if visual.get("visualType") == "textbox" else None,
             is_group="visualGroup" in d,
             parent_group=d.get("parentGroupName"),
             hidden=bool(d.get("isHidden", False)),
             bound=_bound(visual),
             ignored=str(notes.get(IGNORE_ANNOTATION, "")).lower() == "true",
             spec_id=notes.get(VISUAL_ANNOTATION),
+            region=notes.get(REGION_ANNOTATION),
+            fields=_fields(visual),
             colors=formatting.colors_in(visual),
             fonts=formatting.fonts_in(visual),
             source=doc,
         )
+
+
+def _fields(visual: dict) -> dict[str, list[Field]]:
+    """Bound fields by query role, in projection order (probe 04 shapes)."""
+    out: dict[str, list[Field]] = {}
+    state = (visual.get("query") or {}).get("queryState") or {}
+    for role, entry in state.items():
+        for p in (entry or {}).get("projections") or [] if isinstance(entry, dict) else []:
+            f = (p or {}).get("field") or {}
+            for key, kind in (("Measure", "measure"), ("Column", "column")):
+                if isinstance(f.get(key), dict):
+                    src = (f[key].get("Expression") or {}).get("SourceRef") or {}
+                    out.setdefault(role, []).append(Field(kind, src.get("Entity"), f[key].get("Property", "")))
+    return out
+
+
+def _textbox_text(visual: dict) -> str | None:
+    """Text of a textbox: runs joined, paragraphs separated by newlines (sample, probe 03 shapes)."""
+    paragraphs = []
+    for general in (visual.get("objects") or {}).get("general") or []:
+        for para in ((general or {}).get("properties") or {}).get("paragraphs") or []:
+            runs = (para or {}).get("textRuns") or []
+            paragraphs.append("".join(str((r or {}).get("value", "")) for r in runs))
+    return "\n".join(paragraphs) if paragraphs else None
 
 
 def _bound(visual: dict) -> bool:
