@@ -3,8 +3,8 @@
 Each shape is the minimal subset of what Desktop wrote when the same object was created by hand
 in probe 04 (schema.md "Creating pages and visuals"), with keys in Desktop's order. What
 Desktop adds on its own (``sortDefinition``, ``filterConfig`` filters,
-``drillFilterOtherVisuals``) is left out. Probe 05 checks whether Desktop accepts the result and
-adds those itself.
+``drillFilterOtherVisuals``) is left out. Probe 05 confirmed Desktop accepts these minimal
+documents as written and doesn't add those keys on save.
 
 Documents declare the newest *vendored* schema version for their kind, so they validate
 exactly, and the writer refuses to create anything that doesn't.

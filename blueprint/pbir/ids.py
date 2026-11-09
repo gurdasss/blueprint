@@ -6,8 +6,7 @@ is (a hash of a stable key) rather than drawing it at random. The same spec plus
 report therefore always produces the same names, which keeps output byte-identical
 (README design principle 1).
 
-Open (schema.md, README Q4): whether Desktop accepts a non-random name for a new object. The
-format matches what Desktop writes; the probe that opens a `bp apply` result settles it.
+Desktop accepts these derived names for new objects and keeps them on save (probe 05, README Q4).
 """
 
 from __future__ import annotations

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `pbir/writer`, `model`, `plan`, `guidelines`, `policies`, `grid`, `validate`, `pbir/formatting`, `bp inspect`, `bp fmt` and `bp check` (including the palette and typography rules). `bp apply` (v0.3): `spec`, `slots` (+ `blueprint/visuals/*.yaml`), `layouts`, `pbir/semantic`, `pbir/ids`, `pbir/registry`, `pbir/render`, `writer.add_create`/`add_modify`. Pending: probe 05 (does Desktop accept Blueprint-created pages and visuals as written?). Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
+Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `pbir/writer`, `model`, `plan`, `guidelines`, `policies`, `grid`, `validate`, `pbir/formatting`, `bp inspect`, `bp fmt` and `bp check` (including the palette and typography rules). `bp apply` (v0.3): `spec`, `slots` (+ `blueprint/visuals/*.yaml`), `layouts`, `pbir/semantic`, `pbir/ids`, `pbir/registry`, `pbir/render`, `writer.add_create`/`add_modify`. Probe 05 confirmed that Desktop accepts its output as written. Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
 
 ## Commands
 
