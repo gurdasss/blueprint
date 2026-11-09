@@ -1,0 +1,8 @@
+# Named layout from the README. Not used by any command yet (bp apply, v0.3).
+name: standard-4-up
+canvas: { width: 1280, height: 720 }
+regions:
+  - { role: header,  x: 16,  y: 16,  w: 1248, h: 64 }
+  - { role: kpi-row, x: 16,  y: 96,  w: 1248, h: 120 }
+  - { role: main,    x: 16,  y: 232, w: 616,  h: 472 }
+  - { role: main,    x: 648, y: 232, w: 616,  h: 472 }
