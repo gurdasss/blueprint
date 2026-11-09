@@ -398,8 +398,21 @@ README Q1–Q3 and Q5–Q11. Every file Desktop wrote validates and round-trips 
   - New visuals default to `280×280` at `x 10`, stacked downwards with a 10px gap (`y` 0, 290,
     580). `z`/`tabOrder` are the next integer, as in probe 04.
   - No `filterConfig` was written, because the filter pane stayed collapsed (probe 05).
-  - **Open:** the KPI's **Target** role (not bound: the model has no target measure), and more than
-    one Legend column on a pie.
+  - **Open:** more than one Legend column on a pie.
+  - **KPI Target (probe 10,** `scripts/probe_kpi_target.py`; evidence `docs/probes/10-kpi-target.diff`):
+    the Target well is role **`Goal`**, holding a measure projection of the usual shape. The KPI shows
+    the Value at the **last trend-axis point** (300, not the 500 total) against the goal (600, "-50%",
+    red). A new measure is written to TMDL as `measure 'Target Amount' = 600` with `formatString: 0`
+    and a `lineageTag`.
+  - **Target also accepts a column**, which Desktop stores as an implicit aggregation: `{"field":
+    {"Aggregation": {"Expression": {"Column": {"Expression": {"SourceRef": {"Entity": "Sales"}},
+    "Property": "Amount"}}, "Function": 0}}, "queryRef": "Sum(Sales.Amount)", "nativeQueryRef":
+    "Sum of Amount"}` (Desktop shows "Sum of Amount"; `Function` 0 is Sum, and other functions
+    weren't observed). Specs have no syntax for this, so the `target` slot accepts measures only, and the
+    reader skips `Aggregation` fields.
+  - **`queryState` roles are written in alphabetical order**, not well order: `Goal`, `Indicator`,
+    `TrendLine` (the wells read Value, Trend axis, Target). That matches every type seen so far
+    (`Category`/`Y`, `Values`, `Data`), so `render` sorts roles.
   - **Desktop accepts Blueprint's pie, table and KPI as written (probe 09,** `scripts/probe_apply_types.py`;
     evidence `docs/probes/09-apply-types.diff`). `bp apply examples/sales-mix.yaml` on fixture 02,
     then open and save: **no visual or page file changed**. Only `activePageName` and

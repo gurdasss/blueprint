@@ -1,0 +1,199 @@
+# Probe 10: the KPI's Target well. Desktop 2.159.1231.0, 2026-11-09 (scripts/probe_kpi_target.py), on fixture 02.
+# User saw: step 3 KPI value 300, 'Goal: 600 (-50%)', light red; step 4 Target well 'Sum of Amount', light green. All content invented.
+
+######## 01 open and save
+
+diff --git a/Fixture.Report/definition/report.json b/Fixture.Report/definition/report.json
+index 6b0944f..502857b 100644
+--- a/Fixture.Report/definition/report.json
++++ b/Fixture.Report/definition/report.json
+@@ -24,6 +24,19 @@
+           }
+         }
+       }
++    ],
++    "outspacePane": [
++      {
++        "properties": {
++          "expanded": {
++            "expr": {
++              "Literal": {
++                "Value": "false"
++              }
++            }
++          }
++        }
++      }
+     ]
+   },
+   "resourcePackages": [
+
+######## 02 new measure
+
+diff --git a/Fixture.SemanticModel/definition/tables/Sales.tmdl b/Fixture.SemanticModel/definition/tables/Sales.tmdl
+index 4b3c8d8..5235df2 100644
+--- a/Fixture.SemanticModel/definition/tables/Sales.tmdl
++++ b/Fixture.SemanticModel/definition/tables/Sales.tmdl
+@@ -5,6 +5,10 @@ table Sales
+ 		formatString: 0
+ 		lineageTag: e6eb2d64-b4c3-497b-941e-816943dec7e2
+ 
++	measure 'Target Amount' = 600
++		formatString: 0
++		lineageTag: 9ab090f9-bd7f-43c4-82be-86470a46784b
++
+ 	column Country
+ 		dataType: string
+ 		lineageTag: bbedb577-9e73-424a-a819-f7141ced9761
+
+######## 03 kpi with target
+
+diff --git a/Fixture.Report/definition/pages/f24ea256006a52730e7d/page.json b/Fixture.Report/definition/pages/f24ea256006a52730e7d/page.json
+new file mode 100644
+index 0000000..a848281
+--- /dev/null
++++ b/Fixture.Report/definition/pages/f24ea256006a52730e7d/page.json
+@@ -0,0 +1,8 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
++  "name": "f24ea256006a52730e7d",
++  "displayName": "KPI",
++  "displayOption": "FitToPage",
++  "height": 1080,
++  "width": 1920
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/f24ea256006a52730e7d/visuals/e3c25db883cb4b6c051b/visual.json b/Fixture.Report/definition/pages/f24ea256006a52730e7d/visuals/e3c25db883cb4b6c051b/visual.json
+new file mode 100644
+index 0000000..dc32817
+--- /dev/null
++++ b/Fixture.Report/definition/pages/f24ea256006a52730e7d/visuals/e3c25db883cb4b6c051b/visual.json
+@@ -0,0 +1,74 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
++  "name": "e3c25db883cb4b6c051b",
++  "position": {
++    "x": 10,
++    "y": 0,
++    "z": 0,
++    "height": 280,
++    "width": 280,
++    "tabOrder": 0
++  },
++  "visual": {
++    "visualType": "kpi",
++    "query": {
++      "queryState": {
++        "Goal": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Target Amount"
++                }
++              },
++              "queryRef": "Sales.Target Amount",
++              "nativeQueryRef": "Target Amount"
++            }
++          ]
++        },
++        "Indicator": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        },
++        "TrendLine": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country"
++            }
++          ]
++        }
++      }
++    },
++    "drillFilterOtherVisuals": true
++  }
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/pages.json b/Fixture.Report/definition/pages/pages.json
+index e28de5a..b05cc03 100644
+--- a/Fixture.Report/definition/pages/pages.json
++++ b/Fixture.Report/definition/pages/pages.json
+@@ -1,7 +1,8 @@
+ {
+   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.1.0/schema.json",
+   "pageOrder": [
+-    "6a692d13619c1d4c0146"
++    "6a692d13619c1d4c0146",
++    "f24ea256006a52730e7d"
+   ],
+-  "activePageName": "6a692d13619c1d4c0146"
++  "activePageName": "f24ea256006a52730e7d"
+ }
+\ No newline at end of file
+
+######## 04 target as column
+
+diff --git a/Fixture.Report/definition/pages/f24ea256006a52730e7d/visuals/e3c25db883cb4b6c051b/visual.json b/Fixture.Report/definition/pages/f24ea256006a52730e7d/visuals/e3c25db883cb4b6c051b/visual.json
+index dc32817..4457d3e 100644
+--- a/Fixture.Report/definition/pages/f24ea256006a52730e7d/visuals/e3c25db883cb4b6c051b/visual.json
++++ b/Fixture.Report/definition/pages/f24ea256006a52730e7d/visuals/e3c25db883cb4b6c051b/visual.json
+@@ -17,17 +17,22 @@
+           "projections": [
+             {
+               "field": {
+-                "Measure": {
++                "Aggregation": {
+                   "Expression": {
+-                    "SourceRef": {
+-                      "Entity": "Sales"
++                    "Column": {
++                      "Expression": {
++                        "SourceRef": {
++                          "Entity": "Sales"
++                        }
++                      },
++                      "Property": "Amount"
+                     }
+                   },
+-                  "Property": "Target Amount"
++                  "Function": 0
+                 }
+               },
+-              "queryRef": "Sales.Target Amount",
+-              "nativeQueryRef": "Target Amount"
++              "queryRef": "Sum(Sales.Amount)",
++              "nativeQueryRef": "Sum of Amount"
+             }
+           ]
+         },
+
