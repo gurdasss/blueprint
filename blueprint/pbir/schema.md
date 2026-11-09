@@ -22,8 +22,11 @@ Sources:
 - `jsonfmt.load` → `jsonfmt.dumps` reproduces all 31 files byte-for-byte
   (`tests/test_jsonfmt.py`).
 
-**Open:** does Desktop re-serialise *unchanged* files on save (README Q13)? Does it rewrite
-our integer coordinates as floats?
+**Verified 2026-11-09, Desktop 2.159.1231.0 (by hand):** after `bp fmt` rewrote 17 `visual.json`
+files with integer coordinates, the report opened in Desktop without errors. Saving
+produced **no diff**: Desktop doesn't re-serialise unchanged files (README Q13), and it keeps
+our integers (`"x": 640`) as written. This also confirms the writer's output is accepted
+on load.
 
 ## Report folder
 
