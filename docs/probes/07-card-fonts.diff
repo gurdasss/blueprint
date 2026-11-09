@@ -1,0 +1,151 @@
+# Probe 07: the new card's (cardVisual) fonts. Desktop 2.159.1231.0, 2026-11-09 (scripts/probe_card_fonts.py), on fixture 02.
+# User read in step 1: Callout value Segoe UI Semibold 21 #242424; Category label Segoe UI 12 #616161. All content invented.
+
+######## 01 open and save (read defaults)
+
+diff --git a/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/ca909884eb63347a3230/visual.json b/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/ca909884eb63347a3230/visual.json
+index 6d703d5..f717f47 100644
+--- a/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/ca909884eb63347a3230/visual.json
++++ b/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/ca909884eb63347a3230/visual.json
+@@ -43,7 +43,7 @@
+               },
+               "queryRef": "Sales.Region",
+               "nativeQueryRef": "Region",
+-              "active": true
++              "active": false
+             }
+           ]
+         },
+diff --git a/Fixture.Report/definition/report.json b/Fixture.Report/definition/report.json
+index 6b0944f..502857b 100644
+--- a/Fixture.Report/definition/report.json
++++ b/Fixture.Report/definition/report.json
+@@ -24,6 +24,19 @@
+           }
+         }
+       }
++    ],
++    "outspacePane": [
++      {
++        "properties": {
++          "expanded": {
++            "expr": {
++              "Literal": {
++                "Value": "false"
++              }
++            }
++          }
++        }
++      }
+     ]
+   },
+   "resourcePackages": [
+
+######## 02 callout value font
+
+diff --git a/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/c62803c0b4a8a11ac705/visual.json b/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/c62803c0b4a8a11ac705/visual.json
+index 9f0eefe..c5a732e 100644
+--- a/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/c62803c0b4a8a11ac705/visual.json
++++ b/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/c62803c0b4a8a11ac705/visual.json
+@@ -51,6 +51,49 @@
+         "isDefaultSort": true
+       }
+     },
++    "objects": {
++      "value": [
++        {
++          "properties": {
++            "fontFamily": {
++              "expr": {
++                "Literal": {
++                  "Value": "'Arial'"
++                }
++              }
++            },
++            "fontSize": {
++              "expr": {
++                "Literal": {
++                  "Value": "28D"
++                }
++              }
++            },
++            "bold": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "fontColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "Literal": {
++                      "Value": "'#E15759'"
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
++      ]
++    },
+     "visualContainerObjects": {
+       "title": [
+         {
+
+######## 03 label size
+
+diff --git a/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/c62803c0b4a8a11ac705/visual.json b/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/c62803c0b4a8a11ac705/visual.json
+index c5a732e..1dfceba 100644
+--- a/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/c62803c0b4a8a11ac705/visual.json
++++ b/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/c62803c0b4a8a11ac705/visual.json
+@@ -92,6 +92,22 @@
+             "id": "default"
+           }
+         }
++      ],
++      "label": [
++        {
++          "properties": {
++            "fontSize": {
++              "expr": {
++                "Literal": {
++                  "Value": "14D"
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
+       ]
+     },
+     "visualContainerObjects": {
+
+######## 04 title size
+
+diff --git a/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/c62803c0b4a8a11ac705/visual.json b/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/c62803c0b4a8a11ac705/visual.json
+index 1dfceba..aab280a 100644
+--- a/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/c62803c0b4a8a11ac705/visual.json
++++ b/Fixture.Report/definition/pages/6a692d13619c1d4c0146/visuals/c62803c0b4a8a11ac705/visual.json
+@@ -127,6 +127,13 @@
+                   "Value": "'Total'"
+                 }
+               }
++            },
++            "fontSize": {
++              "expr": {
++                "Literal": {
++                  "Value": "16D"
++                }
++              }
+             }
+           }
+         }
+

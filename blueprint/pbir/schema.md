@@ -287,6 +287,37 @@ Segoe UI 11, Title Segoe UI Semibold 16):
   way formatting-object literals are. The first family in the stack is the face.
 - The file is 3.2 MB in Desktop's JSON format and round-trips through `jsonfmt`.
 
+### The new card (`cardVisual`)
+
+**Verified 2026-11-09, Desktop 2.159.1231.0, probe 07** (`scripts/probe_card_fonts.py`; evidence
+`docs/probes/07-card-fonts.diff`, fixture 02's card "Total", all content invented). Desktop's
+sections are *Callout value* and *Category label*.
+
+| Change in Desktop | Written to `visual.json` (`visual.objects`, unless noted) |
+|---|---|
+| Nothing (defaults shown: value Segoe UI Semibold 21 #242424, label Segoe UI 12 #616161) | nothing in the card |
+| Callout value **Arial, 28, Bold, #E15759** | `value = [{"properties": {"fontFamily": Literal "'Arial'", "fontSize": Literal "28D", "bold": Literal "true", "fontColor": {"solid": {"color": hex literal}}}, "selector": {"id": "default"}}]` |
+| Category label size **14** | `label = [{"properties": {"fontSize": Literal "14D"}, "selector": {"id": "default"}}]` |
+| Title size **16** | `visual.visualContainerObjects.title[0].properties.fontSize = Literal "16D"`, as on every other visual |
+
+What follows:
+
+- **The callout value is `objects.value`** (not `labels`, as on the legacy `card`), with the same
+  literal forms as titles. Bold is a separate `bold` property, as it is for titles. It doesn't change the face.
+- **Each entry has a `selector` of `{"id": "default"}`**. The theme writes the same tag as
+  `"$id": "default"`. Other selectors (presumably per measure) were not observed.
+- **Defaults come from the theme:** the base theme's `visualStyles.cardVisual["*"].value` is
+  `[{"$id": "default", "textClass": "callout"}]`, and the shown value matches `textClasses.callout`
+  exactly (21, Segoe UI Semibold, #242424). `visualStyles.cardVisual["*"].label` sets `fontSize: 12`,
+  `textClass: "label"`, `fontColor: foregroundNeutralSecondary` (#616161). That outranks
+  `textClasses.label` (10.5), which is the same layering as titles in probe 06.
+- Colours are found by shape (`fontColor.solid.color.expr`), so the palette rule already covers them.
+- **Open:** whether a custom theme's `textClasses.callout` reaches the card's value. By the probe 06
+  layering it should, because the base sets only `textClass` at the `visualStyles` level, but no probe has applied one.
+- Step 1, an open and save with no changes, also rewrote unrelated state. A slicer projection's
+  `active` went from `true` to `false`, and `report.json` gained `objects.outspacePane[0].expanded =
+  false`, recording the collapsed Filters pane. That's view state Desktop persists on save.
+
 ## Creating pages and visuals
 
 **Verified 2026-11-09, Desktop 2.159.1231.0, probe 04** (`scripts/probe_apply.py`; evidence
@@ -335,8 +366,8 @@ README Q1–Q3 and Q5–Q11. Every file Desktop wrote validates and round-trips 
 - **Defaults:** a new card is placed at `x 10, y 0`, size `280×280`; a column chart is `696×329`.
   `z` and `tabOrder` are the next integer on the page (0, 1, 2, …).
 - **The card type is `cardVisual`** (the newer card), with its field in role **`Data`**. Older
-  reports use `card` with role `Values`. The typography `callout` role only covers `card`
-  `labels`; `cardVisual` formatting is unverified.
+  reports use `card` with role `Values`. The typography `callout` role covers `card` `labels`
+  and `cardVisual` `value` (probe 07).
 - Desktop adds the following to every bound visual: `query.sortDefinition` (`isDefaultSort: true`;
   descending on the measure for the card, ascending on each category level for the chart),
   `visual.drillFilterOtherVisuals: true`, and **`filterConfig.filters`**, one per bound field
