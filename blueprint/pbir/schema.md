@@ -378,6 +378,28 @@ changes, then dragged the card and saved:
 - A drag changed only the card's `position` (sub-pixel floats). **Re-running `bp apply` restored
   the layout position exactly** and changed nothing else. A third run reported no changes.
 
+### A Blueprint-written theme in Desktop (probe 06)
+
+**Verified 2026-11-09, Desktop 2.159.1231.0, phase 1** (`scripts/probe_theme.py`; evidence
+`docs/probes/06-theme-phase1.diff`). `bp apply` + `fmt` + `theme` (example guidelines) on fixture 02:
+
+- **Desktop accepted the theme file as written.** It didn't rewrite `blueprint-theme.json` or the
+  `customTheme`/`RegisteredResources` entries. The user saw the theme name in *Customize current
+  theme* over base "Fluent 2", with data colours in order (#4E79A7, #F28E2B, #E15759, …), and
+  titles in the theme's `textClasses.title.fontFace` (Segoe UI Semibold).
+- **But titles were 15pt, not 18.** The base theme sets `visualStyles["*"]["*"].title =
+  {"show": true, "fontSize": 15}` (and `subTitle` `fontSize: 12`), which **outranks
+  `textClasses.title.fontSize`**. The font face came through because the base doesn't set one at that
+  level. So `bp theme` must also write sizes at `visualStyles["*"]["*"].title/subTitle`, and the
+  check must read that level: it had reported 0 errors (a false pass) while titles were 15pt.
+- Desktop added `filterConfig.filters` to Blueprint's visuals on this save (the filter pane had
+  been opened: `report.json` gained `objects.outspacePane.expanded = false`), and a drill-down
+  changed a category projection's `"active"` to `false`. Both are UI state. `apply` compares
+  only which fields are bound, so neither affects a re-run.
+
+**Open (probe 06 phase 2):** whether writing `visualStyles["*"]["*"].title.fontSize` takes effect
+and keeps titles shown where the base theme shows them.
+
 ## Field bindings
 
 **Verified [sample]** (`ReportSection3/visuals/VisualContainer4`):
