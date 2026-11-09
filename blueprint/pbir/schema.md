@@ -154,9 +154,41 @@ group or to the page?
   is listed in `resourcePackages`. Desktop opens the report anyway, so a referenced theme
   can be missing. A palette check can't assume the theme's colours are readable.
 
-**Open (probe 02, `scripts/probe_formatting.py`):** how data colours, theme-colour
-references (and shades), per-category selectors, title and card font sizes and bold,
-and page background are stored, and where a theme lives when it's switched.
+**Verified 2026-11-09, Desktop 2.159.1231.0, probe 02 phase 1** (`scripts/probe_formatting.py`;
+evidence `docs/probes/02-formatting-phase1.diff`, redacted). One step per visual. Each
+step rewrote only its own file:
+
+| Step | Where it landed | Encoding |
+|---|---|---|
+| Custom hex data colour (single-series column chart) | `visual.objects.dataPoint[0].properties.fill` | `{"solid":{"color":{"expr":{"Literal":{"Value":"'#E15759'"}}}}}`, no `selector`, so it applies to the whole series |
+| Theme colour on ONE pie slice | `visual.objects.dataPoint[0]` | `fill.solid.color.expr = {"ThemeDataColor":{"ColorId":2,"Percent":0.4}}` plus `selector.data[0].scopeId.Comparison` (`Left`: column ref, `Right`: `Literal` **category value from the data**) |
+| Title font size, bold, colour | `visual.visualContainerObjects.title[0].properties` | `fontSize = Literal "18D"`, `bold = Literal "true"`, `fontColor` = hex literal as above |
+| Card callout size + theme colour | `visual.objects.labels[0].properties` | `fontSize = Literal "28D"`, `color.solid.color.expr = {"ThemeDataColor":{"ColorId":0,"Percent":-0.1}}` |
+| Page canvas background | `page.json objects.background[0].properties.color` | hex literal. `transparency` 0% was **not** written (default values are omitted) |
+| Theme colour on textbox text | `…paragraphs[0].textRuns[0].textStyle` | **resolved to plain hex** `"color": "#f7c1a4"`; the theme reference is lost. Desktop also **dropped** `fontStyle`/`fontWeight: "normal"` from the run |
+
+What follows for a palette or typography check:
+
+- **Three colour forms:** a hex `Literal` inside `…solid.color.expr`; a theme reference
+  `ThemeDataColor {ColorId, Percent}` (a shade, where `Percent` is lighter > 0 and darker < 0);
+  and a plain hex string in textbox `textStyle.color`. Textbox colours chosen from the theme
+  are stored as their resolved hex, which may be a *shade* that isn't in any palette list.
+- Colours are found by **shape** (`solid.color.expr`), under many property names (`fill`,
+  `color`, `fontColor`, `background.color`). A walker shouldn't hard-code property names.
+- Formatting-object numbers are typed literals: `"18D"` (pt, double). Textbox sizes are
+  `"28pt"` strings. Booleans are `"true"`/`"false"`. Strings are `"'…'"`.
+- The title font family (set to Segoe UI) was **not written**, presumably because it
+  equals the default. Default-valued properties are omitted, so a missing key means "theme or
+  default", not "unset".
+- **Per-category formatting puts data values in report files** (`'<value>'` in the
+  selector). This confirms Learn's warning. Fixtures and committed evidence must be redacted.
+- Mapping picker grid positions to `ColorId`/`Percent` is **not established**:
+  "1st column, 1st row" gave `ColorId 0, Percent -0.1`. Don't infer grid positions from it.
+- Map visuals were unavailable in this Desktop (step 7 skipped). Desktop didn't rewrite
+  or convert the existing map `visual.json` files.
+
+**Open (probe 02 phase 2):** where the theme lives and what `ColorId` indexes, which
+`report.json` `themeCollection` and `StaticResources` should show when the theme is switched.
 
 ## Field bindings
 

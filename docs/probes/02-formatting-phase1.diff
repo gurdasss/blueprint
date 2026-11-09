@@ -1,0 +1,204 @@
+# Probe 02 phase 1: formatting. Desktop 2.159.1231.0, 2026-11-09. Steps 1-6 of scripts/probe_formatting.py (step 7, maps, unavailable).
+# REDACTED: semantic-model names and data values replaced with <Table>, <Column>, <value>. Raw diff is local only (samples/probes/).
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/page.json b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/page.json
+index 907a355..e8dbe98 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/page.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/page.json	
+@@ -98,5 +98,24 @@
+         "howCreated": "User"
+       }
+     ]
++  },
++  "objects": {
++    "background": [
++      {
++        "properties": {
++          "color": {
++            "solid": {
++              "color": {
++                "expr": {
++                  "Literal": {
++                    "Value": "'#F3F2F1'"
++                  }
++                }
++              }
++            }
++          }
++        }
++      }
++    ]
+   }
+ }
+\ No newline at end of file
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer/visual.json b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer/visual.json
+index 617211d..7b2ff6a 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer/visual.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer/visual.json	
+@@ -22,8 +22,7 @@
+                     "textStyle": {
+                       "fontFamily": "Segoe UI Light",
+                       "fontSize": "28pt",
+-                      "fontStyle": "normal",
+-                      "fontWeight": "normal"
++                      "color": "#f7c1a4"
+                     }
+                   }
+                 ],
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer4/visual.json b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer4/visual.json
+index 0a826f6..e6f9afb 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer4/visual.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer4/visual.json	
+@@ -131,6 +131,31 @@
+                   "Value": "'<title>'"
+                 }
+               }
++            },
++            "bold": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "fontColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "Literal": {
++                      "Value": "'#333333'"
++                    }
++                  }
++                }
++              }
++            },
++            "fontSize": {
++              "expr": {
++                "Literal": {
++                  "Value": "18D"
++                }
++              }
+             }
+           }
+         }
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer5/visual.json b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer5/visual.json
+index 3f32316..866cae7 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer5/visual.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer5/visual.json	
+@@ -89,6 +89,50 @@
+             }
+           }
+         }
++      ],
++      "dataPoint": [
++        {
++          "properties": {
++            "fill": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 2,
++                      "Percent": 0.4
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "data": [
++              {
++                "scopeId": {
++                  "Comparison": {
++                    "ComparisonKind": 0,
++                    "Left": {
++                      "Column": {
++                        "Expression": {
++                          "SourceRef": {
++                            "Entity": "<Table>"
++                          }
++                        },
++                        "Property": "<Column>"
++                      }
++                    },
++                    "Right": {
++                      "Literal": {
++                        "Value": "'<value>'"
++                      }
++                    }
++                  }
++                }
++              }
++            ]
++          }
++        }
+       ]
+     },
+     "visualContainerObjects": {
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer7/visual.json b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer7/visual.json
+index ce81894..bc3d6db 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer7/visual.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer7/visual.json	
+@@ -30,6 +30,33 @@
+           ]
+         }
+       }
++    },
++    "objects": {
++      "labels": [
++        {
++          "properties": {
++            "fontSize": {
++              "expr": {
++                "Literal": {
++                  "Value": "28D"
++                }
++              }
++            },
++            "color": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 0,
++                      "Percent": -0.1
++                    }
++                  }
++                }
++              }
++            }
++          }
++        }
++      ]
+     }
+   }
+ }
+\ No newline at end of file
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection4/visuals/VisualContainer4/visual.json b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection4/visuals/VisualContainer4/visual.json
+index 68bf741..d955221 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection4/visuals/VisualContainer4/visual.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection4/visuals/VisualContainer4/visual.json	
+@@ -95,6 +95,23 @@
+             }
+           }
+         }
++      ],
++      "dataPoint": [
++        {
++          "properties": {
++            "fill": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "Literal": {
++                      "Value": "'#E15759'"
++                    }
++                  }
++                }
++              }
++            }
++          }
++        }
+       ]
+     },
+     "visualContainerObjects": {
