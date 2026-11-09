@@ -19,7 +19,11 @@
               {
                 "textRuns": [
                   {
-                    "value": "Sales Overview"
+                    "value": "Sales Overview",
+                    "textStyle": {
+                      "fontFamily": "Segoe UI Semibold",
+                      "fontSize": "20pt"
+                    }
                   }
                 ]
               }

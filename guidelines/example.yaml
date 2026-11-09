@@ -22,6 +22,7 @@ palette:
 typography:
   title:    { font: Segoe UI Semibold, size: 18 }   # weight is part of the face name
   subtitle: { font: Segoe UI, size: 12 }
+  header:   { font: Segoe UI Semibold, size: 20 }   # bp apply writes this onto header textboxes
 
 page:
   require_title: true

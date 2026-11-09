@@ -102,6 +102,10 @@ def build_plan(args: argparse.Namespace) -> Plan:
     plan = Plan(root=report.root)
     plan.warnings.extend(report.warnings)
     built_with = f"{rules.name}@{rules.version}"
+    rule = rules.typography.get("header")
+    header_style = render.text_style(rule.fonts[0] if rule and rule.fonts else None,
+                                     rule.sizes[0] if rule and rule.sizes else None,
+                                     rule.bold if rule else None)
 
     page = _find_page(report, page_spec.page)
     if page is None:
@@ -154,10 +158,12 @@ def build_plan(args: argparse.Namespace) -> Plan:
                 current.source.data = render.with_annotations(
                     current.source.data, render.visual_annotations(vs.id, p.region.key))
             if vs.type == "header":
-                text = current.text
-                if vs.title != text:
-                    plan.warnings.append(f"{vs.id}: header text differs from the spec ({text!r}); "
-                                         "updating textbox text isn't supported yet, left as is")
+                updated = render.with_textbox(current.source.data, vs.title or "", header_style)
+                if updated is None:
+                    plan.warnings.append(f"{vs.id}: header textbox was edited by hand (not a single "
+                                         "text run); its text and style were left as is")
+                else:
+                    current.source.data = updated
             elif vs.title is not None:
                 current.title = vs.title
             continue
@@ -167,7 +173,8 @@ def build_plan(args: argparse.Namespace) -> Plan:
         is_header = vs.type == "header"
         doc = render.visual(vid, contract.visual_type, rect, z, tab, vs.id, p.region.key,
                             bindings=want or None,
-                            title=None if is_header else vs.title, text=vs.title if is_header else None)
+                            title=None if is_header else vs.title, text=vs.title if is_header else None,
+                            text_style=header_style if is_header else None)
         writer.add_create(plan, PAGES / pid / "visuals" / vid / "visual.json", doc,
                           f"new {vs.type} {vs.id!r} in region {p.region.key} at "
                           f"{rect.x},{rect.y} {rect.width}x{rect.height}")

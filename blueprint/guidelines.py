@@ -76,7 +76,7 @@ class Palette:
         return {"strict": "error", "warn": "warning", "off": "off"}[self.enforce]
 
 
-TYPOGRAPHY_ROLES = ("title", "subtitle", "callout", "textbox")
+TYPOGRAPHY_ROLES = ("title", "subtitle", "callout", "header", "textbox")
 
 
 @dataclass(frozen=True)

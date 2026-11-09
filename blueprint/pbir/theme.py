@@ -58,6 +58,8 @@ def build(rules: Guidelines) -> tuple[dict[str, Any], list[str]]:
     classes: dict[str, dict[str, Any]] = {}
     visual_cards: dict[str, dict[str, Any]] = {}
     for role, rule in rules.typography.items():
+        if role == "header":
+            continue  # written onto Blueprint's header textboxes by bp apply, not via the theme
         card = ROLE_TO_VISUAL_CARD.get(role)
         if card is not None and rule.sizes:
             size = rule.sizes[0]

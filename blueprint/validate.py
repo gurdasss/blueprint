@@ -293,13 +293,16 @@ def _check_typography(report: Report, rules: Guidelines, c: _Collector) -> None:
                 continue
             problems = []
             for font in v.fonts:
-                rule = roles.get(font.role)
+                role = font.role
+                if role == "textbox" and v.spec_id is not None and "header" in roles:
+                    role = "header"  # a Blueprint header: checked against typography.header
+                rule = roles.get(role)
                 if rule is None:
                     continue
                 if font.family in UNRESOLVED_FAMILIES:
                     unresolved.add(font.family)
                     font = FontUse(font.role, None, font.size, font.bold, font.raw_family)
-                problems += [f"{font.role} {p}" for p in _font_problems(font, rule, bold=font.bold)]
+                problems += [f"{role} {p}" for p in _font_problems(font, rule, bold=font.bold)]
             if problems:
                 c.add("typography", "; ".join(dict.fromkeys(problems)), page, v)
     if unresolved:
