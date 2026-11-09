@@ -188,3 +188,24 @@ def test_fmt_then_check_leaves_only_fmt_skipped_grid_findings(retail_report: Pat
         grid_findings = [f for f in out["findings"] if f["rule"] == "grid"]
         assert all("bp fmt skips it" in f["message"] for f in grid_findings), (g, grid_findings)
         assert not [f for f in out["findings"] if f["rule"] in ("format", "bounds")], g
+
+
+def test_schema_errors_on_unvendored_newer_minor_are_warnings(tmp_path: Path, capsys):
+    from tests.builders import S
+    rd = make_report(tmp_path, {"p": []})
+    v = visual("v1", 16, 16, 64, 64)
+    v["$schema"] = f"{S}/visualContainer/2.99.0/schema.json"
+    v["someFutureProperty"] = True
+    write(rd / "definition/pages/p/visuals/v1/visual.json", v)
+    assert main(["check", "--report", str(rd), "--json"]) == 0  # warning only: doesn't fail CI
+    [f] = [f for f in json.loads(capsys.readouterr().out)["findings"] if f["rule"] == "format"]
+    assert f["severity"] == "warning"
+    assert "declares 2.99.0, which isn't vendored yet" in f["message"]
+    assert "someFutureProperty" in f["message"]
+
+
+def test_schema_errors_on_exact_version_stay_errors(tmp_path: Path, capsys):
+    rd = make_report(tmp_path, {"p": [visual("v1", 16, 16, 64, 64, someFutureProperty=True)]})
+    assert main(["check", "--report", str(rd), "--json"]) == 1
+    [f] = [f for f in json.loads(capsys.readouterr().out)["findings"] if f["rule"] == "format"]
+    assert f["severity"] == "error"

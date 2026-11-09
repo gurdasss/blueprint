@@ -139,18 +139,33 @@ def validate(doc: Any, resolution: Resolution) -> list[str]:
     return [f"{'/'.join(map(str, e.absolute_path)) or '<root>'}: {e.message}" for e in errors]
 
 
-def validate_documents(documents) -> list[str]:
-    """Schema problems across parsed report documents (``reader.Document``s), one per line.
+@dataclass(frozen=True)
+class DocumentProblems:
+    path: str
+    errors: tuple[str, ...]
+    # True when the file was validated against an older vendored schema than it declares. Its
+    # errors may just be newer properties, so they're less certain than errors on an exact match.
+    approximate: bool = False
+    declared: str = ""
+    used: str = ""
 
-    Documents with an unknown major version can't be validated; that's reported too.
+
+def validate_documents(documents) -> list[DocumentProblems]:
+    """Schema problems across parsed report documents (``reader.Document``s), per file.
+
+    Documents with an unknown major version can't be validated, and that's reported too.
     """
-    problems: list[str] = []
+    out: list[DocumentProblems] = []
     for doc in sorted(documents, key=lambda d: d.path.as_posix()):
         res = doc.schema
         if res is None:
             continue
+        path = doc.path.as_posix()
         if res.used is None:
-            problems.append(f"{doc.path.as_posix()}: not validated (unknown schema {res.declared.url})")
+            out.append(DocumentProblems(path, (f"not validated (unknown schema {res.declared.url})",)))
             continue
-        problems.extend(f"{doc.path.as_posix()}: {e}" for e in validate(doc.data, res))
-    return problems
+        errors = validate(doc.data, res)
+        if errors:
+            out.append(DocumentProblems(path, tuple(errors), not res.exact,
+                                        fmt_version(res.declared.version), fmt_version(res.used.version)))
+    return out

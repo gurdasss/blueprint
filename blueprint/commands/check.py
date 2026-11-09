@@ -25,12 +25,27 @@ def run_check(args: argparse.Namespace) -> tuple[Report, Guidelines, CheckResult
     result = check_report(report, rules)
     level = rules.check.severity["format"]
     if level != "off":
-        problems = report.warnings + schemas.validate_documents(report.source.documents.values())
-        result.findings[:0] = [Finding("format", level, p) for p in problems]
+        result.findings[:0] = _format_findings(report, level)
     if rules.unchecked:
         result.notes.append("not checked yet (set in guidelines, not implemented): "
                             + ", ".join(rules.unchecked))
     return report, rules, result
+
+
+def _format_findings(report: Report, level: str) -> list[Finding]:
+    found = [Finding("format", level, w) for w in report.warnings]
+    for doc in schemas.validate_documents(report.source.documents.values()):
+        if not doc.approximate:
+            found += [Finding("format", level, f"{doc.path}: {e}") for e in doc.errors]
+            continue
+        # Desktop writes schema versions before Microsoft publishes them; newer properties then
+        # look like errors against the older vendored schema. Report them without failing.
+        listed = "; ".join(doc.errors[:3]) + ("; …" if len(doc.errors) > 3 else "")
+        found.append(Finding("format", "warning",
+            f"{doc.path}: {len(doc.errors)} problem(s) against schema {doc.used}, but the file "
+            f"declares {doc.declared}, which isn't vendored yet. Probably newer properties: vendor "
+            f"{doc.declared} with scripts/vendor_schemas.py once Microsoft publishes it. ({listed})"))
+    return found
 
 
 def _ordered(report: Report, findings: list[Finding]) -> list[Finding]:
