@@ -1,4 +1,4 @@
-# Probe 06 phase 1: does Desktop accept bp theme output? Desktop 2.159.1231.0, 2026-11-09 (scripts/probe_theme.py).
+# Probe 06 phases 1 and 2 (phase 2 from 'blueprint: theme with visualStyles ...' on): does Desktop accept bp theme output? Desktop 2.159.1231.0, 2026-11-09 (scripts/probe_theme.py).
 # User saw: theme name 'Example Corp Reporting Standard' over base 'Fluent 2'; data colours #4E79A7, #F28E2B, #E15759, ...;
 # chart titles in Segoe UI Semibold but 15pt (guidelines: 18). All content invented.
 
@@ -697,3 +697,40 @@ index 7f51f5a..f34e966 100644
              }
            ]
          },
+
+######## blueprint: theme with visualStyles title/subtitle sizes (phase 2)
+
+diff --git a/Fixture.Report/StaticResources/RegisteredResources/blueprint-theme.json b/Fixture.Report/StaticResources/RegisteredResources/blueprint-theme.json
+index e41285e..36a209e 100644
+--- a/Fixture.Report/StaticResources/RegisteredResources/blueprint-theme.json
++++ b/Fixture.Report/StaticResources/RegisteredResources/blueprint-theme.json
+@@ -24,5 +24,21 @@
+     "label": {
+       "color": "#333333"
+     }
++  },
++  "visualStyles": {
++    "*": {
++      "*": {
++        "title": [
++          {
++            "fontSize": 18
++          }
++        ],
++        "subTitle": [
++          {
++            "fontSize": 12
++          }
++        ]
++      }
++    }
+   }
+ }
+\ No newline at end of file
+
+######## steps: snap.sh records unchanged saves
+
+
+######## 03 phase 2 open and save (no changes)
+
+

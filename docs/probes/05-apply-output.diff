@@ -1,5 +1,5 @@
 # Probe 05: does Desktop accept bp apply output? Desktop 2.159.1231.0, 2026-11-09 (scripts/probe_apply_output.py).
-# Commits: baseline (fixture 02) -> blueprint: apply -> 01 open and save -> 02 drag card -> blueprint: re-apply. All content invented.
+# Commits: baseline (fixture 02) -> blueprint: apply -> 01 open and save -> 02 drag card -> blueprint: re-apply, then two later Blueprint runs (manifest, annotations). All content invented.
 
 ######## blueprint: apply examples/sales-overview.yaml
 
@@ -464,3 +464,278 @@ index e753038..823b441 100644
      "tabOrder": 1000
    },
    "visual": {
+
+######## blueprint: manifest (pre-annotation page)
+
+diff --git a/Fixture.Report/.blueprint.manifest.json b/Fixture.Report/.blueprint.manifest.json
+new file mode 100644
+index 0000000..d494b87
+--- /dev/null
++++ b/Fixture.Report/.blueprint.manifest.json
+@@ -0,0 +1,143 @@
++{
++  "blueprint_version": "0.0.1",
++  "guidelines": {
++    "name": "Example Corp Reporting Standard",
++    "version": 1
++  },
++  "pbir_schema": {
++    "page": [
++      "2.1.0"
++    ],
++    "pagesMetadata": [
++      "1.1.0"
++    ],
++    "report": [
++      "3.3.0"
++    ],
++    "versionMetadata": [
++      "1.0.0"
++    ],
++    "visualContainer": [
++      "2.13.0",
++      "2.14.0 (validated as 2.13.0)"
++    ]
++  },
++  "generated_at": "2026-11-09T03:02:36Z",
++  "pages": [
++    {
++      "id": "6a692d13619c1d4c0146",
++      "name": "Overview",
++      "size": {
++        "w": 1920,
++        "h": 1080
++      },
++      "visuals": [
++        {
++          "id": "c62803c0b4a8a11ac705",
++          "type": "cardVisual",
++          "visual_type": "cardVisual",
++          "title": "Total",
++          "managed": false,
++          "position": {
++            "x": 10.29,
++            "y": 0,
++            "w": 695.71,
++            "h": 741
++          },
++          "slots": {
++            "Data": "[Total Amount]"
++          }
++        },
++        {
++          "id": "ca909884eb63347a3230",
++          "type": "clusteredColumnChart",
++          "visual_type": "clusteredColumnChart",
++          "title": null,
++          "managed": false,
++          "position": {
++            "x": 903.61,
++            "y": 236.71,
++            "w": 696,
++            "h": 329
++          },
++          "slots": {
++            "Category": [
++              "Sales[Country]",
++              "Sales[Region]"
++            ],
++            "Y": "[Total Amount]"
++          }
++        }
++      ]
++    },
++    {
++      "id": "b1df9ce53010a81607ce",
++      "name": "Sales Overview",
++      "spec_page": "Sales Overview",
++      "layout": null,
++      "built_with": null,
++      "size": {
++        "w": 1280,
++        "h": 720
++      },
++      "visuals": [
++        {
++          "id": "33677126057fa2308cba",
++          "type": "header",
++          "visual_type": "textbox",
++          "title": "Sales Overview",
++          "managed": true,
++          "spec_id": "header-1",
++          "region": null,
++          "position": {
++            "x": 16,
++            "y": 16,
++            "w": 1248,
++            "h": 64
++          },
++          "slots": {}
++        },
++        {
++          "id": "816ec20d4825d39a3037",
++          "type": "card",
++          "visual_type": "cardVisual",
++          "title": "Total",
++          "managed": true,
++          "spec_id": "card-1",
++          "region": null,
++          "position": {
++            "x": 16,
++            "y": 232,
++            "w": 616,
++            "h": 472
++          },
++          "slots": {
++            "value": "[Total Amount]"
++          }
++        },
++        {
++          "id": "b4f94ad3cfcc67642873",
++          "type": "column",
++          "visual_type": "clusteredColumnChart",
++          "title": "Sales by Geography",
++          "managed": true,
++          "spec_id": "column-1",
++          "region": null,
++          "position": {
++            "x": 648,
++            "y": 232,
++            "w": 616,
++            "h": 472
++          },
++          "slots": {
++            "category": [
++              "Sales[Country]",
++              "Sales[Region]"
++            ],
++            "value": "[Total Amount]"
++          }
++        }
++      ]
++    }
++  ]
++}
+
+######## blueprint: re-apply adds layout/region/guidelines annotations
+
+diff --git a/Fixture.Report/.blueprint.manifest.json b/Fixture.Report/.blueprint.manifest.json
+index d494b87..26c06cd 100644
+--- a/Fixture.Report/.blueprint.manifest.json
++++ b/Fixture.Report/.blueprint.manifest.json
+@@ -22,7 +22,7 @@
+       "2.14.0 (validated as 2.13.0)"
+     ]
+   },
+-  "generated_at": "2026-11-09T03:02:36Z",
++  "generated_at": "2026-11-09T03:02:56Z",
+   "pages": [
+     {
+       "id": "6a692d13619c1d4c0146",
+@@ -74,8 +74,8 @@
+       "id": "b1df9ce53010a81607ce",
+       "name": "Sales Overview",
+       "spec_page": "Sales Overview",
+-      "layout": null,
+-      "built_with": null,
++      "layout": "standard-4-up",
++      "built_with": "Example Corp Reporting Standard@1",
+       "size": {
+         "w": 1280,
+         "h": 720
+@@ -88,7 +88,7 @@
+           "title": "Sales Overview",
+           "managed": true,
+           "spec_id": "header-1",
+-          "region": null,
++          "region": "header#1",
+           "position": {
+             "x": 16,
+             "y": 16,
+@@ -104,7 +104,7 @@
+           "title": "Total",
+           "managed": true,
+           "spec_id": "card-1",
+-          "region": null,
++          "region": "main#1",
+           "position": {
+             "x": 16,
+             "y": 232,
+@@ -122,7 +122,7 @@
+           "title": "Sales by Geography",
+           "managed": true,
+           "spec_id": "column-1",
+-          "region": null,
++          "region": "main#2",
+           "position": {
+             "x": 648,
+             "y": 232,
+diff --git a/Fixture.Report/definition/pages/b1df9ce53010a81607ce/page.json b/Fixture.Report/definition/pages/b1df9ce53010a81607ce/page.json
+index 4177139..53052ff 100644
+--- a/Fixture.Report/definition/pages/b1df9ce53010a81607ce/page.json
++++ b/Fixture.Report/definition/pages/b1df9ce53010a81607ce/page.json
+@@ -9,6 +9,14 @@
+     {
+       "name": "blueprint.page",
+       "value": "Sales Overview"
++    },
++    {
++      "name": "blueprint.layout",
++      "value": "standard-4-up"
++    },
++    {
++      "name": "blueprint.guidelines",
++      "value": "Example Corp Reporting Standard@1"
+     }
+   ]
+ }
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/b1df9ce53010a81607ce/visuals/33677126057fa2308cba/visual.json b/Fixture.Report/definition/pages/b1df9ce53010a81607ce/visuals/33677126057fa2308cba/visual.json
+index 949d821..4eba235 100644
+--- a/Fixture.Report/definition/pages/b1df9ce53010a81607ce/visuals/33677126057fa2308cba/visual.json
++++ b/Fixture.Report/definition/pages/b1df9ce53010a81607ce/visuals/33677126057fa2308cba/visual.json
+@@ -33,6 +33,10 @@
+     {
+       "name": "blueprint.visual",
+       "value": "header-1"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "header#1"
+     }
+   ]
+ }
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/b1df9ce53010a81607ce/visuals/816ec20d4825d39a3037/visual.json b/Fixture.Report/definition/pages/b1df9ce53010a81607ce/visuals/816ec20d4825d39a3037/visual.json
+index 823b441..9f7df78 100644
+--- a/Fixture.Report/definition/pages/b1df9ce53010a81607ce/visuals/816ec20d4825d39a3037/visual.json
++++ b/Fixture.Report/definition/pages/b1df9ce53010a81607ce/visuals/816ec20d4825d39a3037/visual.json
+@@ -60,6 +60,10 @@
+     {
+       "name": "blueprint.visual",
+       "value": "card-1"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#1"
+     }
+   ]
+ }
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/b1df9ce53010a81607ce/visuals/b4f94ad3cfcc67642873/visual.json b/Fixture.Report/definition/pages/b1df9ce53010a81607ce/visuals/b4f94ad3cfcc67642873/visual.json
+index de72850..4a39234 100644
+--- a/Fixture.Report/definition/pages/b1df9ce53010a81607ce/visuals/b4f94ad3cfcc67642873/visual.json
++++ b/Fixture.Report/definition/pages/b1df9ce53010a81607ce/visuals/b4f94ad3cfcc67642873/visual.json
+@@ -94,6 +94,10 @@
+     {
+       "name": "blueprint.visual",
+       "value": "column-1"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#2"
+     }
+   ]
+ }
+\ No newline at end of file
+

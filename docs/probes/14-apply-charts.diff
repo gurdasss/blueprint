@@ -24,6 +24,197 @@ index 4b3c8d8..b772357 100644
 
 ######## blueprint: apply specs/dates-and-bars.yaml and specs/pies-and-lines.yaml
 
+diff --git a/Fixture.Report/.blueprint.manifest.json b/Fixture.Report/.blueprint.manifest.json
+new file mode 100644
+index 0000000..d6a5c81
+--- /dev/null
++++ b/Fixture.Report/.blueprint.manifest.json
+@@ -0,0 +1,185 @@
++{
++  "blueprint_version": "0.0.1",
++  "guidelines": {
++    "name": "Example Corp Reporting Standard",
++    "version": 1
++  },
++  "pbir_schema": {
++    "page": [
++      "2.1.0"
++    ],
++    "pagesMetadata": [
++      "1.1.0"
++    ],
++    "report": [
++      "3.3.0"
++    ],
++    "versionMetadata": [
++      "1.0.0"
++    ],
++    "visualContainer": [
++      "2.13.0",
++      "2.14.0 (validated as 2.13.0)"
++    ]
++  },
++  "generated_at": "2026-01-01T00:00:00Z",
++  "pages": [
++    {
++      "id": "6a692d13619c1d4c0146",
++      "name": "Overview",
++      "size": {
++        "w": 1920,
++        "h": 1080
++      },
++      "visuals": [
++        {
++          "id": "c62803c0b4a8a11ac705",
++          "type": "cardVisual",
++          "visual_type": "cardVisual",
++          "title": "Total",
++          "managed": false,
++          "position": {
++            "x": 10.29,
++            "y": 0,
++            "w": 695.71,
++            "h": 741
++          },
++          "slots": {
++            "Data": "[Total Amount]"
++          }
++        },
++        {
++          "id": "ca909884eb63347a3230",
++          "type": "clusteredColumnChart",
++          "visual_type": "clusteredColumnChart",
++          "title": null,
++          "managed": false,
++          "position": {
++            "x": 903.61,
++            "y": 236.71,
++            "w": 696,
++            "h": 329
++          },
++          "slots": {
++            "Category": [
++              "Sales[Country]",
++              "Sales[Region]"
++            ],
++            "Y": "[Total Amount]"
++          }
++        }
++      ]
++    },
++    {
++      "id": "9ae405061e564595caed",
++      "name": "Dates & Bars",
++      "spec": "dates-and-bars",
++      "spec_page": "Dates & Bars",
++      "layout": "standard-4-up",
++      "built_with": "Example Corp Reporting Standard@1",
++      "size": {
++        "w": 1280,
++        "h": 720
++      },
++      "visuals": [
++        {
++          "id": "e760ee74e1bf9112186c",
++          "type": "line",
++          "visual_type": "lineChart",
++          "title": "By Order Date",
++          "managed": true,
++          "spec_id": "line-1",
++          "region": "main#1",
++          "position": {
++            "x": 16,
++            "y": 232,
++            "w": 616,
++            "h": 472
++          },
++          "slots": {
++            "category": "Sales[Order Date]",
++            "value": "[Total Amount]"
++          }
++        },
++        {
++          "id": "f11a0ed0f968802d29fc",
++          "type": "bar",
++          "visual_type": "clusteredBarChart",
++          "title": "By Geography",
++          "managed": true,
++          "spec_id": "bar-1",
++          "region": "main#2",
++          "position": {
++            "x": 648,
++            "y": 232,
++            "w": 616,
++            "h": 472
++          },
++          "slots": {
++            "category": [
++              "Sales[Country]",
++              "Sales[Region]"
++            ],
++            "value": "[Total Amount]"
++          }
++        }
++      ]
++    },
++    {
++      "id": "f52c6ebd2d38b0e5e137",
++      "name": "Pies & Lines",
++      "spec": "pies-and-lines",
++      "spec_page": "Pies & Lines",
++      "layout": "standard-4-up",
++      "built_with": "Example Corp Reporting Standard@1",
++      "size": {
++        "w": 1280,
++        "h": 720
++      },
++      "visuals": [
++        {
++          "id": "4406922ab3863d43ba87",
++          "type": "pie",
++          "visual_type": "pieChart",
++          "title": "Share by Geography",
++          "managed": true,
++          "spec_id": "pie-1",
++          "region": "main#1",
++          "position": {
++            "x": 16,
++            "y": 232,
++            "w": 616,
++            "h": 472
++          },
++          "slots": {
++            "category": [
++              "Sales[Country]",
++              "Sales[Region]"
++            ],
++            "value": "[Total Amount]"
++          }
++        },
++        {
++          "id": "9a00cc72d46368fc448d",
++          "type": "line",
++          "visual_type": "lineChart",
++          "title": "By Country and Region",
++          "managed": true,
++          "spec_id": "line-1",
++          "region": "main#2",
++          "position": {
++            "x": 648,
++            "y": 232,
++            "w": 616,
++            "h": 472
++          },
++          "slots": {
++            "category": "Sales[Country]",
++            "legend": "Sales[Region]",
++            "value": "[Total Amount]"
++          }
++        }
++      ]
++    }
++  ]
++}
 diff --git a/Fixture.Report/definition/pages/9ae405061e564595caed/page.json b/Fixture.Report/definition/pages/9ae405061e564595caed/page.json
 new file mode 100644
 index 0000000..f289843
