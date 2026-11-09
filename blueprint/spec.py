@@ -191,8 +191,11 @@ def _slots(at: str, raw: Any, contract: Contract, problems: list[str]) -> dict[s
                 problems.append(f"{item_at}: {item!r} is not a field reference "
                                 "(use Table[Column] or [Measure])")
             elif ref.kind not in slot.accepts:
+                hint = ""
+                if ref.kind == "column" and slot.accepts == ("measure",):
+                    hint = f"; if {ref.name!r} is a measure, write it as [{ref.name}]"
                 problems.append(f"{item_at}: {ref} is a {ref.kind}, but {name} accepts "
-                                f"{' or '.join(slot.accepts)}")
+                                f"{' or '.join(slot.accepts)}{hint}")
             else:
                 refs.append(ref)
         if len(refs) == len(values):

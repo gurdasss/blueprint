@@ -67,7 +67,8 @@ def test_ignored_visual_needs_no_slots():
      ["visuals[0].title: a header needs a title (it is the header's text)"]),
     ({"page": "P", "visuals": [{"type": "card"}]}, ["visuals[0].slots.value: required by card"]),
     ({"page": "P", "visuals": [{"type": "card", "slots": {"value": "Sales[Amount]"}}]},
-     ["visuals[0].slots.value: Sales[Amount] is a column, but value accepts measure"]),
+     [("visuals[0].slots.value: Sales[Amount] is a column, but value accepts measure; "
+       "if 'Amount' is a measure, write it as [Amount]")]),
     ({"page": "P", "visuals": [{"type": "column", "slots": {"category": "[Total]", "value": "[Total]"}}]},
      ["visuals[0].slots.category: [Total] is a measure, but category accepts column"]),
     ({"page": "P", "visuals": [{"type": "card", "slots": {"value": ["[A]", "[B]"]}}]},
