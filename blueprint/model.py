@@ -28,6 +28,25 @@ class Rect:
         return self.y + self.height
 
 
+@dataclass(frozen=True)
+class ColorUse:
+    """One colour set somewhere in a visual or page."""
+
+    where: str  # readable location, e.g. "dataPoint.fill", "title.fontColor", "text"
+    kind: str  # "hex" | "theme" (a reference into the theme) | "expression" (e.g. conditional)
+    value: str | None = None  # "#E15759" (uppercase) for hex; a description otherwise
+
+
+@dataclass(frozen=True)
+class Theme:
+    name: str
+    layer: str  # "base" | "custom"; custom overrides base
+    missing: bool  # referenced, but its file couldn't be found
+    data_colors: tuple[str, ...] = ()  # uppercase hex
+    foreground: str | None = None
+    background: str | None = None
+
+
 @dataclass
 class Visual:
     name: str
@@ -40,6 +59,7 @@ class Visual:
     hidden: bool = False
     bound: bool = False  # has at least one field projection (measure/column)
     ignored: bool = False  # `blueprint: ignore` escape hatch
+    colors: list[ColorUse] = field(default_factory=list)
     source: Any = field(default=None, repr=False, compare=False)
 
 
@@ -51,6 +71,7 @@ class Page:
     height: float | None
     display_option: str
     visuals: list[Visual] = field(default_factory=list)
+    colors: list[ColorUse] = field(default_factory=list)
     source: Any = field(default=None, repr=False, compare=False)
 
 
@@ -62,6 +83,7 @@ class Report:
     # e.g. {"visualContainer": ["2.14.0 (validated as 2.13.0)"]}
     schema_versions: dict[str, list[str]] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
+    themes: list[Theme] = field(default_factory=list)  # in layer order: base, then custom
     source: Any = field(default=None, repr=False, compare=False)
 
     def page(self, name: str) -> Page:

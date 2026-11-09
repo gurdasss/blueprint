@@ -45,3 +45,30 @@ def make_report(root: Path, pages: dict[str, list[dict]], order: list[str] | Non
         for v in visuals:
             write(pd / "visuals" / v["name"] / "visual.json", v)
     return rd
+
+
+def add_theme(report_dir: Path, layer: str, name: str, theme: dict | None, package: str = "SharedResources",
+              folder: str = "BuiltInThemes") -> None:
+    """Register a theme the way Desktop does (probe 02 phase 2); theme=None leaves the file missing."""
+    path = report_dir / "definition" / "report.json"
+    doc = jsonfmt.load(path)
+    key = "baseTheme" if layer == "base" else "customTheme"
+    doc.setdefault("themeCollection", {})[key] = {"name": name, "type": package}
+    pkgs = doc.setdefault("resourcePackages", [])
+    pkg = next((p for p in pkgs if p["name"] == package), None)
+    if pkg is None:
+        pkg = {"name": package, "type": package, "items": []}
+        pkgs.append(pkg)
+    rel = f"{folder}/{name}.json"
+    pkg["items"].append({"name": name, "path": rel, "type": "BaseTheme" if layer == "base" else "CustomTheme"})
+    write(path, doc)
+    if theme is not None:
+        write(report_dir / "StaticResources" / package / rel, {"name": name, **theme})
+
+
+def hex_color(value: str) -> dict:
+    return {"solid": {"color": {"expr": {"Literal": {"Value": f"'{value}'"}}}}}
+
+
+def theme_color(color_id: int, percent: float = 0) -> dict:
+    return {"solid": {"color": {"expr": {"ThemeDataColor": {"ColorId": color_id, "Percent": percent}}}}}

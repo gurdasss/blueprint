@@ -14,8 +14,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from blueprint.model import Page, Rect, Report, Visual
-from blueprint.pbir import jsonfmt, schemas
+from blueprint.model import Page, Rect, Report, Theme, Visual
+from blueprint.pbir import formatting, jsonfmt, schemas
 
 # Microsoft Learn: object/folder names "must consist of one or more word characters
 # (letters, digits, underscores) or hyphens"; Desktop silently ignores anything else.
@@ -134,7 +134,8 @@ class _Reader:
         if not self.exists(Path("definition/version.json")):
             raise ReportFormatError(f"{self.dir.name}: definition/version.json missing")
         self.load(Path("definition/version.json"))
-        self.load_required(Path("definition/report.json"))
+        report_doc = self.load_required(Path("definition/report.json"))
+        themes = self.read_themes(report_doc.data) if report_doc is not None else []
 
         order: list[str] = []
         active: str | None = None
@@ -172,8 +173,24 @@ class _Reader:
             active_page=active,
             schema_versions={k: sorted(v) for k, v in sorted(self.versions.items())},
             warnings=self.warnings,
+            themes=themes,
             source=self.src,
         )
+
+    def read_themes(self, report_doc: dict) -> list[Theme]:
+        themes = []
+        for layer, name, rel in formatting.theme_refs(report_doc):
+            if rel is None or not self.exists(rel):
+                themes.append(Theme(name, layer, missing=True))
+                continue
+            try:
+                data = self.load(rel).data
+            except ReportFormatError as exc:
+                self.warnings.append(f"{rel}: theme file unreadable: {exc}")
+                themes.append(Theme(name, layer, missing=True))
+                continue
+            themes.append(formatting.theme_from(layer, name, data))
+        return themes
 
     def read_page(self, rel_dir: Path) -> Page | None:
         doc = self.load_required(rel_dir / "page.json")
@@ -188,6 +205,7 @@ class _Reader:
             width=d.get("width"),
             height=d.get("height"),
             display_option=d.get("displayOption", ""),
+            colors=formatting.colors_in(d),
             source=doc,
         )
         for folder in self.subdirs(rel_dir / "visuals"):
@@ -218,6 +236,7 @@ class _Reader:
             hidden=bool(d.get("isHidden", False)),
             bound=_bound(visual),
             ignored=str(notes.get(IGNORE_ANNOTATION, "")).lower() == "true",
+            colors=formatting.colors_in(visual),
             source=doc,
         )
 
