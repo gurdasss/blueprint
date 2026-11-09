@@ -13,20 +13,7 @@ from blueprint.validate import check_report
 ROOT = Path(__file__).resolve().parent.parent
 GUIDE = ROOT / "guidelines" / "example.yaml"
 
-SPEC = """\
-page: Mix
-layout: standard-4-up
-visuals:
-  - type: kpi
-    title: Trend
-    slots: {value: "[Total Amount]", trend: "Sales[Country]"}
-  - type: pie
-    title: Share
-    slots: {category: "Sales[Region]", value: "[Total Amount]"}
-  - type: table
-    title: Detail
-    slots: {columns: ["Sales[Country]", "Sales[Region]", "[Total Amount]"]}
-"""
+SPEC = ROOT / "examples" / "sales-mix.yaml"
 
 
 def col(name: str, active: bool = False) -> dict:
@@ -57,9 +44,7 @@ def test_contracts_ship_the_probed_types():
 def test_apply_writes_desktops_query_shapes(tmp_path: Path):
     shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
     report = tmp_path / "proj" / "Fixture.Report"
-    spec = tmp_path / "mix.yaml"
-    spec.write_text(SPEC)
-    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
+    assert main(["apply", str(SPEC), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
 
     made = {}
     for f in report.glob("definition/pages/*/visuals/*/visual.json"):
