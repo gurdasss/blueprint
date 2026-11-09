@@ -57,13 +57,19 @@ def _format_findings(report: Report, level: str) -> list[Finding]:
         if not doc.approximate:
             found += [Finding("format", level, f"{doc.path}: {e}") for e in doc.errors]
             continue
-        # Desktop writes schema versions before Microsoft publishes them; newer properties then
-        # look like errors against the older vendored schema. Report them without failing.
-        listed = "; ".join(doc.errors[:3]) + ("; …" if len(doc.errors) > 3 else "")
-        found.append(Finding("format", "warning",
-            f"{doc.path}: {len(doc.errors)} problem(s) against schema {doc.used}, but the file "
-            f"declares {doc.declared}, which isn't vendored yet. Probably newer properties: vendor "
-            f"{doc.declared} with scripts/vendor_schemas.py once Microsoft publishes it. ({listed})"))
+        # Desktop writes schema versions before Microsoft publishes them. Against the older
+        # vendored schema, a newer *property* shows up as "Additional properties are not
+        # allowed": that's probably fine. Any other error (a wrong type, a missing required
+        # key) is wrong in every version, so it stays at full severity.
+        newer = [e for e in doc.errors if "Additional properties are not allowed" in e]
+        found += [Finding("format", level, f"{doc.path}: {e}") for e in doc.errors if e not in newer]
+        if newer:
+            listed = "; ".join(newer[:3]) + ("; …" if len(newer) > 3 else "")
+            found.append(Finding("format", "warning",
+                f"{doc.path}: {len(newer)} unknown propert{'y' if len(newer) == 1 else 'ies'} "
+                f"against schema {doc.used}, but the file declares {doc.declared}, which isn't "
+                f"vendored yet. Probably newer properties: vendor {doc.declared} with "
+                f"scripts/vendor_schemas.py once Microsoft publishes it. ({listed})"))
     return found
 
 
