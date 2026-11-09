@@ -1,0 +1,337 @@
+# Probe 11: pie chart Legend drill-down and Details. Desktop 2.159.1231.0, 2026-11-09 (scripts/probe_pie_legend.py), on fixture 02.
+# User saw: step 2 accepted Country then Region in Legend, with drill arrows; step 3 drilling into a slice changed the slices; step 4 Region in Details split each country's slice (e.g. UK:North, UK:South). All content invented.
+
+######## 01 open and save
+
+diff --git a/Fixture.Report/definition/report.json b/Fixture.Report/definition/report.json
+index 6b0944f..502857b 100644
+--- a/Fixture.Report/definition/report.json
++++ b/Fixture.Report/definition/report.json
+@@ -24,6 +24,19 @@
+           }
+         }
+       }
++    ],
++    "outspacePane": [
++      {
++        "properties": {
++          "expanded": {
++            "expr": {
++              "Literal": {
++                "Value": "false"
++              }
++            }
++          }
++        }
++      }
+     ]
+   },
+   "resourcePackages": [
+
+######## 02 pie legend country region
+
+diff --git a/Fixture.Report/definition/pages/298a74501a487a892673/page.json b/Fixture.Report/definition/pages/298a74501a487a892673/page.json
+new file mode 100644
+index 0000000..7a6c83e
+--- /dev/null
++++ b/Fixture.Report/definition/pages/298a74501a487a892673/page.json
+@@ -0,0 +1,8 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
++  "name": "298a74501a487a892673",
++  "displayName": "Pie",
++  "displayOption": "FitToPage",
++  "height": 1080,
++  "width": 1920
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/298a74501a487a892673/visuals/09c9ef5e423e2dce449c/visual.json b/Fixture.Report/definition/pages/298a74501a487a892673/visuals/09c9ef5e423e2dce449c/visual.json
+new file mode 100644
+index 0000000..9a264ec
+--- /dev/null
++++ b/Fixture.Report/definition/pages/298a74501a487a892673/visuals/09c9ef5e423e2dce449c/visual.json
+@@ -0,0 +1,90 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
++  "name": "09c9ef5e423e2dce449c",
++  "position": {
++    "x": 10,
++    "y": 0,
++    "z": 0,
++    "height": 280,
++    "width": 280,
++    "tabOrder": 0
++  },
++  "visual": {
++    "visualType": "pieChart",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": false
++            },
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region",
++              "active": true
++            }
++          ]
++        },
++        "Y": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      },
++      "sortDefinition": {
++        "sort": [
++          {
++            "field": {
++              "Measure": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Property": "Total Amount"
++              }
++            },
++            "direction": "Descending"
++          }
++        ],
++        "isDefaultSort": true
++      }
++    },
++    "drillFilterOtherVisuals": true
++  }
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/pages.json b/Fixture.Report/definition/pages/pages.json
+index e28de5a..c855ab8 100644
+--- a/Fixture.Report/definition/pages/pages.json
++++ b/Fixture.Report/definition/pages/pages.json
+@@ -1,7 +1,8 @@
+ {
+   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.1.0/schema.json",
+   "pageOrder": [
+-    "6a692d13619c1d4c0146"
++    "6a692d13619c1d4c0146",
++    "298a74501a487a892673"
+   ],
+-  "activePageName": "6a692d13619c1d4c0146"
++  "activePageName": "298a74501a487a892673"
+ }
+\ No newline at end of file
+
+######## 03 drilled into a country
+
+diff --git a/Fixture.Report/definition/pages/298a74501a487a892673/visuals/09c9ef5e423e2dce449c/visual.json b/Fixture.Report/definition/pages/298a74501a487a892673/visuals/09c9ef5e423e2dce449c/visual.json
+index 9a264ec..5ea0545 100644
+--- a/Fixture.Report/definition/pages/298a74501a487a892673/visuals/09c9ef5e423e2dce449c/visual.json
++++ b/Fixture.Report/definition/pages/298a74501a487a892673/visuals/09c9ef5e423e2dce449c/visual.json
+@@ -28,7 +28,7 @@
+               },
+               "queryRef": "Sales.Country",
+               "nativeQueryRef": "Country",
+-              "active": false
++              "active": true
+             },
+             {
+               "field": {
+@@ -86,5 +86,63 @@
+       }
+     },
+     "drillFilterOtherVisuals": true
++  },
++  "filterConfig": {
++    "filters": [
++      {
++        "name": "bccac8c0cb72e7a471cb",
++        "field": {
++          "Column": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Country"
++          }
++        },
++        "type": "Categorical",
++        "filter": {
++          "Version": 2,
++          "From": [
++            {
++              "Name": "s",
++              "Entity": "Sales",
++              "Type": 0
++            }
++          ],
++          "Where": [
++            {
++              "Condition": {
++                "In": {
++                  "Expressions": [
++                    {
++                      "Column": {
++                        "Expression": {
++                          "SourceRef": {
++                            "Source": "s"
++                          }
++                        },
++                        "Property": "Country"
++                      }
++                    }
++                  ],
++                  "Values": [
++                    [
++                      {
++                        "Literal": {
++                          "Value": "'UK'"
++                        }
++                      }
++                    ]
++                  ]
++                }
++              }
++            }
++          ]
++        },
++        "howCreated": "Drill"
++      }
++    ]
+   }
+ }
+\ No newline at end of file
+
+######## 04 region in details
+
+diff --git a/Fixture.Report/definition/pages/298a74501a487a892673/visuals/09c9ef5e423e2dce449c/visual.json b/Fixture.Report/definition/pages/298a74501a487a892673/visuals/09c9ef5e423e2dce449c/visual.json
+index 5ea0545..a4b913f 100644
+--- a/Fixture.Report/definition/pages/298a74501a487a892673/visuals/09c9ef5e423e2dce449c/visual.json
++++ b/Fixture.Report/definition/pages/298a74501a487a892673/visuals/09c9ef5e423e2dce449c/visual.json
+@@ -29,7 +29,11 @@
+               "queryRef": "Sales.Country",
+               "nativeQueryRef": "Country",
+               "active": true
+-            },
++            }
++          ]
++        },
++        "Series": {
++          "projections": [
+             {
+               "field": {
+                 "Column": {
+@@ -42,8 +46,7 @@
+                 }
+               },
+               "queryRef": "Sales.Region",
+-              "nativeQueryRef": "Region",
+-              "active": true
++              "nativeQueryRef": "Region"
+             }
+           ]
+         },
+@@ -86,63 +89,5 @@
+       }
+     },
+     "drillFilterOtherVisuals": true
+-  },
+-  "filterConfig": {
+-    "filters": [
+-      {
+-        "name": "bccac8c0cb72e7a471cb",
+-        "field": {
+-          "Column": {
+-            "Expression": {
+-              "SourceRef": {
+-                "Entity": "Sales"
+-              }
+-            },
+-            "Property": "Country"
+-          }
+-        },
+-        "type": "Categorical",
+-        "filter": {
+-          "Version": 2,
+-          "From": [
+-            {
+-              "Name": "s",
+-              "Entity": "Sales",
+-              "Type": 0
+-            }
+-          ],
+-          "Where": [
+-            {
+-              "Condition": {
+-                "In": {
+-                  "Expressions": [
+-                    {
+-                      "Column": {
+-                        "Expression": {
+-                          "SourceRef": {
+-                            "Source": "s"
+-                          }
+-                        },
+-                        "Property": "Country"
+-                      }
+-                    }
+-                  ],
+-                  "Values": [
+-                    [
+-                      {
+-                        "Literal": {
+-                          "Value": "'UK'"
+-                        }
+-                      }
+-                    ]
+-                  ]
+-                }
+-              }
+-            }
+-          ]
+-        },
+-        "howCreated": "Drill"
+-      }
+-    ]
+   }
+ }
+\ No newline at end of file
+

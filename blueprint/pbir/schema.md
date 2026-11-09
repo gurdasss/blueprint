@@ -402,7 +402,19 @@ README Q1–Q3 and Q5–Q11. Every file Desktop wrote validates and round-trips 
   - New visuals default to `280×280` at `x 10`, stacked downwards with a 10px gap (`y` 0, 290,
     580). `z`/`tabOrder` are the next integer, as in probe 04.
   - No `filterConfig` was written, because the filter pane stayed collapsed (probe 05).
-  - **Open:** more than one Legend column on a pie.
+  - **Pie Legend drill-down and Details (probe 11,** `scripts/probe_pie_legend.py`; evidence
+    `docs/probes/11-pie-legend.diff`). Desktop accepts **several Legend columns as an ordered
+    drill-down**, stored as an ordered list of `Category` projections (Country, then Region), the same
+    as the column chart (probe 04). The **Details** well is role **`Series`**. Its column projection
+    has no `active` key, and roles stay alphabetical (`Category`, `Series`, `Y`). With Region in
+    Details, each country's slice is split by region ("UK:North").
+  - **`active` is drill view state:** right after adding the second Legend field it was Country `false`,
+    Region `true`; drilling into a slice set Country to `true`. Desktop's own column chart (fixture 02)
+    and Blueprint's output (probe 05) have every level `true`, which Desktop accepts as written.
+  - **Drilling writes a filter holding a data value** into the visual: `filterConfig.filters[]` with
+    `"howCreated": "Drill"`, `"type": "Categorical"` and an `In` condition on the drilled value
+    (`'UK'`). Drilling back up and changing the wells removed it. `apply` ignores `filterConfig`,
+    and evidence files must redact these values for real reports.
   - **KPI Target (probe 10,** `scripts/probe_kpi_target.py`; evidence `docs/probes/10-kpi-target.diff`):
     the Target well is role **`Goal`**, holding a measure projection of the usual shape. The KPI shows
     the Value at the **last trend-axis point** (300, not the 500 total) against the goal (600, "-50%",
