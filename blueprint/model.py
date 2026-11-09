@@ -38,6 +38,23 @@ class ColorUse:
 
 
 @dataclass(frozen=True)
+class FontUse:
+    """Font settings written for one text role of a visual. None = not written (theme/default)."""
+
+    role: str  # "title" | "subtitle" | "callout" | "textbox"
+    family: str | None = None  # the face, e.g. "Segoe UI Semibold" (first entry of a font stack)
+    size: float | None = None  # pt
+    bold: bool | None = None
+    raw_family: str | None = None  # as stored, for messages
+
+
+@dataclass(frozen=True)
+class TextClass:
+    font: str | None = None
+    size: float | None = None
+
+
+@dataclass(frozen=True)
 class Theme:
     name: str
     layer: str  # "base" | "custom"; custom overrides base
@@ -48,6 +65,7 @@ class Theme:
     data_colors: tuple[str, ...] = ()  # uppercase hex
     foreground: str | None = None
     background: str | None = None
+    text_classes: dict[str, TextClass] = field(default_factory=dict)  # title, label, callout, …
 
 
 @dataclass
@@ -63,6 +81,7 @@ class Visual:
     bound: bool = False  # has at least one field projection (measure/column)
     ignored: bool = False  # `blueprint: ignore` escape hatch
     colors: list[ColorUse] = field(default_factory=list)
+    fonts: list[FontUse] = field(default_factory=list)
     source: Any = field(default=None, repr=False, compare=False)
 
 

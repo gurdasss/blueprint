@@ -238,6 +238,7 @@ class _Reader:
             bound=_bound(visual),
             ignored=str(notes.get(IGNORE_ANNOTATION, "")).lower() == "true",
             colors=formatting.colors_in(visual),
+            fonts=formatting.fonts_in(visual),
             source=doc,
         )
 
