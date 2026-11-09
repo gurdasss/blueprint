@@ -86,8 +86,8 @@ core.whitespace cr-at-eol` hides it.
   `ReportSection`, `ReportSection2`; visuals `VisualContainer`, `VisualContainer1`, …
   Folder name == `name` property in every case. Readers must not assume hex IDs.
 
-**Open (README Q4):** does Desktop accept any compliant name for a *new* object, or must
-it be 20 hex characters?
+**Open (README Q4):** does Desktop accept any compliant name for a *new* object? See
+"Creating pages and visuals" below: new objects get 20 hex characters.
 
 ## Pages
 
@@ -286,6 +286,74 @@ Segoe UI 11, Title Segoe UI Semibold 16):
   `"DIN"`) and a CSS font stack in the customised theme. Neither is wrapped in quote characters the
   way formatting-object literals are. The first family in the stack is the face.
 - The file is 3.2 MB in Desktop's JSON format and round-trips through `jsonfmt`.
+
+## Creating pages and visuals
+
+**Verified 2026-11-09, Desktop 2.159.1231.0, probe 04** (`scripts/probe_apply.py`; evidence
+`docs/probes/04-apply-from-scratch.diff`, one commit per step, all content invented). This answers
+README Q1–Q3 and Q5–Q11. Every file Desktop wrote validates and round-trips through `jsonfmt`.
+
+### A new report (Q1)
+
+- Files: `Fixture.pbip`, `.gitignore` (Desktop writes one that ignores only
+  `**/.pbi/localSettings.json` and `**/.pbi/cache.abf`), `Fixture.Report/{.platform,
+  definition.pbir, definition/{version.json, report.json, pages/pages.json,
+  pages/<id>/page.json}, StaticResources/SharedResources/BaseThemes/Fluent2-CY26SU10.json}`, and
+  `Fixture.SemanticModel/{.platform, definition.pbism, diagramLayout.json, .pbi/editorSettings.json,
+  definition/{database,model}.tmdl, definition/cultures/<locale>.tmdl}`. The culture file is
+  named after the Desktop locale (`en-IN` here).
+- **The default canvas is 1920×1080** (`displayOption: FitToPage`), not 1280×720.
+- `report.json` embeds the base theme file and its `resourcePackages` entry, sets
+  `objects.section.verticalAlignment = 'Top'`, and has `settings` `{useStylableVisualContainerHeader,
+  exportDataMode: "AllowSummarized", defaultDrillFilterOtherVisuals, allowChangeFilterTypes,
+  useEnhancedTooltips, useDefaultAggregateDisplayName}` (all `true` except `exportDataMode`).
+- `definition.pbir` has no `$schema`, even in a new report.
+
+### IDs (Q4, partly)
+
+- Pages, visuals and **filters** (`filterConfig.filters[].name`) all get **20 lowercase hex
+  characters** (`6a692d13619c1d4c0146`). They look random. A pasted visual gets a new ID, and
+  so does each of its filters.
+- **Open:** whether Desktop accepts a Blueprint-generated name (deterministic, still 20 hex)
+  for a *new* object. Settle it by opening a report `bp apply` wrote.
+
+### Pages (Q2, Q3, Q5)
+
+- **Add:** a new folder `pages/<id>/page.json` with exactly `$schema`, `name` (= the folder),
+  `displayName` (`"Page 2"`), `displayOption`, `height`, `width`. **`pages.json` is updated** too:
+  the ID is appended to `pageOrder` and `activePageName` is set to the new page. A page folder
+  on its own is therefore not enough: `bp apply` must update the registry.
+- **Rename:** `displayName` only. The ID and folder stay the same.
+- **Reorder:** `pageOrder` only. Folder names never imply order.
+- **Delete:** the page folder is removed and its ID is removed from `pageOrder`. `activePageName`
+  was left alone (another page was active).
+
+### Visuals (Q6–Q11)
+
+- **Add:** a new folder `visuals/<id>/visual.json`. No other file changes, except
+  `activePageName` following the page on screen.
+- **Defaults:** a new card is placed at `x 10, y 0`, size `280×280`; a column chart is `696×329`.
+  `z` and `tabOrder` are the next integer on the page (0, 1, 2, …).
+- **The card type is `cardVisual`** (the newer card), with its field in role **`Data`**. Older
+  reports use `card` with role `Values`. The typography `callout` role only covers `card`
+  `labels`; `cardVisual` formatting is unverified.
+- Desktop adds the following to every bound visual: `query.sortDefinition` (`isDefaultSort: true`;
+  descending on the measure for the card, ascending on each category level for the chart),
+  `visual.drillFilterOtherVisuals: true`, and **`filterConfig.filters`**, one per bound field
+  (`type: "Advanced"` for a measure, `"Categorical"` for a column), each with its own 20-hex
+  `name`.
+- **Bindings (Q9):** `{"field": {"Measure"|"Column": {"Expression": {"SourceRef": {"Entity":
+  "<table>"}}, "Property": "<name>"}}, "queryRef": "<table>.<name>", "nativeQueryRef": "<name>"}`.
+  Category columns also have `"active": true`.
+- **Drill-down (Q11):** an **ordered list of projections in one role** (`Category`: Country,
+  then Region). The order is the hierarchy. `sortDefinition` has one entry per level.
+- **Field wells (Q10):** column chart roles are `Category` and `Y`; the card's is `Data`.
+- **Title (Q8):** `visualContainerObjects.title[0].properties` = `show "true"` + `text
+  "'Total'"`.
+- **Move/resize (Q7):** only `position` changes, as sub-pixel floats.
+- **Paste:** an identical file apart from `name`, filter `name`s, `position`, and the next
+  `z`/`tabOrder`. (Whether annotations are copied is untested.)
+- **Delete:** the visual's folder is removed. Nothing else changes.
 
 ## Field bindings
 
