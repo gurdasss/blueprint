@@ -26,17 +26,36 @@ def _nearest(v: float, grid: int) -> int:
     return math.floor(v / grid + 0.5) * grid
 
 
+def _snap_edge(v: float, grid: int, limit: float) -> float:
+    """Nearest grid line, treating the page edge ``limit`` as a snap line too.
+
+    An edge that starts on the page never snaps past ``limit``. The page edge matters
+    when the page size isn't a multiple of the grid (e.g. 720 on a 7px grid).
+    """
+    n = _nearest(v, grid)
+    if v > limit:
+        return n  # already off the page: snap normally; `check` reports it
+    if n > limit or abs(limit - v) < abs(n - v):
+        return limit
+    return n
+
+
+def _span(lo: float, hi: float, grid: int, limit: float, was_hi: float) -> tuple[float, float]:
+    """Snap one axis. A visual never collapses below one grid cell, and growing it to one
+    cell must not push it off the page: if there's no room after it, grow it the other way."""
+    lo, hi = _snap_edge(lo, grid, limit), _snap_edge(hi, grid, limit)
+    if hi - lo < grid:
+        if lo + grid <= limit or was_hi > limit:
+            hi = lo + grid
+        else:
+            hi = limit
+            lo = max(0, math.floor((limit - grid) / grid) * grid)
+    return lo, hi
+
+
 def snap_rect(rect: Rect, grid: int, page_w: float, page_h: float) -> Rect:
-    left, top = _nearest(rect.x, grid), _nearest(rect.y, grid)
-    right, bottom = _nearest(rect.right, grid), _nearest(rect.bottom, grid)
-    # Snapping must not push an edge that was on the page off it.
-    if right > page_w and rect.right <= page_w:
-        right = math.floor(page_w / grid) * grid
-    if bottom > page_h and rect.bottom <= page_h:
-        bottom = math.floor(page_h / grid) * grid
-    # A visual never collapses below one grid cell.
-    right = max(right, left + grid)
-    bottom = max(bottom, top + grid)
+    left, right = _span(rect.x, rect.right, grid, page_w, rect.right)
+    top, bottom = _span(rect.y, rect.bottom, grid, page_h, rect.bottom)
     return Rect(left, top, right - left, bottom - top)
 
 
