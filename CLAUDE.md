@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `pbir/writer`, `model`, `plan`, `guidelines`, `policies`, `grid`, `validate`, `bp inspect`, `bp fmt` and `bp check`. Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
+Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `pbir/writer`, `model`, `plan`, `guidelines`, `policies`, `grid`, `validate`, `pbir/formatting`, `bp inspect`, `bp fmt` and `bp check` (including the palette rule). Typography is next and needs a Desktop probe first. Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
 
 ## Commands
 
@@ -33,6 +33,8 @@ python scripts/vendor_schemas.py <$schema URL>    # vendor a schema + its $refs 
 - The writer owns only `position.x/y/width/height` so far. To make Blueprint own another field, extend `writer._visual_write`. Never regenerate a whole document.
 - `validate.py` holds the guideline rules (`bounds`, `grid`, `margin`, `overlap`, `page-size`, `density`), pure functions over the model. `bp check` adds `format` findings from `pbir/` (reader warnings plus `schemas.validate_documents`). Rule ids and exit codes are a CI contract, so don't rename them. Each rule's severity comes from `check.severity` in the guidelines.
 - `grid.off_grid_edges` is the only definition of "on grid", used by both `fmt` and `check`. A test asserts that `check` passes everything `fmt` produces.
+- `pbir/formatting.py` finds colours by **shape** (`solid.color.expr` anywhere, plus textbox `textStyle.color`), not by property name, and classifies each as `hex`, `theme` (`ThemeDataColor`) or `expression`. Themes resolve through `report.json` `resourcePackages` to `StaticResources/<package>/<path>`. A missing theme is data, not an error. Paths read from report files must never be followed out of the report folder (`_inside_report`).
+- The `palette` rule's severity comes from `palette.enforce` (strict/warn/off), not `check.severity`. Theme references pass because the theme itself is checked. Textbox colours picked from the theme are stored as resolved hex, so approved shades go in `palette.extra`.
 - A guideline key the docs describe but no code implements goes in `guidelines.NOT_IMPLEMENTED`, so `check` reports it as unchecked instead of passing silently. Only check what `schema.md` marks as verified.
 - `grid.py` snaps each of a visual's four edges to the nearest grid line, rounding halves up. It skips `blueprint.ignore` visuals silently. It skips, with a warning, pages with no fixed size (`DeprecatedDynamic`) and grouped visuals (group-relative positioning is unverified).
 
