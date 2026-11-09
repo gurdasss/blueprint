@@ -17,7 +17,13 @@ from typing import Any
 
 from blueprint.model import Rect
 from blueprint.pbir import schemas
-from blueprint.pbir.reader import PAGE_ANNOTATION, VISUAL_ANNOTATION
+from blueprint.pbir.reader import (
+    GUIDELINES_ANNOTATION,
+    LAYOUT_ANNOTATION,
+    PAGE_ANNOTATION,
+    REGION_ANNOTATION,
+    VISUAL_ANNOTATION,
+)
 
 _KIND = "item/report/definition"
 
@@ -57,7 +63,25 @@ def _quote(text: str) -> str:
     return "'" + text.replace("'", "''") + "'"
 
 
-def page(name: str, display_name: str, width: int, height: int, spec_page: str) -> dict:
+def page_annotations(spec_page: str, layout: str, guidelines: str) -> list[dict]:
+    return [{"name": PAGE_ANNOTATION, "value": spec_page},
+            {"name": LAYOUT_ANNOTATION, "value": layout},
+            {"name": GUIDELINES_ANNOTATION, "value": guidelines}]
+
+
+def visual_annotations(spec_id: str, region: str) -> list[dict]:
+    return [{"name": VISUAL_ANNOTATION, "value": spec_id}, {"name": REGION_ANNOTATION, "value": region}]
+
+
+def with_annotations(doc: dict, wanted: list[dict]) -> dict:
+    """``doc`` with Blueprint's annotations set to ``wanted``; any other annotations are kept."""
+    names = {a["name"] for a in wanted}
+    others = [a for a in doc.get("annotations", []) if not (isinstance(a, dict) and a.get("name") in names)]
+    return {**doc, "annotations": [*others, *wanted]}
+
+
+def page(name: str, display_name: str, width: int, height: int, spec_page: str, layout: str,
+         guidelines: str) -> dict:
     return {
         "$schema": schema_url("page"),
         "name": name,
@@ -65,7 +89,7 @@ def page(name: str, display_name: str, width: int, height: int, spec_page: str) 
         "displayOption": "FitToPage",
         "height": height,
         "width": width,
-        "annotations": [{"name": PAGE_ANNOTATION, "value": spec_page}],
+        "annotations": page_annotations(spec_page, layout, guidelines),
     }
 
 
@@ -73,7 +97,8 @@ def title_objects(title: str) -> dict:
     return {"title": [{"properties": {"show": _literal("true"), "text": _literal(_quote(title))}}]}
 
 
-def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec_id: str, *,
+def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec_id: str,
+           region: str, *,
            bindings: dict[str, list[Binding]] | None = None, title: str | None = None,
            text: str | None = None) -> dict:
     """A visual container. ``bindings``: query role -> ordered fields. ``text``: textbox content."""
@@ -91,22 +116,8 @@ def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec
         "position": {"x": rect.x, "y": rect.y, "z": z, "height": rect.height, "width": rect.width,
                      "tabOrder": tab_order},
         "visual": body,
-        "annotations": [{"name": VISUAL_ANNOTATION, "value": spec_id}],
+        "annotations": visual_annotations(spec_id, region),
     }
-
-
-def bound_fields(visual_doc: dict) -> dict[str, list[tuple[str, str, str]]]:
-    """Existing bindings by role, as (kind, table, name), for comparing with a spec."""
-    out: dict[str, list[tuple[str, str, str]]] = {}
-    state = (((visual_doc.get("visual") or {}).get("query") or {}).get("queryState")) or {}
-    for role, entry in state.items():
-        for p in (entry or {}).get("projections") or []:
-            f = (p or {}).get("field") or {}
-            for key, kind in (("Measure", "measure"), ("Column", "column")):
-                if key in f:
-                    table = ((f[key].get("Expression") or {}).get("SourceRef") or {}).get("Entity")
-                    out.setdefault(role, []).append((kind, table, f[key].get("Property")))
-    return out
 
 
 def with_title(visual_doc: dict, title: str) -> dict:

@@ -34,6 +34,7 @@ class LayoutError(Exception):
 class Region:
     role: str
     rect: Rect
+    key: str = ""  # "<role>#<n>": the n-th region of that role, in declaration order
 
 
 @dataclass(frozen=True)
@@ -88,6 +89,7 @@ def parse(data: Any, source: str = "<layout>", expected_name: str | None = None)
         problems.append("canvas: needs integer width and height > 0")
         width = height = 0
     regions: list[Region] = []
+    per_role: dict[str, int] = {}
     raw_regions = data.get("regions")
     if not isinstance(raw_regions, list) or not raw_regions:
         problems.append("regions: required, a non-empty list")
@@ -103,7 +105,8 @@ def parse(data: Any, source: str = "<layout>", expected_name: str | None = None)
         rect = Rect(r["x"], r["y"], r["w"], r["h"])
         if width and (rect.x < 0 or rect.y < 0 or rect.right > width or rect.bottom > height):
             problems.append(f"{at} ({r['role']}): extends outside the {width}x{height} canvas")
-        regions.append(Region(r["role"], rect))
+        per_role[r["role"]] = per_role.get(r["role"], 0) + 1
+        regions.append(Region(r["role"], rect, f"{r['role']}#{per_role[r['role']]}"))
     if problems:
         raise LayoutError(f"{source}: {len(problems)} problem(s)\n  " + "\n  ".join(problems))
     return Layout(name, width, height, tuple(regions), source)

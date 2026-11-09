@@ -9,6 +9,14 @@
     {
       "name": "blueprint.page",
       "value": "Sales Overview"
+    },
+    {
+      "name": "blueprint.layout",
+      "value": "standard-4-up"
+    },
+    {
+      "name": "blueprint.guidelines",
+      "value": "Example Corp Reporting Standard@1"
     }
   ]
 }

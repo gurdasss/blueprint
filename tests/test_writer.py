@@ -129,7 +129,7 @@ def test_add_create_validates_exactly_and_never_overwrites(tmp_path: Path):
     from blueprint.plan import Plan
     rd = make_report(tmp_path, {"p": [visual("v1")]})
     plan = Plan(root=rd)
-    good = render.visual("aaaaaaaaaaaaaaaaaaaa", "cardVisual", Rect(0, 0, 8, 8), 0, 0, "card-1")
+    good = render.visual("aaaaaaaaaaaaaaaaaaaa", "cardVisual", Rect(0, 0, 8, 8), 0, 0, "card-1", "main#1")
     writer.add_create(plan, Path("definition/pages/p/visuals/aaaaaaaaaaaaaaaaaaaa/visual.json"), good, "new")
     with pytest.raises(writer.WriteError, match="already exists"):  # in this plan
         writer.add_create(plan, Path("definition/pages/p/visuals/aaaaaaaaaaaaaaaaaaaa/visual.json"), good, "x")

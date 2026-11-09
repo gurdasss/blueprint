@@ -100,12 +100,14 @@ def build_plan(args: argparse.Namespace) -> Plan:
     known = contracts()
     plan = Plan(root=report.root)
     plan.warnings.extend(report.warnings)
+    built_with = f"{rules.name}@{rules.version}"
 
     page = _find_page(report, page_spec.page)
     if page is None:
         pid = ids.page_id(page_spec.page, {p.name for p in report.pages})
         writer.add_create(plan, PAGES / pid / "page.json",
-                          render.page(pid, page_spec.page, layout.width, layout.height, page_spec.page),
+                          render.page(pid, page_spec.page, layout.width, layout.height, page_spec.page,
+                                      layout.name, built_with),
                           f"new page {page_spec.page!r} ({layout.width}x{layout.height}, layout {layout.name})")
         registry_doc = report.source.documents.get(PAGES / "pages.json")
         if registry_doc is None:
@@ -119,6 +121,11 @@ def build_plan(args: argparse.Namespace) -> Plan:
             raise ApplyError(f"page {page.display_name!r} is {page.width}x{page.height} but layout "
                              f"{layout.name!r} is {layout.width}x{layout.height}; Blueprint doesn't "
                              "scale layouts. Resize the page in Desktop or choose a matching layout.")
+        if (page.layout, page.guidelines) != (layout.name, built_with):
+            writer.add_modify(plan, page.source, render.with_annotations(
+                page.source.data, render.page_annotations(page_spec.page, layout.name, built_with)),
+                f"page built with layout {layout.name}, guidelines {built_with} "
+                f"(was {page.layout}, {page.guidelines})", force_schema=args.force_schema)
 
     existing: dict[str, Visual] = {v.spec_id: v for v in (page.visuals if page else []) if v.spec_id}
     hand_placed = [v for v in (page.visuals if page else []) if not v.spec_id]
@@ -135,15 +142,18 @@ def build_plan(args: argparse.Namespace) -> Plan:
                 problems.append(f"visuals[{vs.index}] ({vs.id}): is a {current.visual_type} in the "
                                 f"report but {vs.type} ({contract.visual_type}) in the spec")
                 continue
-            have = render.bound_fields(current.source.data)
+            have = {role: [(f.kind, f.table, f.name) for f in fs] for role, fs in current.fields.items()}
             if have != {role: [(b.kind, b.table, b.name) for b in fs] for role, fs in want.items()}:
                 problems.append(f"visuals[{vs.index}] ({vs.id}): field bindings differ from the "
                                 "report; changing bindings isn't supported yet (delete the visual in "
                                 "Desktop and re-apply)")
                 continue
             current.rect = rect
+            if current.region != p.region.key:
+                current.source.data = render.with_annotations(
+                    current.source.data, render.visual_annotations(vs.id, p.region.key))
             if vs.type == "header":
-                text = _textbox_text(current.source.data)
+                text = current.text
                 if vs.title != text:
                     plan.warnings.append(f"{vs.id}: header text differs from the spec ({text!r}); "
                                          "updating textbox text isn't supported yet, left as is")
@@ -154,10 +164,11 @@ def build_plan(args: argparse.Namespace) -> Plan:
         vid = ids.visual_id(pid, vs.id, taken)
         taken.add(vid)
         is_header = vs.type == "header"
-        doc = render.visual(vid, contract.visual_type, rect, z, tab, vs.id, bindings=want or None,
+        doc = render.visual(vid, contract.visual_type, rect, z, tab, vs.id, p.region.key,
+                            bindings=want or None,
                             title=None if is_header else vs.title, text=vs.title if is_header else None)
         writer.add_create(plan, PAGES / pid / "visuals" / vid / "visual.json", doc,
-                          f"new {vs.type} {vs.id!r} in region {p.region.role} at "
+                          f"new {vs.type} {vs.id!r} in region {p.region.key} at "
                           f"{rect.x},{rect.y} {rect.width}x{rect.height}")
         z, tab = z + STEP, tab + STEP
         for other in hand_placed:
@@ -177,14 +188,6 @@ def build_plan(args: argparse.Namespace) -> Plan:
     return plan
 
 
-def _textbox_text(doc: dict) -> str | None:
-    try:
-        runs = doc["visual"]["objects"]["general"][0]["properties"]["paragraphs"][0]["textRuns"]
-        return "".join(r.get("value", "") for r in runs)
-    except (KeyError, IndexError, TypeError):
-        return None
-
-
 def run(args: argparse.Namespace) -> int:
     plan = build_plan(args)
     if not args.dry_run:
@@ -195,4 +198,3 @@ def run(args: argparse.Namespace) -> int:
               "accept 'Apply external changes' (unsaved Desktop edits will be overwritten).",
               file=sys.stderr)
     return 0
-

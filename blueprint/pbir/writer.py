@@ -57,18 +57,19 @@ def _visual_write(visual: Visual, *, force_schema: bool) -> FileWrite | None:
         if old is None or float(old) != float(new):
             new_pos[key] = new
             changes.append(f"{key} {_fmt(old)} -> {_fmt(new)}")
+    # doc.data may already carry in-memory edits (e.g. bp apply updating annotations); position
+    # and title go on top, and the whole document becomes one write, so changes never collide.
     data = {**doc.data, "position": new_pos}
     current_title = _title(doc.data.get("visual") or {})
     if visual.title is not None and visual.title != current_title:
         data = render.with_title(data, visual.title)
         changes.append(f"title {current_title!r} -> {visual.title!r}")
-    if not changes:
-        return None
-    _check_schema(doc, data, force_schema=force_schema)
     after = jsonfmt.dump_bytes(data)
     if after == doc.raw:
         return None
-    return FileWrite(doc.path, doc.raw, after, (f"{visual.name}: " + ", ".join(changes),))
+    _check_schema(doc, data, force_schema=force_schema)
+    return FileWrite(doc.path, doc.raw, after,
+                     (f"{visual.name}: " + (", ".join(changes) or "Blueprint annotations"),))
 
 
 def add_modify(plan: Plan, doc: Document, data: dict, note: str, *, force_schema: bool = False) -> None:

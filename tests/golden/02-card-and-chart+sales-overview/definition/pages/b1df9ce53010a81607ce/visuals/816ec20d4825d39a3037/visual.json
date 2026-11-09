@@ -60,6 +60,10 @@
     {
       "name": "blueprint.visual",
       "value": "card-1"
+    },
+    {
+      "name": "blueprint.region",
+      "value": "main#1"
     }
   ]
 }

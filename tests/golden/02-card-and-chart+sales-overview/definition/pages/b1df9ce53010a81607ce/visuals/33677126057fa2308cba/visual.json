@@ -33,6 +33,10 @@
     {
       "name": "blueprint.visual",
       "value": "header-1"
+    },
+    {
+      "name": "blueprint.region",
+      "value": "header#1"
     }
   ]
 }

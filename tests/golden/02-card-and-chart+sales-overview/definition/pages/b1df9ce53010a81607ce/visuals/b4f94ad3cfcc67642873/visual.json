@@ -94,6 +94,10 @@
     {
       "name": "blueprint.visual",
       "value": "column-1"
+    },
+    {
+      "name": "blueprint.region",
+      "value": "main#2"
     }
   ]
 }
