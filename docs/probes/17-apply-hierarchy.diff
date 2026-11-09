@@ -1,0 +1,672 @@
+# Probe 17: Desktop opens bp apply output bound to a model hierarchy (Sales[Geography]). Desktop 2.159.1231.0, 2026-11-09 (scripts/probe_apply_hierarchy.py), fixture 02 plus probe 16's hierarchy.
+# User saw: both visuals drawn with titles; column chart UK and FR with working drill-down; table columns Country, Region, Total Amount; X-axis well shows Geography (Country, Region). All content invented.
+
+######## model: add hierarchy Geography (as Desktop wrote it in probe 16)
+
+diff --git a/Fixture.SemanticModel/definition/tables/Sales.tmdl b/Fixture.SemanticModel/definition/tables/Sales.tmdl
+index 4b3c8d8..0931d2b 100644
+--- a/Fixture.SemanticModel/definition/tables/Sales.tmdl
++++ b/Fixture.SemanticModel/definition/tables/Sales.tmdl
+@@ -30,6 +30,17 @@ table Sales
+ 
+ 		annotation SummarizationSetBy = Automatic
+ 
++	hierarchy Geography
++		lineageTag: 1c532aa5-8b4d-4377-a0d9-2f88cbfd471d
++
++		level Country
++			lineageTag: 96a8fc60-b3a4-4c8d-ba60-fb8924982fbf
++			column: Country
++
++		level Region
++			lineageTag: 10795807-315b-45b3-ab90-5d16ec8ee6e2
++			column: Region
++
+ 	partition Sales = m
+ 		mode: import
+ 		source =
+
+######## blueprint: apply specs/geography.yaml
+
+diff --git a/Fixture.Report/.blueprint.manifest.json b/Fixture.Report/.blueprint.manifest.json
+new file mode 100644
+index 0000000..c9854d1
+--- /dev/null
++++ b/Fixture.Report/.blueprint.manifest.json
+@@ -0,0 +1,132 @@
++{
++  "blueprint_version": "0.0.1",
++  "guidelines": {
++    "name": "Example Corp Reporting Standard",
++    "version": 1
++  },
++  "pbir_schema": {
++    "page": [
++      "2.1.0"
++    ],
++    "pagesMetadata": [
++      "1.1.0"
++    ],
++    "report": [
++      "3.3.0"
++    ],
++    "versionMetadata": [
++      "1.0.0"
++    ],
++    "visualContainer": [
++      "2.13.0",
++      "2.14.0 (validated as 2.13.0)"
++    ]
++  },
++  "generated_at": "2026-01-01T00:00:00Z",
++  "pages": [
++    {
++      "id": "6a692d13619c1d4c0146",
++      "name": "Overview",
++      "size": {
++        "w": 1920,
++        "h": 1080
++      },
++      "visuals": [
++        {
++          "id": "c62803c0b4a8a11ac705",
++          "type": "cardVisual",
++          "visual_type": "cardVisual",
++          "title": "Total",
++          "managed": false,
++          "position": {
++            "x": 10.29,
++            "y": 0,
++            "w": 695.71,
++            "h": 741
++          },
++          "slots": {
++            "Data": "[Total Amount]"
++          }
++        },
++        {
++          "id": "ca909884eb63347a3230",
++          "type": "clusteredColumnChart",
++          "visual_type": "clusteredColumnChart",
++          "title": null,
++          "managed": false,
++          "position": {
++            "x": 903.61,
++            "y": 236.71,
++            "w": 696,
++            "h": 329
++          },
++          "slots": {
++            "Category": [
++              "Sales[Country]",
++              "Sales[Region]"
++            ],
++            "Y": "[Total Amount]"
++          }
++        }
++      ]
++    },
++    {
++      "id": "798daeb35360ea2fbaca",
++      "name": "Geography",
++      "spec": "geography",
++      "spec_page": "Geography",
++      "layout": "standard-4-up",
++      "built_with": "Example Corp Reporting Standard@1",
++      "size": {
++        "w": 1280,
++        "h": 720
++      },
++      "visuals": [
++        {
++          "id": "8673d98a0aa5664f4b74",
++          "type": "column",
++          "visual_type": "clusteredColumnChart",
++          "title": "By Geography",
++          "managed": true,
++          "spec_id": "column-1",
++          "region": "main#1",
++          "position": {
++            "x": 16,
++            "y": 232,
++            "w": 616,
++            "h": 472
++          },
++          "slots": {
++            "category": [
++              "Sales[Geography].Country",
++              "Sales[Geography].Region"
++            ],
++            "value": "[Total Amount]"
++          }
++        },
++        {
++          "id": "f03c14abc4ce5ca22946",
++          "type": "table",
++          "visual_type": "tableEx",
++          "title": "Geography Detail",
++          "managed": true,
++          "spec_id": "table-1",
++          "region": "main#2",
++          "position": {
++            "x": 648,
++            "y": 232,
++            "w": 616,
++            "h": 472
++          },
++          "slots": {
++            "columns": [
++              "Sales[Geography].Country",
++              "Sales[Geography].Region",
++              "[Total Amount]"
++            ]
++          }
++        }
++      ]
++    }
++  ]
++}
+diff --git a/Fixture.Report/definition/pages/798daeb35360ea2fbaca/page.json b/Fixture.Report/definition/pages/798daeb35360ea2fbaca/page.json
+new file mode 100644
+index 0000000..452368b
+--- /dev/null
++++ b/Fixture.Report/definition/pages/798daeb35360ea2fbaca/page.json
+@@ -0,0 +1,26 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
++  "name": "798daeb35360ea2fbaca",
++  "displayName": "Geography",
++  "displayOption": "FitToPage",
++  "height": 720,
++  "width": 1280,
++  "annotations": [
++    {
++      "name": "blueprint.page",
++      "value": "Geography"
++    },
++    {
++      "name": "blueprint.spec",
++      "value": "geography"
++    },
++    {
++      "name": "blueprint.layout",
++      "value": "standard-4-up"
++    },
++    {
++      "name": "blueprint.guidelines",
++      "value": "Example Corp Reporting Standard@1"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/8673d98a0aa5664f4b74/visual.json b/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/8673d98a0aa5664f4b74/visual.json
+new file mode 100644
+index 0000000..68028e0
+--- /dev/null
++++ b/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/8673d98a0aa5664f4b74/visual.json
+@@ -0,0 +1,113 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "8673d98a0aa5664f4b74",
++  "position": {
++    "x": 16,
++    "y": 232,
++    "z": 0,
++    "height": 472,
++    "width": 616,
++    "tabOrder": 0
++  },
++  "visual": {
++    "visualType": "clusteredColumnChart",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "HierarchyLevel": {
++                  "Expression": {
++                    "Hierarchy": {
++                      "Expression": {
++                        "SourceRef": {
++                          "Entity": "Sales"
++                        }
++                      },
++                      "Hierarchy": "Geography"
++                    }
++                  },
++                  "Level": "Country"
++                }
++              },
++              "queryRef": "Sales.Geography.Country",
++              "nativeQueryRef": "Geography Country",
++              "active": true
++            },
++            {
++              "field": {
++                "HierarchyLevel": {
++                  "Expression": {
++                    "Hierarchy": {
++                      "Expression": {
++                        "SourceRef": {
++                          "Entity": "Sales"
++                        }
++                      },
++                      "Hierarchy": "Geography"
++                    }
++                  },
++                  "Level": "Region"
++                }
++              },
++              "queryRef": "Sales.Geography.Region",
++              "nativeQueryRef": "Geography Region",
++              "active": false
++            }
++          ]
++        },
++        "Y": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      }
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'By Geography'"
++                }
++              }
++            }
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "column-1"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#1"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/f03c14abc4ce5ca22946/visual.json b/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/f03c14abc4ce5ca22946/visual.json
+new file mode 100644
+index 0000000..0c84dcb
+--- /dev/null
++++ b/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/f03c14abc4ce5ca22946/visual.json
+@@ -0,0 +1,107 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "f03c14abc4ce5ca22946",
++  "position": {
++    "x": 648,
++    "y": 232,
++    "z": 1000,
++    "height": 472,
++    "width": 616,
++    "tabOrder": 1000
++  },
++  "visual": {
++    "visualType": "tableEx",
++    "query": {
++      "queryState": {
++        "Values": {
++          "projections": [
++            {
++              "field": {
++                "HierarchyLevel": {
++                  "Expression": {
++                    "Hierarchy": {
++                      "Expression": {
++                        "SourceRef": {
++                          "Entity": "Sales"
++                        }
++                      },
++                      "Hierarchy": "Geography"
++                    }
++                  },
++                  "Level": "Country"
++                }
++              },
++              "queryRef": "Sales.Geography.Country",
++              "nativeQueryRef": "Geography Country"
++            },
++            {
++              "field": {
++                "HierarchyLevel": {
++                  "Expression": {
++                    "Hierarchy": {
++                      "Expression": {
++                        "SourceRef": {
++                          "Entity": "Sales"
++                        }
++                      },
++                      "Hierarchy": "Geography"
++                    }
++                  },
++                  "Level": "Region"
++                }
++              },
++              "queryRef": "Sales.Geography.Region",
++              "nativeQueryRef": "Geography Region"
++            },
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      }
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'Geography Detail'"
++                }
++              }
++            }
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "table-1"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#2"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/pages.json b/Fixture.Report/definition/pages/pages.json
+index e28de5a..4dbf175 100644
+--- a/Fixture.Report/definition/pages/pages.json
++++ b/Fixture.Report/definition/pages/pages.json
+@@ -1,7 +1,8 @@
+ {
+   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.1.0/schema.json",
+   "pageOrder": [
+-    "6a692d13619c1d4c0146"
++    "6a692d13619c1d4c0146",
++    "798daeb35360ea2fbaca"
+   ],
+   "activePageName": "6a692d13619c1d4c0146"
+ }
+\ No newline at end of file
+diff --git a/specs/geography.yaml b/specs/geography.yaml
+new file mode 100644
+index 0000000..a865c6e
+--- /dev/null
++++ b/specs/geography.yaml
+@@ -0,0 +1,9 @@
++page: Geography
++layout: standard-4-up
++visuals:
++  - type: column
++    title: By Geography
++    slots: {category: "Sales[Geography]", value: "[Total Amount]"}
++  - type: table
++    title: Geography Detail
++    slots: {columns: ["Sales[Geography]", "[Total Amount]"]}
+
+######## 01 open and save
+
+diff --git a/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/8673d98a0aa5664f4b74/visual.json b/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/8673d98a0aa5664f4b74/visual.json
+index 68028e0..637f7b6 100644
+--- a/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/8673d98a0aa5664f4b74/visual.json
++++ b/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/8673d98a0aa5664f4b74/visual.json
+@@ -1,5 +1,5 @@
+ {
+-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+   "name": "8673d98a0aa5664f4b74",
+   "position": {
+     "x": 16,
+@@ -33,7 +33,7 @@
+               },
+               "queryRef": "Sales.Geography.Country",
+               "nativeQueryRef": "Geography Country",
+-              "active": true
++              "active": false
+             },
+             {
+               "field": {
+@@ -53,7 +53,7 @@
+               },
+               "queryRef": "Sales.Geography.Region",
+               "nativeQueryRef": "Geography Region",
+-              "active": false
++              "active": true
+             }
+           ]
+         },
+@@ -100,6 +100,62 @@
+       ]
+     }
+   },
++  "filterConfig": {
++    "filters": [
++      {
++        "name": "0e2f7550b29e06b58718",
++        "field": {
++          "HierarchyLevel": {
++            "Expression": {
++              "Hierarchy": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Hierarchy": "Geography"
++              }
++            },
++            "Level": "Country"
++          }
++        },
++        "type": "Categorical"
++      },
++      {
++        "name": "39d2ac3566331d125a8e",
++        "field": {
++          "HierarchyLevel": {
++            "Expression": {
++              "Hierarchy": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Hierarchy": "Geography"
++              }
++            },
++            "Level": "Region"
++          }
++        },
++        "type": "Categorical"
++      },
++      {
++        "name": "47a945d50c2d72551341",
++        "field": {
++          "Measure": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Total Amount"
++          }
++        },
++        "type": "Advanced"
++      }
++    ]
++  },
+   "annotations": [
+     {
+       "name": "blueprint.visual",
+diff --git a/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/f03c14abc4ce5ca22946/visual.json b/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/f03c14abc4ce5ca22946/visual.json
+index 0c84dcb..4d04667 100644
+--- a/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/f03c14abc4ce5ca22946/visual.json
++++ b/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/f03c14abc4ce5ca22946/visual.json
+@@ -1,5 +1,5 @@
+ {
+-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+   "name": "f03c14abc4ce5ca22946",
+   "position": {
+     "x": 648,
+@@ -94,6 +94,62 @@
+       ]
+     }
+   },
++  "filterConfig": {
++    "filters": [
++      {
++        "name": "802cfcf031e8700c8ec0",
++        "field": {
++          "HierarchyLevel": {
++            "Expression": {
++              "Hierarchy": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Hierarchy": "Geography"
++              }
++            },
++            "Level": "Country"
++          }
++        },
++        "type": "Categorical"
++      },
++      {
++        "name": "29b1267d50ce3d9713b2",
++        "field": {
++          "HierarchyLevel": {
++            "Expression": {
++              "Hierarchy": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Hierarchy": "Geography"
++              }
++            },
++            "Level": "Region"
++          }
++        },
++        "type": "Categorical"
++      },
++      {
++        "name": "96c5152a27c4aa615022",
++        "field": {
++          "Measure": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Total Amount"
++          }
++        },
++        "type": "Advanced"
++      }
++    ]
++  },
+   "annotations": [
+     {
+       "name": "blueprint.visual",
+diff --git a/Fixture.Report/definition/pages/pages.json b/Fixture.Report/definition/pages/pages.json
+index 4dbf175..9cde024 100644
+--- a/Fixture.Report/definition/pages/pages.json
++++ b/Fixture.Report/definition/pages/pages.json
+@@ -4,5 +4,5 @@
+     "6a692d13619c1d4c0146",
+     "798daeb35360ea2fbaca"
+   ],
+-  "activePageName": "6a692d13619c1d4c0146"
++  "activePageName": "798daeb35360ea2fbaca"
+ }
+\ No newline at end of file
+
+######## 02 drill and back
+
+diff --git a/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/8673d98a0aa5664f4b74/visual.json b/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/8673d98a0aa5664f4b74/visual.json
+index 637f7b6..f9140ea 100644
+--- a/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/8673d98a0aa5664f4b74/visual.json
++++ b/Fixture.Report/definition/pages/798daeb35360ea2fbaca/visuals/8673d98a0aa5664f4b74/visual.json
+@@ -33,7 +33,7 @@
+               },
+               "queryRef": "Sales.Geography.Country",
+               "nativeQueryRef": "Geography Country",
+-              "active": false
++              "active": true
+             },
+             {
+               "field": {
+@@ -53,7 +53,7 @@
+               },
+               "queryRef": "Sales.Geography.Region",
+               "nativeQueryRef": "Geography Region",
+-              "active": true
++              "active": false
+             }
+           ]
+         },
+

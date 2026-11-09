@@ -45,9 +45,9 @@ ROOT = Path(__file__).resolve().parent.parent
 PROBES = ROOT / "docs" / "probes"
 FIXTURE = ROOT / "fixtures" / "02-card-and-chart"
 GUIDE = ROOT / "guidelines" / "example.yaml"
-REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
 # Probes whose report Blueprint built and Desktop then opened and saved.
-ACCEPTANCE = [5, 6, 9, 14]
+ACCEPTANCE = [5, 6, 9, 14, 17]
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git to apply the evidence")
 
@@ -311,14 +311,18 @@ def test_blueprint_annotations_survive_every_desktop_save(replays, probe):
 @pytest.mark.parametrize(("probe", "specs"), [
     (9, [ROOT / "examples" / "sales-mix.yaml"]),
     (14, ["specs/dates-and-bars.yaml", "specs/pies-and-lines.yaml"]),
+    (17, ["specs/geography.yaml"]),
 ])
 def test_reapply_after_desktop_saved_changes_nothing(replays, probe, specs, tmp_path, capsys):
+    """Nothing but the manifest: Desktop's save can raise files' $schema versions, which the
+    manifest records (probe 17 raised every Blueprint visual from 2.13.0 to 2.14.0)."""
     proj = _copy(_last(replays, probe), tmp_path)
     for spec in specs:
         path = spec if isinstance(spec, Path) else proj / spec
         capsys.readouterr()
         assert main(["apply", str(path), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
-        assert capsys.readouterr().out.strip().startswith("No changes."), f"{probe}: {spec}"
+        written = [ln[2:] for ln in capsys.readouterr().out.splitlines() if ln[:2] in ("A ", "M ")]
+        assert set(written) <= {manifest.FILE}, f"{probe}: {spec} rewrote {written}"
     names = {name for _, name in _managed(_last(replays, probe))}
     found = check_report(read_report(proj / "Fixture.Report"), guidelines.load(GUIDE)).findings
     assert [f for f in found if f.visual in names] == []

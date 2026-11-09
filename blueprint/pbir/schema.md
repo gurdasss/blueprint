@@ -585,6 +585,14 @@ Data pane (Create hierarchy on Country, renamed Geography, then Region added):
   projections, matching Desktop's step 03 and 04 queries exactly (first level `active` in `Category`,
   no `active` in a table's `Values`). It's allowed only in the column chart's category and the table's
   columns; elsewhere it's refused as unverified.
+- **Desktop accepts these as written (probe 17,** `scripts/probe_apply_hierarchy.py`; evidence
+  `docs/probes/17-apply-hierarchy.diff`). Probe 16's hierarchy was added to fixture 02's TMDL, then
+  `bp apply` ran with a column chart and a table on `Sales[Geography]`. Both were drawn: the column
+  chart showed UK and FR and drilled to regions, and the table showed Country, Region and Total Amount.
+  The X-axis well showed Geography. On save Desktop kept the queries apart from the drill `active` flags,
+  kept the annotations, and added only the automatic `filterConfig` filters. It also raised both visuals'
+  `$schema` from 2.13.0 to 2.14.0, so a re-apply rewrites **only the manifest**, which records schema
+  versions and is now stale.
 
 ## Schema versions
 
