@@ -671,6 +671,14 @@ Data pane (Create hierarchy on Country, renamed Geography, then Region added):
     it's the right literal, so it isn't offered. The three positions are treated as verified on the
     three chart types they were seen on (the property is the same object on each).
   - Not probed, so refused: several measures together with a Legend on the stacked and area charts.
+- **Desktop saves bp apply's chart variants and options unchanged (probe 24,**
+  `scripts/probe_apply_variants.py`; evidence `docs/probes/24-apply-variants.diff`). Probes 22 and
+  23 had no save diff (nothing dirty). Here `bp apply` built every shape they verified from the
+  shipped contracts (14 visuals on two pages, no data cache); the user clicked Refresh now and
+  saved. The save landed (the model, base theme and cache were rewritten, byte-identical), and **no
+  page or visual file was rewritten**: no `filterConfig` added, no `$schema` raised
+  (`test_24_desktops_save_kept_every_blueprint_file`). Re-applying the specs afterwards changes
+  nothing. This completes probes 22 and 23's evidence with a real save.
 
 ## Schema versions
 

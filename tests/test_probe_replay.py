@@ -45,9 +45,9 @@ ROOT = Path(__file__).resolve().parent.parent
 PROBES = ROOT / "docs" / "probes"
 FIXTURE = ROOT / "fixtures" / "02-card-and-chart"
 GUIDE = ROOT / "guidelines" / "example.yaml"
-REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
 # Probes whose report Blueprint built and Desktop then opened and saved.
-ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23]
+ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24]
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git to apply the evidence")
 
@@ -314,6 +314,7 @@ def test_blueprint_annotations_survive_every_desktop_save(replays, probe):
     (17, ["specs/geography.yaml"]),
     (19, ["specs/geo-bar-pie.yaml", "specs/geo-line.yaml"]),
     (21, ["specs/slicer-matrix.yaml"]),
+    (24, ["specs/saved-variants-1.yaml", "specs/saved-variants-2.yaml"]),
 ])
 def test_reapply_after_desktop_saved_changes_nothing(replays, probe, specs, tmp_path, capsys):
     """Nothing but the manifest: Desktop's save can raise files' $schema versions, which the
@@ -601,3 +602,17 @@ def test_23_specs_write_what_desktop_drew(replays, tmp_path, step_name, sid):
     assert ours["visualType"] == drawn["visualType"]
     assert ours["query"] == drawn["query"]
     assert ours.get("objects") == drawn.get("objects")
+
+
+def test_24_desktops_save_kept_every_blueprint_file(replays):
+    """Probe 24: after Refresh now and Ctrl+S, Desktop rewrote no page or visual file (the save
+    landed: the model and theme were rewritten byte-identical), so nothing in the report changed."""
+    built, saved = replays[24][-2], replays[24][-1]
+    assert saved.name.startswith("01 refresh and save")
+
+    def report_files(step: Step) -> dict[str, bytes]:
+        return {p.relative_to(step.report).as_posix(): p.read_bytes()
+                for p in step.report.rglob("*") if p.is_file()}
+
+    assert report_files(saved) == report_files(built)
+    assert len(_managed(saved)) == 14  # 12 charts and slicers, 2 headers
