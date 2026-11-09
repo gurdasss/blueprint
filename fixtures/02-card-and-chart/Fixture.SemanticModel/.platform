@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "Fixture"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "92ea705a-2010-448f-ba02-346f052eccd5"
+  }
+}

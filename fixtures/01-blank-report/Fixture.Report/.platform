@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "Fixture"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "37a251ee-9690-47a3-b0d5-3dc12c8f80ba"
+  }
+}

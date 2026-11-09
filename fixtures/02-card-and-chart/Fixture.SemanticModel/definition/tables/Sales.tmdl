@@ -1,0 +1,43 @@
+table Sales
+	lineageTag: c7e8cdc0-b59b-4642-8775-e5294a7c49e5
+
+	measure 'Total Amount' = SUM(Sales[Amount])
+		formatString: 0
+		lineageTag: e6eb2d64-b4c3-497b-941e-816943dec7e2
+
+	column Country
+		dataType: string
+		lineageTag: bbedb577-9e73-424a-a819-f7141ced9761
+		summarizeBy: none
+		sourceColumn: Country
+
+		annotation SummarizationSetBy = Automatic
+
+	column Region
+		dataType: string
+		lineageTag: 1c81cc60-79cc-4924-b104-d9806e3fb103
+		summarizeBy: none
+		sourceColumn: Region
+
+		annotation SummarizationSetBy = Automatic
+
+	column Amount
+		dataType: int64
+		formatString: 0
+		lineageTag: d268c89b-1f0f-4184-a683-ab65df82404c
+		summarizeBy: sum
+		sourceColumn: Amount
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Sales = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i45WCvVW0lHyyy8qyQDShgYGSrE6UMHg/FKwoBFU0C0IyHFNLC4BKTRFEgtPBYuBhGIB", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Country = _t, Region = _t, Amount = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Country", type text}, {"Region", type text}, {"Amount", Int64.Type}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+
