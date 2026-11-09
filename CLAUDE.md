@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `pbir/writer`, `model`, `plan`, `guidelines`, `policies`, `grid`, `validate`, `pbir/formatting`, `bp inspect`, `bp fmt` and `bp check` (including the palette and typography rules). `bp apply` (v0.3): `spec`, `slots` (+ `blueprint/visuals/*.yaml`), `layouts`, `pbir/semantic`, `pbir/ids`, `pbir/registry`, `pbir/render`, `writer.add_create`/`add_modify`. Probe 05 confirmed that Desktop accepts its output as written. Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
+Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power BI PBIP/PBIR report layouts from YAML page specs and a guidelines file. `README.md` is the design doc, and most of its structure isn't built yet. Built so far: `pbir/jsonfmt`, `pbir/schemas`, `pbir/reader`, `pbir/writer`, `model`, `plan`, `guidelines`, `policies`, `grid`, `validate`, `pbir/formatting`, `bp inspect`, `bp fmt` and `bp check` (including the palette and typography rules). `bp apply` (v0.3): `spec`, `slots` (+ `blueprint/visuals/*.yaml`), `layouts`, `pbir/semantic`, `pbir/ids`, `pbir/registry`, `pbir/render`, `writer.add_create`/`add_modify`. Probe 05 confirmed that Desktop accepts its output as written. `bp manifest` / `manifest.py` close the loop. Roadmap: v0.1 `inspect`/`fmt` → v0.2 `check` → v0.3 `apply` (no bindings) → v0.4 typed slot bindings.
 
 ## Commands
 
@@ -21,6 +21,7 @@ bp fmt --report <copy> --dry-run                  # never run fmt on samples/ it
 bp check --report samples/retail-analysis --guidelines guidelines/example.yaml   # exit 0 clean, 1 errors, 2 unreadable
 bp apply examples/sales-overview.yaml --report <copy of fixtures/02-card-and-chart> --guidelines guidelines/example.yaml
 BLUEPRINT_UPDATE_GOLDEN=1 pytest tests/test_apply_golden.py   # regenerate apply's golden output after an intended change
+bp manifest --report <report> [--dry-run]                   # rebuild <Name>.Report/.blueprint.manifest.json
 python scripts/vendor_schemas.py <$schema URL>    # vendor a schema + its $refs into blueprint/pbir/schemas/
 ```
 
@@ -53,6 +54,8 @@ python scripts/vendor_schemas.py <$schema URL>    # vendor a schema + its $refs 
 - New object names come from `pbir/ids.py`: 20 hex characters derived from a stable key (never random), so output is deterministic. `pbir/registry.py` is the only code that changes `pages.json` `pageOrder`. The page folder and the registry must change together.
 
 - **`bp apply`** (`commands/apply.py`) finds the pages and visuals it created by the `blueprint.page` and `blueprint.visual` annotations. On a re-run it updates only position and title. A page-size mismatch, or a changed type or binding, is an error. A visual dropped from the spec is kept, with a warning. It never touches hand-placed or ignored visuals, and never deletes. Bindings resolve against the TMDL model (`pbir/semantic.py`, read-only) before anything is written. New documents come from `pbir/render.py`, the minimal shapes from probe 04, and must validate exactly (`writer.add_create`).
+
+- **Manifest** (`manifest.py`): built only from the model. Anything `apply` knew (layout, region `<role>#<n>`, guidelines `<name>@<version>`) is persisted as `blueprint.layout`/`blueprint.region`/`blueprint.guidelines` annotations so the manifest can be rebuilt from the report. `generated_at` changes only when the content does (`SOURCE_DATE_EPOCH` is honoured). `apply` regenerates it after writing. `check` notes a stale manifest and guidelines drift.
 
 ## Test data
 

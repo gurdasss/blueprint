@@ -168,8 +168,11 @@ bp apply examples/sales-overview.yaml \
         --report /tmp/demo/Fixture.Report \
         --guidelines guidelines/example.yaml
 
-# 5. See exactly what changed
-cd /tmp/demo && git diff --stat
+# 5. See exactly what changed (a new page, three visuals, pages.json and the manifest)
+cd /tmp/demo && git status --short && cd -
+
+# 6. Check the result, and re-run apply: it reports "No changes."
+bp check --report /tmp/demo/Fixture.Report --guidelines guidelines/example.yaml
 ```
 
 Then open the report in Power BI Desktop and look at it.
@@ -336,31 +339,38 @@ layouts:
 
 ## The manifest
 
-`manifest.json` is the handoff artifact between the layout half of the stack and the
-semantic-model half. Without it, an agent has to re-derive the report structure by reading
-PBIR on every turn.
+`.blueprint.manifest.json` (in the `.Report` folder, next to `.blueprint.yaml`) is the handoff
+artifact between the layout half of the stack and the semantic-model half. Without it, an agent
+has to re-derive the report structure by reading PBIR on every turn. `bp apply` rewrites it after
+every change, and `bp manifest` rebuilds it from the report at any time.
 
 ```json
 {
-  "blueprint_version": "0.1.0",
+  "blueprint_version": "0.0.1",
   "guidelines": { "name": "Example Corp Reporting Standard", "version": 1 },
-  "pbir_schema": "<as read from the report>",
+  "pbir_schema": { "page": ["2.1.0"], "visualContainer": ["2.13.0"] },
   "generated_at": "2026-11-09T04:00:00Z",
   "pages": [
     {
-      "id": "<page id>",
+      "id": "b1df9ce53010a81607ce",
       "name": "Sales Overview",
+      "spec_page": "Sales Overview",
       "layout": "standard-4-up",
+      "built_with": "Example Corp Reporting Standard@1",
+      "size": { "w": 1280, "h": 720 },
       "visuals": [
         {
-          "id": "<visual id>",
-          "type": "pie",
-          "title": "Sales by Category",
-          "region": "main",
-          "position": { "x": 16, "y": 232, "w": 616, "h": 472 },
+          "id": "b4f94ad3cfcc67642873",
+          "type": "column",
+          "visual_type": "clusteredColumnChart",
+          "title": "Sales by Geography",
+          "managed": true,
+          "spec_id": "column-1",
+          "region": "main#2",
+          "position": { "x": 648, "y": 232, "w": 616, "h": 472 },
           "slots": {
-            "category": "Product[Category]",
-            "value": "[Total Sales]"
+            "category": ["Sales[Country]", "Sales[Region]"],
+            "value": "[Total Amount]"
           }
         }
       ]
@@ -369,8 +379,18 @@ PBIR on every turn.
 }
 ```
 
-It is **generated, never hand-edited**, and `bp manifest` can rebuild it from the report at
-any time.
+- **Every page and visual is listed**, hand-built ones too. Those have `"managed": false`, their PBIR
+  `visualType` as `type`, and query roles (`Category`, `Y`, …) as slot names. Visuals Blueprint
+  created have their spec type, spec id, slot names and layout region (`<role>#<n>`).
+- `layout`, `region` and `built_with` come from annotations `bp apply` leaves on the page and
+  visuals. That's what makes the manifest rebuildable from the report alone, and it's how
+  `bp check` can say which guidelines a page was built against.
+- **It's deterministic.** `generated_at` changes only when something else does, so
+  regenerating an unchanged report is a no-op. Set `SOURCE_DATE_EPOCH` for reproducible
+  timestamps.
+- `bp check` notes when the manifest is out of date (e.g. after a drag in Desktop).
+
+It is **generated, never hand-edited**.
 
 ---
 
