@@ -1,0 +1,10 @@
+# pie drill-down and pie with details (probes 08, 11)
+page: Pies Demo
+layout: standard-4-up
+visuals:
+  - type: pie
+    title: Pie Drill-down
+    slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}
+  - type: pie
+    title: Pie with Details
+    slots: {category: "Sales[Country]", details: "Sales[Region]", value: "[Total Amount]"}

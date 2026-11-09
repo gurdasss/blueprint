@@ -1,0 +1,10 @@
+# bar drill-down and line with a legend (probe 12)
+page: Charts Demo
+layout: standard-4-up
+visuals:
+  - type: bar
+    title: Bar Drill-down
+    slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}
+  - type: line
+    title: Line by Country, per Region
+    slots: {category: "Sales[Country]", value: "[Total Amount]", legend: "Sales[Region]"}

@@ -1,0 +1,10 @@
+# the Geography hierarchy on a column chart and in a table (probes 16, 17)
+page: Geography Demo
+layout: standard-4-up
+visuals:
+  - type: column
+    title: Column by Geography
+    slots: {category: "Sales[Geography]", value: "[Total Amount]"}
+  - type: table
+    title: Table by Geography
+    slots: {columns: ["Sales[Geography]", "[Total Amount]"]}

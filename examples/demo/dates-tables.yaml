@@ -1,0 +1,10 @@
+# a date column on a line axis (probes 13, 14) and a table (probe 08)
+page: Dates and Tables Demo
+layout: standard-4-up
+visuals:
+  - type: line
+    title: By Order Date
+    slots: {category: "Sales[Order Date]", value: "[Total Amount]"}
+  - type: table
+    title: Detail
+    slots: {columns: ["Sales[Country]", "Sales[Region]", "[Total Amount]"]}

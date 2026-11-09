@@ -1,0 +1,15 @@
+# header (probe 03), kpi + target (08, 10), card (04, 07), column drill-down (04)
+page: Overview Demo
+layout: standard-4-up
+visuals:
+  - type: header
+    title: Sales Overview
+  - type: kpi
+    title: Total vs Target
+    slots: {value: "[Total Amount]", trend: "Sales[Country]", target: "[Target Amount]"}
+  - type: card
+    title: Total
+    slots: {value: "[Total Amount]"}
+  - type: column
+    title: By Country and Region
+    slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}

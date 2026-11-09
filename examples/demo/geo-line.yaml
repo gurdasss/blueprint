@@ -1,0 +1,7 @@
+# the Geography hierarchy on a line chart (probes 18, 19)
+page: Geography Line Demo
+layout: standard-4-up
+visuals:
+  - type: line
+    title: Line by Geography
+    slots: {category: "Sales[Geography]", value: "[Total Amount]"}
