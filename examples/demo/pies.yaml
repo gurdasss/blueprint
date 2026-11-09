@@ -2,6 +2,8 @@
 page: Pies Demo
 layout: standard-4-up
 visuals:
+  - type: header
+    title: Pies
   - type: pie
     title: Pie Drill-down
     slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}

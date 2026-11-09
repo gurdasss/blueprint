@@ -125,6 +125,21 @@ def _next(page: Page | None, key: str) -> int:
     return (max(nums) // STEP + 1) * STEP if nums else 0
 
 
+def _title_warnings(placements: list[layouts.Placement], rules: guidelines.Guidelines) -> list[str]:
+    """What `bp check` will report under the title rules, said up front. A warning, not a refusal:
+    like an overlap with a hand-placed visual, it's the guidelines' call, and check enforces it."""
+    headers = [p for p in placements if p.visual.type == "header"]
+    out = []
+    if rules.page.require_title and not headers:
+        out.append("no header: the guidelines require a page title (page.require_title); add a "
+                   "`type: header` visual with the title as its `title`, or bp check will fail")
+    want = rules.page.title_region
+    if want:
+        out += [f"{p.visual.id}: header placed in region {p.region.key}, but page.title_region is "
+                f"{want!r}; bp check will fail" for p in headers if p.region.role != want]
+    return out
+
+
 def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
     page_spec = spec.load(spec_path)
     report = read_report(args.report)
@@ -144,6 +159,7 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
     known = contracts()
     plan = Plan(root=report.root)
     plan.warnings.extend(report.warnings)
+    plan.warnings.extend(_title_warnings(placements, rules))
     built_with = f"{rules.name}@{rules.version}"
     rule = rules.typography.get("header")
     header_style = render.text_style(rule.fonts[0] if rule and rule.fonts else None,

@@ -2,6 +2,8 @@
 page: Charts Demo
 layout: standard-4-up
 visuals:
+  - type: header
+    title: Charts
   - type: bar
     title: Bar Drill-down
     slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}

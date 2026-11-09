@@ -2,6 +2,8 @@
 page: Dates and Tables Demo
 layout: standard-4-up
 visuals:
+  - type: header
+    title: Dates and Tables
   - type: line
     title: By Order Date
     slots: {category: "Sales[Order Date]", value: "[Total Amount]"}

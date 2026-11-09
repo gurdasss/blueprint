@@ -366,10 +366,10 @@ typography:
   header:   { font: Segoe UI Semibold, size: 20 }   # bp apply writes this onto header textboxes
 
 page:
-  require_title: true
-  title_region: header
+  require_title: true      # pages built from a spec need a `type: header` visual...
+  title_region: header     # ...placed in a header region (hand-built pages aren't checked)
   max_visuals: 6
-  density_policy: strict   # named policy implemented in code, not an if-statement here
+  density_policy: data     # named policy implemented in code, not an if-statement here
 
 layouts:
   search_path: ["layouts"]     # relative to this file

@@ -88,6 +88,8 @@ def _guidelines(rules: Guidelines) -> dict[str, Any]:
         "grid": rules.grid.size,
         "max_visuals": rules.page.max_visuals,
         "density_policy": rules.page.density_policy,
+        "require_title": rules.page.require_title,
+        "title_region": rules.page.title_region,
         "default_layout": rules.layouts.default,
     }
 
@@ -154,7 +156,12 @@ def to_text(data: dict[str, Any]) -> str:
     lines = [f"Guidelines: {g['name'] or '(unnamed)'} v{g['version']}  [{' < '.join(g['sources'])}]",
              (f"  canvas {c['width'] or '*'}x{c['height'] or '*'}, grid {g['grid']}px, margin {c['margin']}px, "
              f"gutter {c['gutter']}px, max_visuals {g['max_visuals'] or 'none'} "
-             f"(policy {g['density_policy']})"), ""]
+             f"(policy {g['density_policy']})"),
+             *(["  every page needs a `type: header` visual (page.require_title)"
+                + (f", in a {g['title_region']!r} region" if g["title_region"] else "")]
+               if g["require_title"] else
+               [f"  a header must be in a {g['title_region']!r} region"] if g["title_region"] else []),
+             ""]
 
     s = data["spec"]
     lines.append("Spec syntax (YAML)")

@@ -189,10 +189,12 @@ def test_format_findings(tmp_path: Path, capsys):
     assert any("visual.json" in m and "bogus" in m for m in msgs)
 
 
-def test_unchecked_guidelines_are_listed(tmp_path: Path, capsys):
+def test_unchecked_guidelines_are_listed(tmp_path: Path, capsys, monkeypatch):
+    # Nothing is unimplemented today; the mechanism stays for the next documented-but-unbuilt key.
+    monkeypatch.setattr(guidelines, "NOT_IMPLEMENTED", ("canvas.bleed", "page.require_title"))
     rd = make_report(tmp_path, {"p": []})
     g = tmp_path / "g.yaml"
-    g.write_text("canvas: {gutter: 32}\npage: {require_title: true}\n")
+    g.write_text("page: {require_title: true}\n")
     main(["check", "--report", str(rd), "--guidelines", str(g)])
     assert "not checked yet (set in guidelines, not implemented): page.require_title\n" in capsys.readouterr().out
 

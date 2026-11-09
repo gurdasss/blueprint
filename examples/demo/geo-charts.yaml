@@ -2,6 +2,8 @@
 page: Geography Charts Demo
 layout: standard-4-up
 visuals:
+  - type: header
+    title: Geography Charts
   - type: bar
     title: Bar by Geography
     slots: {category: "Sales[Geography]", value: "[Total Amount]"}

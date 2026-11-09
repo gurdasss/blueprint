@@ -26,6 +26,10 @@ page:
   #   visible  as `all`, minus hidden visuals
   #   data     visible visuals bound to fields (excludes textboxes, images, shapes)
   density_policy: visible
+  # Title rules apply to pages built from a spec (their header is known exactly). Hand-built
+  # pages don't mark a title, so they aren't checked (bp check notes how many were skipped).
+  require_title: false     # the page must have a header (a `type: header` visual)
+  title_region: null       # the region role its header must be in, e.g. header; null: any
 
 palette:
   categorical: []      # empty: palette not checked
@@ -59,6 +63,7 @@ check:
     page-size: warning # page size differs from canvas.width/height
     density: warning   # more visuals than page.max_visuals
     typography: error  # a font, size or bold setting outside the typography guidelines
+    title: error       # a spec-built page has no header, or it's outside page.title_region
   # Visual types allowed to contain other visuals (backgrounds, panels); exempt from margin
   # and gutter.
   decorative_types: [image, shape, basicShape]

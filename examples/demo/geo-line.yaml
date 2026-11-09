@@ -2,6 +2,8 @@
 page: Geography Line Demo
 layout: standard-4-up
 visuals:
+  - type: header
+    title: Geography Line
   - type: line
     title: Line by Geography
     slots: {category: "Sales[Geography]", value: "[Total Amount]"}

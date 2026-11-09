@@ -58,7 +58,33 @@ def check_report(report: Report, rules: Guidelines) -> CheckResult:
         _check_palette(report, rules, c)
     if rules.typography and c.on("typography"):
         _check_typography(report, rules, c)
+    if (rules.page.require_title or rules.page.title_region) and c.on("title"):
+        _check_titles(report, rules, c)
     return result
+
+
+def _check_titles(report: Report, rules: Guidelines, c: _Collector) -> None:
+    """Only pages built from a spec: their header is the textbox Blueprint created. A hand-built
+    page doesn't say which textbox is its title, and guessing would make false findings."""
+    skipped = 0
+    for page in report.pages:
+        if page.spec_page is None:
+            skipped += 1
+            continue
+        headers = [v for v in page.visuals
+                   if v.spec_id and v.visual_type == "textbox" and not v.ignored]
+        if rules.page.require_title and not headers:
+            c.add("title", "no header: add a `type: header` visual to the page's spec "
+                           "(page.require_title)", page)
+        want = rules.page.title_region
+        for v in headers:
+            role = (v.region or "").split("#")[0]
+            if want and role != want:
+                c.add("title", f"header is in region {v.region or '(none)'}, but page.title_region "
+                               f"is {want!r}", page, v)
+    if skipped:
+        c.result.notes.append(f"title rules not checked on {skipped} page(s) not built from a spec "
+                              "(nothing marks which textbox is the title)")
 
 
 def _check_page(page: Page, rules: Guidelines, c: _Collector) -> None:

@@ -29,9 +29,10 @@ REPORT_OVERRIDE = ".blueprint.yaml"
 ENV_VAR = "BLUEPRINT_GUIDELINES"
 
 SEVERITIES = ("error", "warning", "off")
-RULES = ("format", "bounds", "grid", "margin", "gutter", "overlap", "page-size", "density", "typography")
+RULES = ("format", "bounds", "grid", "margin", "gutter", "overlap", "page-size", "density", "typography",
+         "title")
 # Documented in README but unchecked until the PBIR format for them is verified.
-NOT_IMPLEMENTED = ("page.require_title", "page.title_region")
+NOT_IMPLEMENTED: tuple[str, ...] = ()
 
 
 class GuidelinesError(Exception):
@@ -57,6 +58,8 @@ class Canvas:
 class PageRules:
     max_visuals: int | None
     density_policy: str  # a name from blueprint.policies.DENSITY
+    require_title: bool  # pages built from a spec must have a header
+    title_region: str | None  # the region role that header must be in; None: any
 
 
 @dataclass(frozen=True)
@@ -200,7 +203,9 @@ def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
                       margin=_int(raw, "canvas.margin", minimum=0),
                       gutter=_int(raw, "canvas.gutter", minimum=0)),
         page=PageRules(max_visuals=_int(raw, "page.max_visuals", minimum=1, nullable=True),
-                       density_policy=policy),
+                       density_policy=policy,
+                       require_title=_bool(raw, "page.require_title"),
+                       title_region=_title_region(raw)),
         palette=_palette(raw),
         typography=_typography(raw),
         layouts=_layouts(raw),
@@ -316,6 +321,13 @@ def _typography(raw: dict[str, Any]) -> dict[str, FontRule]:
             raise GuidelinesError(f"{key}.bold must be true or false")
         out[role] = FontRule(tuple(f.strip() for f in fonts), tuple(float(z) for z in sizes), bold)
     return out
+
+
+def _title_region(raw: dict[str, Any]) -> str | None:
+    value = _get(raw, "page.title_region")
+    if value is not None and (not isinstance(value, str) or not value.strip()):
+        raise GuidelinesError(f"page.title_region must be a region role (e.g. header) or null, got {value!r}")
+    return value.strip() if value else None
 
 
 def _anchor(layer: dict[str, Any], path: Path) -> dict[str, Any]:
