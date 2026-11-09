@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from blueprint import __version__
+from blueprint.commands import check as check_cmd
 from blueprint.commands import fmt as fmt_cmd
 from blueprint.commands import inspect as inspect_cmd
 from blueprint.guidelines import GuidelinesError
@@ -25,6 +26,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--report", type=Path, required=True, help=REPORT_HELP)
     p.add_argument("--json", action="store_true", help="machine-readable output")
     p.set_defaults(func=inspect_cmd.run)
+
+    p = sub.add_parser("check", help="validate against guidelines (read-only; exit 1 on errors)")
+    p.add_argument("--report", type=Path, required=True, help=REPORT_HELP)
+    p.add_argument("--guidelines", type=Path, help="guidelines file (default: $BLUEPRINT_GUIDELINES)")
+    p.add_argument("--grid", type=int, help="override grid.size")
+    p.add_argument("--json", action="store_true", help="machine-readable output")
+    p.add_argument("--strict", action="store_true", help="exit 1 on warnings too")
+    p.set_defaults(func=check_cmd.run)
 
     p = sub.add_parser("fmt", help="snap visuals to the grid (idempotent)")
     p.add_argument("--report", type=Path, required=True, help=REPORT_HELP)
