@@ -1,0 +1,180 @@
+# Probe 03 phase 1: typography. Desktop 2.159.1231.0, 2026-11-09. Steps 1-3, 5-7 of scripts/probe_typography.py.
+# Step 4 (card font) did not land. Step 6: no theme font offered; Segoe UI picked. REDACTED: chart title text -> <title>.
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection2/visuals/VisualContainer/visual.json b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection2/visuals/VisualContainer/visual.json
+index e7a7121..d78a3dc 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection2/visuals/VisualContainer/visual.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection2/visuals/VisualContainer/visual.json	
+@@ -20,10 +20,8 @@
+                   {
+                     "value": "District Monthly Sales",
+                     "textStyle": {
+-                      "fontFamily": "Segoe UI Light",
+-                      "fontSize": "28pt",
+-                      "fontStyle": "normal",
+-                      "fontWeight": "normal"
++                      "fontFamily": "Segoe UI",
++                      "fontSize": "28pt"
+                     }
+                   }
+                 ],
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection2/visuals/VisualContainer3/visual.json b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection2/visuals/VisualContainer3/visual.json
+index c7937a1..dd4c8cf 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection2/visuals/VisualContainer3/visual.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection2/visuals/VisualContainer3/visual.json	
+@@ -78,6 +78,28 @@
+           }
+         ]
+       }
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'Probe title'"
++                }
++              }
++            },
++            "fontSize": {
++              "expr": {
++                "Literal": {
++                  "Value": "12D"
++                }
++              }
++            }
++          }
++        }
++      ]
+     }
+   }
+ }
+\ No newline at end of file
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer4/visual.json b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer4/visual.json
+index 0a826f6..f0bf10c 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer4/visual.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer4/visual.json	
+@@ -131,6 +131,20 @@
+                   "Value": "'<title>'"
+                 }
+               }
++            },
++            "fontFamily": {
++              "expr": {
++                "Literal": {
++                  "Value": "'''Segoe UI Semibold'', wf_segoe-ui_semibold, helvetica, arial, sans-serif'"
++                }
++              }
++            },
++            "fontSize": {
++              "expr": {
++                "Literal": {
++                  "Value": "14D"
++                }
++              }
+             }
+           }
+         }
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer5/visual.json b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer5/visual.json
+index 3f32316..1d2561e 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer5/visual.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer5/visual.json	
+@@ -104,6 +104,33 @@
+             }
+           }
+         }
++      ],
++      "subTitle": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'Probe subtitle'"
++                }
++              }
++            },
++            "fontSize": {
++              "expr": {
++                "Literal": {
++                  "Value": "12D"
++                }
++              }
++            }
++          }
++        }
+       ]
+     }
+   }
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer6/visual.json b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer6/visual.json
+index 97b07d2..b0c7575 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer6/visual.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer6/visual.json	
+@@ -166,6 +166,13 @@
+                   "Value": "true"
+                 }
+               }
++            },
++            "fontFamily": {
++              "expr": {
++                "Literal": {
++                  "Value": "'Arial'"
++                }
++              }
+             }
+           }
+         }
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection4/visuals/VisualContainer/visual.json b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection4/visuals/VisualContainer/visual.json
+index 06ea930..8516ed0 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection4/visuals/VisualContainer/visual.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection4/visuals/VisualContainer/visual.json	
+@@ -20,10 +20,10 @@
+                   {
+                     "value": "New Stores Analysis",
+                     "textStyle": {
+-                      "fontFamily": "Segoe UI Light",
+-                      "fontSize": "28pt",
+-                      "fontStyle": "normal",
+-                      "fontWeight": "normal"
++                      "fontWeight": "bold",
++                      "fontFamily": "Arial",
++                      "fontStyle": "italic",
++                      "fontSize": "20pt"
+                     }
+                   }
+                 ],
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/pages.json b/Retail Analysis Sample PBIX.Report/definition/pages/pages.json
+index a4ff5a7..da35c54 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/pages.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/pages.json	
+@@ -6,5 +6,5 @@
+     "ReportSection2",
+     "ReportSection4"
+   ],
+-  "activePageName": "ReportSection"
++  "activePageName": "ReportSection2"
+ }
+\ No newline at end of file
+diff --git a/Retail Analysis Sample PBIX.Report/definition/report.json b/Retail Analysis Sample PBIX.Report/definition/report.json
+index 3239281..1c4db37 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/report.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/report.json	
+@@ -38,5 +38,8 @@
+         }
+       ]
+     }
+-  ]
++  ],
++  "settings": {
++    "useEnhancedTooltips": false
++  }
+ }
+\ No newline at end of file

@@ -218,6 +218,42 @@ background, 1 = foreground, n ≥ 2 = `dataColors[n-2]`) is **unverified**, and 
 shade formula for `Percent`. A check that only needs "is this a theme reference" doesn't
 depend on either.
 
+## Typography
+
+**Verified 2026-11-09, Desktop 2.159.1231.0, probe 03 phase 1** (`scripts/probe_typography.py`;
+evidence `docs/probes/03-typography-phase1.diff`). One visual per step. Each step rewrote only
+its own file:
+
+| Step | Stored as |
+|---|---|
+| Title font **Segoe UI Semibold**, size 14 | `title.fontFamily = Literal "'''Segoe UI Semibold'', wf_segoe-ui_semibold, helvetica, arial, sans-serif'"`, `fontSize = Literal "14D"` |
+| Title font **Arial**, size untouched | `title.fontFamily = Literal "'Arial'"`, **no `fontSize` written** |
+| Subtitle on, "Probe subtitle", size 12 | `visualContainerObjects.subTitle[0].properties` = `show "true"`, `text "'Probe subtitle'"`, `fontSize "12D"` |
+| Title on, "Probe title", **Segoe UI**, size 12 | `title.text` and `fontSize "12D"` only: **no `fontFamily`, no `show`** |
+| Textbox **Arial 20 Bold Italic** | `textStyle = {"fontWeight": "bold", "fontFamily": "Arial", "fontStyle": "italic", "fontSize": "20pt"}` |
+| Textbox **Segoe UI** (no theme font was offered) | `textStyle = {"fontFamily": "Segoe UI", "fontSize": "28pt"}` |
+
+What follows for a typography check:
+
+- **A weight is a font face, not a property.** "Semibold" is the family name `Segoe UI
+  Semibold`. `bold` is a separate on/off (`Literal "true"`, seen in probe 02) and textbox
+  `fontWeight: "bold"`.
+- **Formatting-object `fontFamily` is a CSS font stack inside a single-quoted literal**, with
+  `''` escaping quotes inside it. The first family in the stack is the face. Plain names
+  can be bare: `'Arial'`.
+- **Textbox `fontFamily` is a plain name** (`"Arial"`, `"Segoe UI"`), and sizes are `"20pt"`
+  strings. Formatting-object sizes are `"14D"` literals (pt).
+- **Default values are omitted.** Choosing Segoe UI for a title wrote no `fontFamily`.
+  Turning a title on wrote no `show`. A size the user *sets* is written even if it might equal
+  the default. A missing key means "theme or default", not a violation.
+- Desktop **drops `fontStyle`/`fontWeight: "normal"`** and **reorders keys** in a textbox
+  run it rewrites.
+- **Theme font tokens:** this Desktop offered none in the textbox font list. The sample's older
+  `"fontFamily": "Heading"` stays unexplained; treat unknown families as unresolved, not as
+  violations.
+- **Open:** step 4 (card callout font) didn't land in the save, so card `labels.fontFamily`
+  is unverified.
+
 ## Field bindings
 
 **Verified [sample]** (`ReportSection3/visuals/VisualContainer4`):
