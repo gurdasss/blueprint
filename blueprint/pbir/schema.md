@@ -40,8 +40,11 @@ git repo, opened, browsed, and saved. Desktop modified exactly two files:
   adds a default setting that was missing from the older file. Expect similar one-off
   upgrades the first time Desktop saves an older report.
 
-Both rewritten files still use CRLF line endings with no trailing newline, and new keys
-are appended at the end. `jsonfmt` round-trips both byte for byte, and both validate.
+Both rewritten files still use CRLF line endings with no trailing newline. `jsonfmt`
+round-trips both byte for byte, and both validate. **New keys go in Desktop's own
+order, not at the end:** in probe 01, `settings` was inserted *before* an existing
+`annotations` key. So anything Blueprint adds to a document that Desktop also writes may
+move on Desktop's next save. That's churn but not breakage, since Desktop never drops the key.
 Git prints `^M` only on *added* lines, which is a display artefact; `git config
 core.whitespace cr-at-eol` hides it.
 
@@ -107,11 +110,25 @@ Desktop?
   `columnChart`, `image`, `lineChart`, `map`, `pieChart`, `scatterChart`, `slicer`, `textbox`.
 - Title: `visual.visualContainerObjects.title[0].properties.text.expr.Literal.Value`, a
   single-quoted literal, e.g. `"'Total Sales Variance by …'"`.
-- `annotations`: `[{"name": str, "value": str}]`, no other keys. [learn] says Desktop
-  ignores them. Blueprint uses `blueprint.ignore` = `"true"` for the escape hatch.
+- `annotations`: `[{"name": str, "value": str}]`, no other keys. Blueprint uses
+  `blueprint.ignore` = `"true"` for the escape hatch.
 
-**Open:** do annotations survive a Desktop save (Q14)? Are grouped visuals'
-positions relative to the group or to the page?
+**Verified 2026-11-09, Desktop 2.159.1231.0, probe 01** (`scripts/probe_annotations.py`; evidence
+`docs/probes/01-annotations-desktop-save.diff`). This answers README Q14:
+
+- Annotations survive a Desktop save at **report, page and visual level**, including on
+  a visual Desktop *rewrote* because the user moved it. Values and order are unchanged.
+- Desktop rewrites only the visual that was edited. The other 16 files Blueprint wrote were left
+  byte-identical, so integer coordinates stay integers until a human drags that visual.
+- Dragging a visual in Desktop rewrites **all four** of x/y/width/height with
+  sub-pixel floats (`912` → `911.63049495393955`), even though only the position was
+  meant to change. This is the drift `bp fmt` exists to undo; a dry run snaps it back to the
+  exact pre-drag values.
+- Desktop keeps files it doesn't know in the `.Report` folder (`.blueprint.yaml` survived).
+
+**Open:** does copy/paste of a visual keep its annotations, and what name does the copy
+get? (Probe 01 step 4 was not done.) Are grouped visuals' positions relative to the
+group or to the page?
 
 ## Field bindings
 

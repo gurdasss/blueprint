@@ -1,0 +1,48 @@
+# Probe 01: annotation survival. Desktop 2.159.1231.0, 2026-11-09.
+# Steps: open, save unchanged, nudge New Stores line chart, save. Diff is vs the 'blueprint' commit.
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection4/visuals/VisualContainer1/visual.json b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection4/visuals/VisualContainer1/visual.json
+index db61685..8eb4846 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection4/visuals/VisualContainer1/visual.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection4/visuals/VisualContainer1/visual.json	
+@@ -2,11 +2,11 @@
+   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+   "name": "VisualContainer1",
+   "position": {
+-    "x": 32,
+-    "y": 448,
++    "x": 36.04661395863792,
++    "y": 447.67568948630964,
+     "z": 3000,
+-    "height": 240,
+-    "width": 912
++    "height": 240.69835772380802,
++    "width": 911.63049495393955
+   },
+   "visual": {
+     "visualType": "lineChart",
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/pages.json b/Retail Analysis Sample PBIX.Report/definition/pages/pages.json
+index a4ff5a7..7d0b99c 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/pages.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/pages.json	
+@@ -6,5 +6,5 @@
+     "ReportSection2",
+     "ReportSection4"
+   ],
+-  "activePageName": "ReportSection"
++  "activePageName": "ReportSection4"
+ }
+\ No newline at end of file
+diff --git a/Retail Analysis Sample PBIX.Report/definition/report.json b/Retail Analysis Sample PBIX.Report/definition/report.json
+index 6d2671d..46c5177 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/report.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/report.json	
+@@ -39,6 +39,9 @@
+       ]
+     }
+   ],
++  "settings": {
++    "useEnhancedTooltips": false
++  },
+   "annotations": [
+     {
+       "name": "blueprint.probe",
