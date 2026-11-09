@@ -251,8 +251,20 @@ What follows for a typography check:
 - **Theme font tokens:** this Desktop offered none in the textbox font list. The sample's older
   `"fontFamily": "Heading"` stays unexplained; treat unknown families as unresolved, not as
   violations.
-- **Open:** step 4 (card callout font) didn't land in the save, so card `labels.fontFamily`
-  is unverified.
+**Verified 2026-11-09, probe 03 phase 2** (evidence `docs/probes/03-typography-phase2.diff`):
+
+- Card callout font (step 4 redone; DIN wasn't offered, so Arial was used) is
+  `visual.objects.labels[0].properties.fontFamily = Literal "'Arial'"`, the same literal form as titles.
+- Desktop's **theme "Update" prompt** (shown under *Customize current theme* as new theme defaults
+  being available) added `themeCollection.baseTheme = {"name": "Fluent2-CY26SU10", "type":
+  "SharedResources", …}` to `report.json` **without copying the theme file or adding a
+  `resourcePackages` entry**. When switching to the built-in Dark theme (probe 02), Desktop did copy both. So
+  a built-in (`SharedResources`) theme can be referenced with no file in the report, and Desktop
+  resolves it from its own install. "Theme file missing" is therefore normal for built-in themes. It is not
+  corruption.
+- *Customize current theme* → Text changes (General Segoe UI 11, Title Segoe UI Semibold 16)
+  **did not persist** on a report whose custom theme (`Concourse`) has no file. Where a
+  customised theme's text classes are saved is **still open**.
 
 ## Field bindings
 

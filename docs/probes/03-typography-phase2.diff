@@ -1,0 +1,61 @@
+# Probe 03 phase 2: step 4 redo (card font; DIN unavailable, Arial used) + Customize current theme.
+# The user clicked Desktop's theme 'Update' prompt; text customisation (General 11, Title Semibold 16) did NOT persist. No theme file added.
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer1/visual.json b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer1/visual.json
+index 26ee28a..62429cd 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer1/visual.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/ReportSection3/visuals/VisualContainer1/visual.json	
+@@ -30,6 +30,21 @@
+           ]
+         }
+       }
++    },
++    "objects": {
++      "labels": [
++        {
++          "properties": {
++            "fontFamily": {
++              "expr": {
++                "Literal": {
++                  "Value": "'Arial'"
++                }
++              }
++            }
++          }
++        }
++      ]
+     }
+   }
+ }
+\ No newline at end of file
+diff --git a/Retail Analysis Sample PBIX.Report/definition/pages/pages.json b/Retail Analysis Sample PBIX.Report/definition/pages/pages.json
+index da35c54..d4dae69 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/pages/pages.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/pages/pages.json	
+@@ -6,5 +6,5 @@
+     "ReportSection2",
+     "ReportSection4"
+   ],
+-  "activePageName": "ReportSection2"
++  "activePageName": "ReportSection3"
+ }
+\ No newline at end of file
+diff --git a/Retail Analysis Sample PBIX.Report/definition/report.json b/Retail Analysis Sample PBIX.Report/definition/report.json
+index 1c4db37..05b3034 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/report.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/report.json	
+@@ -1,6 +1,15 @@
+ {
+   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.3.0/schema.json",
+   "themeCollection": {
++    "baseTheme": {
++      "name": "Fluent2-CY26SU10",
++      "reportVersionAtImport": {
++        "visual": "2.14.0",
++        "report": "3.4.0",
++        "page": "2.3.1"
++      },
++      "type": "SharedResources"
++    },
+     "customTheme": {
+       "name": "Concourse",
+       "reportVersionAtImport": {
