@@ -1,5 +1,7 @@
 # Blueprint
 
+[![test](https://github.com/gurdasss/blueprint/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/gurdasss/blueprint/actions/workflows/test.yml)
+
 **Declarative, deterministic Power BI report layouts.** Write a short YAML file, get a
 PBIP report whose pages are built and aligned to your organisation's design guidelines —
 no dragging, no nudging, no eyeballing.
