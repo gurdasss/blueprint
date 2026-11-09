@@ -168,3 +168,24 @@ def test_pie_drill_down_and_details_match_probe_11(tmp_path: Path):
     assert list(state.items()) == [("Category", {"projections": [col("Country", active=True)]}),
                                    ("Series", {"projections": [col("Region")]}),
                                    ("Y", {"projections": [MEASURE]})]
+
+
+def test_line_and_bar_match_probe_12(tmp_path: Path):
+    shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
+    report = tmp_path / "proj" / "Fixture.Report"
+    spec = tmp_path / "charts.yaml"
+    spec.write_text('page: C\nlayout: standard-4-up\nvisuals:\n'
+                    '  - type: line\n    title: Line\n'
+                    '    slots: {category: "Sales[Country]", value: "[Total Amount]", legend: "Sales[Region]"}\n'
+                    '  - type: bar\n    title: Bar\n'
+                    '    slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}\n')
+    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
+    made = _made(report)
+    # probe 12 step 05 (line with Legend) and step 04 (bar drill-down), roles in Desktop's order
+    assert list(made["lineChart"]["visual"]["query"]["queryState"].items()) == [
+        ("Category", {"projections": [col("Country", active=True)]}),
+        ("Series", {"projections": [col("Region")]}),
+        ("Y", {"projections": [MEASURE]})]
+    assert made["clusteredBarChart"]["visual"]["query"]["queryState"] == {
+        "Category": {"projections": [col("Country", active=True), col("Region", active=True)]},
+        "Y": {"projections": [MEASURE]}}

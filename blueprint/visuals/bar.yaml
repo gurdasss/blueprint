@@ -1,0 +1,9 @@
+# Slot contract for spec type `bar`. Verified in probe 12: `clusteredBarChart`, stored like the
+# column chart: the categories (drawn on the Y-axis) in role `Category`, where an ordered list is a
+# drill-down, and the measure (drawn on the X-axis) in role `Y`.
+type: bar
+visual_type: clusteredBarChart
+region: main
+slots:
+  category: { role: Category, accepts: column, required: true, ordered: true }
+  value:    { role: Y, accepts: measure, required: true }
