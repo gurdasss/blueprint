@@ -1,4 +1,4 @@
-# Named layout from the README. Not used by any command yet (bp apply, v0.3).
+# Named layout from the README, used by bp apply: a header, a KPI row and two main regions.
 name: standard-4-up
 canvas: { width: 1280, height: 720 }
 regions:
