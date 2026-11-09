@@ -141,3 +141,30 @@ def test_reapply_refuses_a_target_swapped_for_a_column_in_desktop(tmp_path: Path
     manifest = jsonfmt.load(report / ".blueprint.manifest.json")
     [kpi] = [v for p in manifest["pages"] for v in p["visuals"] if v["visual_type"] == "kpi"]
     assert kpi["slots"]["target"] == "Sum(Sales[Amount])"
+
+
+def test_pie_drill_down_and_details_match_probe_11(tmp_path: Path):
+    shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
+    report = tmp_path / "proj" / "Fixture.Report"
+    spec = tmp_path / "pie.yaml"
+    spec.write_text('page: P\nlayout: standard-4-up\nvisuals:\n'
+                    '  - type: pie\n    title: Drill\n'
+                    '    slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}\n'
+                    '  - type: pie\n    title: Split\n'
+                    '    slots: {category: "Sales[Country]", details: "Sales[Region]", value: "[Total Amount]"}\n')
+    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
+    pies = {}
+    for f in report.glob("definition/pages/*/visuals/*/visual.json"):
+        doc = jsonfmt.load(f)
+        if doc["visual"]["visualType"] == "pieChart":
+            pies[doc["visual"]["visualContainerObjects"]["title"][0]["properties"]["text"]["expr"]["Literal"]["Value"]] = doc
+    # probe 11 step 02: an ordered drill-down in Category. Every level active, as in Desktop's own
+    # column chart (fixture 02), which Desktop accepted from Blueprint in probe 05.
+    assert pies["'Drill'"]["visual"]["query"]["queryState"] == {
+        "Category": {"projections": [col("Country", active=True), col("Region", active=True)]},
+        "Y": {"projections": [MEASURE]}}
+    # probe 11 step 04: Details is role Series, with no "active", and roles in alphabetical order.
+    state = pies["'Split'"]["visual"]["query"]["queryState"]
+    assert list(state.items()) == [("Category", {"projections": [col("Country", active=True)]}),
+                                   ("Series", {"projections": [col("Region")]}),
+                                   ("Y", {"projections": [MEASURE]})]

@@ -262,13 +262,14 @@ column, a measure, or an ordered list for drill-down. Blueprint validates bindin
 confusing result in Desktop.
 
 ```yaml
-# blueprint/visuals/pie.yaml  (slot contract, not the template; verified in probe 08)
+# blueprint/visuals/pie.yaml  (slot contract, not the template; verified in probes 08 and 11)
 type: pie
 visual_type: pieChart
 region: main
 slots:
-  category: { role: Category, accepts: column, required: true }   # Desktop's "Legend" well
+  category: { role: Category, accepts: column, required: true, ordered: true }   # "Legend"; a list drills down
   value:    { role: Y, accepts: measure, required: true }
+  details:  { role: Series, accepts: column }                                  # "Details"
 ```
 
 > **Draft.** The slot vocabulary per visual type has to be harvested from real PBIR files,
