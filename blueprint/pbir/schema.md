@@ -398,9 +398,14 @@ README Q1–Q3 and Q5–Q11. Every file Desktop wrote validates and round-trips 
   - New visuals default to `280×280` at `x 10`, stacked downwards with a 10px gap (`y` 0, 290,
     580). `z`/`tabOrder` are the next integer, as in probe 04.
   - No `filterConfig` was written, because the filter pane stayed collapsed (probe 05).
-  - **Open:** the KPI's **Target** role (not bound: the model has no target measure), more than
-    one Legend column on a pie, and whether Desktop accepts Blueprint-written documents of these
-    types (the probe 05 question for card and column chart).
+  - **Open:** the KPI's **Target** role (not bound: the model has no target measure), and more than
+    one Legend column on a pie.
+  - **Desktop accepts Blueprint's pie, table and KPI as written (probe 09,** `scripts/probe_apply_types.py`;
+    evidence `docs/probes/09-apply-types.diff`). `bp apply examples/sales-mix.yaml` on fixture 02,
+    then open and save: **no visual or page file changed**. Only `activePageName` and
+    `outspacePane.expanded` changed, which is UI state as in probe 07. The wells showed each
+    field where the spec put it: KPI Value/Trend axis, pie Legend/Values, and the table's
+    Columns in spec order.
 - **Move/resize (Q7):** only `position` changes, as sub-pixel floats.
 - **Paste:** an identical file apart from `name`, filter `name`s, `position`, and the next
   `z`/`tabOrder`. (Whether annotations are copied is untested.)

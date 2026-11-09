@@ -1,0 +1,45 @@
+# Probe 09: Desktop opens bp apply output with kpi, pie and table (examples/sales-mix.yaml on fixture 02). Desktop 2.159.1231.0, 2026-11-09 (scripts/probe_apply_types.py).
+# User saw in the wells: KPI Value = Total Amount, Trend axis = Country; pie Legend = Region, Values = Total Amount; table Columns = Country, Region, Total Amount. All content invented.
+
+######## 01 open and save
+
+diff --git a/Fixture.Report/definition/pages/pages.json b/Fixture.Report/definition/pages/pages.json
+index 8eb05d2..f75125d 100644
+--- a/Fixture.Report/definition/pages/pages.json
++++ b/Fixture.Report/definition/pages/pages.json
+@@ -4,5 +4,5 @@
+     "6a692d13619c1d4c0146",
+     "7e720744baab9a88b3e9"
+   ],
+-  "activePageName": "6a692d13619c1d4c0146"
++  "activePageName": "7e720744baab9a88b3e9"
+ }
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/report.json b/Fixture.Report/definition/report.json
+index 6b0944f..502857b 100644
+--- a/Fixture.Report/definition/report.json
++++ b/Fixture.Report/definition/report.json
+@@ -24,6 +24,19 @@
+           }
+         }
+       }
++    ],
++    "outspacePane": [
++      {
++        "properties": {
++          "expanded": {
++            "expr": {
++              "Literal": {
++                "Value": "false"
++              }
++            }
++          }
++        }
++      }
+     ]
+   },
+   "resourcePackages": [
+
+######## 01 open and save (no changes)
+
+
