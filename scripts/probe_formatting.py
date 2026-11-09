@@ -12,12 +12,7 @@ Step targets assume the Retail Analysis sample. They're described by page and vi
 not by internal ID, so they can be found in Desktop.
 """
 
-from __future__ import annotations
-
-import shutil
-import subprocess
-import sys
-from pathlib import Path
+from _probe import cli
 
 STEPS = """\
 # Probe 02: formatting (palette, typography, titles)
@@ -54,26 +49,5 @@ Note anything Desktop showed you (warnings, banners, a visual that changed by it
 """
 
 
-def git(dest: Path, *args: str) -> None:
-    subprocess.run(["git", "-C", str(dest), *args], check=True, stdout=subprocess.DEVNULL)
-
-
-def main(src: Path, dest: Path) -> int:
-    if dest.exists():
-        sys.exit(f"{dest} already exists; remove it first")
-    shutil.copytree(src, dest)
-    (dest / "STEPS.md").write_text(STEPS, encoding="utf-8")
-    git(dest, "init", "-q")
-    git(dest, "config", "core.autocrlf", "false")
-    git(dest, "config", "core.filemode", "false")
-    git(dest, "config", "core.whitespace", "cr-at-eol")
-    git(dest, "add", "-A")
-    git(dest, "commit", "-q", "-m", "baseline")
-    print(f"Probe ready: {dest}\nInstructions: {dest / 'STEPS.md'}")
-    return 0
-
-
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        sys.exit(__doc__)
-    sys.exit(main(Path(sys.argv[1]), Path(sys.argv[2])))
+    cli(__doc__, STEPS)
