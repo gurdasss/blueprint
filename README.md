@@ -158,14 +158,14 @@ cp -r fixtures/01-blank-report /tmp/demo
 cd /tmp/demo && git init && git add -A && git commit -m "baseline" && cd -
 
 # 2. Look at what's there
-bp inspect --report /tmp/demo/Demo.Report
+bp inspect --report /tmp/demo/Fixture.Report
 
 # 3. Check it against the example guidelines (expect failures)
-bp check --report /tmp/demo/Demo.Report --guidelines guidelines/example.yaml
+bp check --report /tmp/demo/Fixture.Report --guidelines guidelines/example.yaml
 
 # 4. Build a page from a spec
 bp apply examples/sales-overview.yaml \
-        --report /tmp/demo/Demo.Report \
+        --report /tmp/demo/Fixture.Report \
         --guidelines guidelines/example.yaml
 
 # 5. See exactly what changed
@@ -421,8 +421,7 @@ blueprint/
 │
 ├── fixtures/                   # synthetic PBIP reports, built from scratch
 │   ├── 01-blank-report/
-│   ├── 02-one-page-one-card/
-│   ├── 03-four-visuals-off-grid/
+│   ├── 02-card-and-chart/
 │   └── README.md               # how each was made, so they can be rebuilt
 │
 └── tests/
@@ -522,11 +521,11 @@ exist so that:
 
 | Fixture | Contents | Exercises |
 |---|---|---|
-| `01-blank-report` | one empty page | reader, page creation, registry update |
-| `02-one-page-one-card` | one card, bound to a trivial measure | slots, bindings, manifest |
-| `03-four-visuals-off-grid` | four visuals, deliberately misaligned | `fmt`, idempotence, `check` |
-| `04-over-budget-page` | more visuals than `max_visuals` | density policy, warn-not-act |
-| `05-ignore-marked` | one visual with `blueprint: ignore` | escape hatch |
+| `01-blank-report` | one empty 1920×1080 page | reader, page creation, registry update |
+| `02-card-and-chart` | a card bound to `[Total Amount]` and a column chart with a Country → Region drill-down, both off-grid | slots, bindings, `fmt`, idempotence, `check` |
+
+Over-budget pages and `blueprint: ignore` are covered by tests that copy a fixture or build a
+synthetic report (`tests/builders.py`), so no hand-edited fixtures are needed.
 
 `fixtures/README.md` records how each one was produced, so they can be rebuilt against a
 newer PBIR schema.
