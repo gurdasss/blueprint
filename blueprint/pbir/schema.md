@@ -381,6 +381,26 @@ README Q1–Q3 and Q5–Q11. Every file Desktop wrote validates and round-trips 
 - **Field wells (Q10):** column chart roles are `Category` and `Y`; the card's is `Data`.
 - **Title (Q8):** `visualContainerObjects.title[0].properties` = `show "true"` + `text
   "'Total'"`.
+- **Pie, table and KPI (probe 08):** verified 2026-11-09, Desktop 2.159.1231.0
+  (`scripts/probe_pie_table_kpi.py`; evidence `docs/probes/08-pie-table-kpi.diff`, fixture 02,
+  all content invented). Each type was added on a new page with no other changes:
+
+  | Desktop name: wells | `visualType` | `queryState` roles | Added by Desktop |
+  |---|---|---|---|
+  | Pie chart: Legend, Values | `pieChart` | `Category` (column, `"active": true`), `Y` (measure) | `sortDefinition` descending on the measure, `drillFilterOtherVisuals` |
+  | Table: Columns | `tableEx` | `Values`: columns and measures mixed in one role, in well order, **no `active`** | `drillFilterOtherVisuals` only (no sort) |
+  | KPI: Value, Trend axis, Target | `kpi` | `Indicator` (measure), `TrendLine` (column, **no `active`**) | `drillFilterOtherVisuals` only (no sort) |
+
+  - **`"active": true` belongs to `Category` projections only** (column chart, probe 04, and pie).
+    A table's or KPI's column projections don't carry it.
+  - **Reordering the table's Columns well only reorders the `Values` projections.** Nothing else
+    changes, so projection order is column order.
+  - New visuals default to `280×280` at `x 10`, stacked downwards with a 10px gap (`y` 0, 290,
+    580). `z`/`tabOrder` are the next integer, as in probe 04.
+  - No `filterConfig` was written, because the filter pane stayed collapsed (probe 05).
+  - **Open:** the KPI's **Target** role (not bound: the model has no target measure), more than
+    one Legend column on a pie, and whether Desktop accepts Blueprint-written documents of these
+    types (the probe 05 question for card and column chart).
 - **Move/resize (Q7):** only `position` changes, as sub-pixel floats.
 - **Paste:** an identical file apart from `name`, filter `name`s, `position`, and the next
   `z`/`tabOrder`. (Whether annotations are copied is untested.)

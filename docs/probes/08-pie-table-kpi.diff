@@ -1,0 +1,328 @@
+# Probe 08: new pie chart, table and KPI. Desktop 2.159.1231.0, 2026-11-09 (scripts/probe_pie_table_kpi.py), on fixture 02.
+# Desktop's visual names: Pie chart, Table, KPI. Wells as in STEPS.md (Legend/Values, Columns, Value/Trend axis/Target). All content invented.
+
+######## 01 open and save
+
+diff --git a/Fixture.Report/definition/report.json b/Fixture.Report/definition/report.json
+index 6b0944f..502857b 100644
+--- a/Fixture.Report/definition/report.json
++++ b/Fixture.Report/definition/report.json
+@@ -24,6 +24,19 @@
+           }
+         }
+       }
++    ],
++    "outspacePane": [
++      {
++        "properties": {
++          "expanded": {
++            "expr": {
++              "Literal": {
++                "Value": "false"
++              }
++            }
++          }
++        }
++      }
+     ]
+   },
+   "resourcePackages": [
+
+######## 02 add page Visuals
+
+diff --git a/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/page.json b/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/page.json
+new file mode 100644
+index 0000000..951eec0
+--- /dev/null
++++ b/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/page.json
+@@ -0,0 +1,8 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
++  "name": "a5ea806838ac2e54d79c",
++  "displayName": "Visuals",
++  "displayOption": "FitToPage",
++  "height": 1080,
++  "width": 1920
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/pages.json b/Fixture.Report/definition/pages/pages.json
+index e28de5a..aa8d81a 100644
+--- a/Fixture.Report/definition/pages/pages.json
++++ b/Fixture.Report/definition/pages/pages.json
+@@ -1,7 +1,8 @@
+ {
+   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.1.0/schema.json",
+   "pageOrder": [
+-    "6a692d13619c1d4c0146"
++    "6a692d13619c1d4c0146",
++    "a5ea806838ac2e54d79c"
+   ],
+-  "activePageName": "6a692d13619c1d4c0146"
++  "activePageName": "a5ea806838ac2e54d79c"
+ }
+\ No newline at end of file
+
+######## 03 pie
+
+diff --git a/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/visuals/903d1837dd5d52e14689/visual.json b/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/visuals/903d1837dd5d52e14689/visual.json
+new file mode 100644
+index 0000000..d8cc299
+--- /dev/null
++++ b/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/visuals/903d1837dd5d52e14689/visual.json
+@@ -0,0 +1,75 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
++  "name": "903d1837dd5d52e14689",
++  "position": {
++    "x": 10,
++    "y": 0,
++    "z": 0,
++    "height": 280,
++    "width": 280,
++    "tabOrder": 0
++  },
++  "visual": {
++    "visualType": "pieChart",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region",
++              "active": true
++            }
++          ]
++        },
++        "Y": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      },
++      "sortDefinition": {
++        "sort": [
++          {
++            "field": {
++              "Measure": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Property": "Total Amount"
++              }
++            },
++            "direction": "Descending"
++          }
++        ],
++        "isDefaultSort": true
++      }
++    },
++    "drillFilterOtherVisuals": true
++  }
++}
+\ No newline at end of file
+
+######## 04 table
+
+diff --git a/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/visuals/e05d7316b0580c7559eb/visual.json b/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/visuals/e05d7316b0580c7559eb/visual.json
+new file mode 100644
+index 0000000..40cd745
+--- /dev/null
++++ b/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/visuals/e05d7316b0580c7559eb/visual.json
+@@ -0,0 +1,66 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
++  "name": "e05d7316b0580c7559eb",
++  "position": {
++    "x": 10,
++    "y": 290,
++    "z": 1,
++    "height": 280,
++    "width": 280,
++    "tabOrder": 1
++  },
++  "visual": {
++    "visualType": "tableEx",
++    "query": {
++      "queryState": {
++        "Values": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region"
++            },
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country"
++            },
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      }
++    },
++    "drillFilterOtherVisuals": true
++  }
++}
+\ No newline at end of file
+
+######## 05 kpi
+
+diff --git a/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/visuals/35dc4de014c0183c92a6/visual.json b/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/visuals/35dc4de014c0183c92a6/visual.json
+new file mode 100644
+index 0000000..7180cd0
+--- /dev/null
++++ b/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/visuals/35dc4de014c0183c92a6/visual.json
+@@ -0,0 +1,56 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
++  "name": "35dc4de014c0183c92a6",
++  "position": {
++    "x": 10,
++    "y": 580,
++    "z": 2,
++    "height": 280,
++    "width": 280,
++    "tabOrder": 2
++  },
++  "visual": {
++    "visualType": "kpi",
++    "query": {
++      "queryState": {
++        "Indicator": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        },
++        "TrendLine": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country"
++            }
++          ]
++        }
++      }
++    },
++    "drillFilterOtherVisuals": true
++  }
++}
+\ No newline at end of file
+
+######## 06 table reorder
+
+diff --git a/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/visuals/e05d7316b0580c7559eb/visual.json b/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/visuals/e05d7316b0580c7559eb/visual.json
+index 40cd745..91a73f7 100644
+--- a/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/visuals/e05d7316b0580c7559eb/visual.json
++++ b/Fixture.Report/definition/pages/a5ea806838ac2e54d79c/visuals/e05d7316b0580c7559eb/visual.json
+@@ -23,11 +23,11 @@
+                       "Entity": "Sales"
+                     }
+                   },
+-                  "Property": "Region"
++                  "Property": "Country"
+                 }
+               },
+-              "queryRef": "Sales.Region",
+-              "nativeQueryRef": "Region"
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country"
+             },
+             {
+               "field": {
+@@ -37,11 +37,11 @@
+                       "Entity": "Sales"
+                     }
+                   },
+-                  "Property": "Country"
++                  "Property": "Region"
+                 }
+               },
+-              "queryRef": "Sales.Country",
+-              "nativeQueryRef": "Country"
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region"
+             },
+             {
+               "field": {
+
