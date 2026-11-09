@@ -18,6 +18,9 @@ Shapes come from what Desktop wrote (schema.md "Colours, fonts and theme" and "T
   there. Probe 06 phase 2 confirmed it: titles at 18pt, still shown on charts and the card,
   still hidden on the textbox. Desktop's save then left every file byte-identical (it rewrote
   the theme file to the same bytes).
+- probe 15: ``textClasses.callout`` reaches the new card's value, and a
+  ``visualStyles.cardVisual["*"].label`` entry sets its Category label, merged key by key with the
+  base theme's entry.
 """
 
 from __future__ import annotations
@@ -38,6 +41,11 @@ ROLE_TO_CLASS = {"title": "title", "callout": "callout"}
 # there, which outranks textClasses.title, so a guideline size must also be written here. Only
 # fontSize is set at this level: it's the only key observed there (base theme, probe 06).
 ROLE_TO_VISUAL_CARD = {"title": "title", "subtitle": "subTitle"}
+# typography.card_label -> visualStyles.cardVisual["*"].label (probe 15): Desktop showed the new
+# card's Category label in the entry's font and size, merging it key by key with the base theme's
+# entry (position, colour, the card's outline kept). The font is written as the CSS stack Desktop
+# accepted there.
+CARD_LABEL_STACK = "'{}', helvetica, arial, sans-serif"
 
 
 class ThemeError(Exception):
@@ -57,9 +65,13 @@ def build(rules: Guidelines) -> tuple[dict[str, Any], list[str]]:
 
     classes: dict[str, dict[str, Any]] = {}
     visual_cards: dict[str, dict[str, Any]] = {}
+    card_label: dict[str, Any] | None = None
     for role, rule in rules.typography.items():
         if role == "header":
             continue  # written onto Blueprint's header textboxes by bp apply, not via the theme
+        if role == "card_label":
+            card_label = _card_label(rule, notes)
+            continue
         card = ROLE_TO_VISUAL_CARD.get(role)
         if card is not None and rule.sizes:
             size = rule.sizes[0]
@@ -90,13 +102,40 @@ def build(rules: Guidelines) -> tuple[dict[str, Any], list[str]]:
             classes.setdefault(cls, {})["color"] = pal.text
     if classes:
         theme["textClasses"] = {k: classes[k] for k in TEXT_CLASSES if k in classes}
+    styles: dict[str, Any] = {}
     if visual_cards:
-        theme["visualStyles"] = {"*": {"*": {card: [visual_cards[card]] for card in
-                                             ("title", "subTitle") if card in visual_cards}}}
+        styles["*"] = {"*": {card: [visual_cards[card]] for card in ("title", "subTitle") if card in visual_cards}}
+    if card_label is not None:
+        styles["cardVisual"] = {"*": {"label": [card_label]}}  # after "*", as in Desktop's base theme
+    if styles:
+        theme["visualStyles"] = styles
 
     if len(theme) == 1:
         raise ThemeError("guidelines set no palette or theme typography; nothing to put in a theme")
     return theme, notes
+
+
+def _card_label(rule, notes: list[str]) -> dict[str, Any] | None:
+    """The cardVisual label entry for typography.card_label (probe 15), or None if it sets nothing."""
+    entry: dict[str, Any] = {"$id": "default"}
+    if rule.sizes:
+        size = rule.sizes[0]
+        entry["fontSize"] = int(size) if size.is_integer() else size
+        if len(rule.sizes) > 1:
+            notes.append(f"typography.card_label: theme uses the first allowed size, {size:g}pt")
+    if rule.fonts:
+        font = rule.fonts[0]
+        if "'" in font or "," in font:
+            notes.append(f"typography.card_label: font {font!r} can't be written as a font stack; "
+                         "visuals are still checked")
+        else:
+            entry["fontFamily"] = CARD_LABEL_STACK.format(font)
+            if len(rule.fonts) > 1:
+                notes.append(f"typography.card_label: theme uses the first allowed font, {font!r}")
+    if rule.bold is not None:
+        notes.append("typography.card_label.bold: not expressible in a theme (unverified); "
+                     "visuals are still checked")
+    return entry if len(entry) > 1 else None
 
 
 def with_theme(report_doc: dict, *, replace: bool) -> dict:

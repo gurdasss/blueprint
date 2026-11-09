@@ -9,6 +9,7 @@ from blueprint.cli import main
 from blueprint.model import TextClass
 from blueprint.pbir import jsonfmt, theme
 from blueprint.pbir.reader import read_report
+from blueprint.validate import check_report
 
 ROOT = Path(__file__).resolve().parent.parent
 GUIDE = ROOT / "guidelines" / "example.yaml"
@@ -165,10 +166,43 @@ def test_fixture_base_theme_visual_text(blank_fixture: Path):
     assert validate.theme_font(base, "card_label") == TextClass("Segoe UI", 12.0)
 
 
-def test_card_label_is_checked_but_not_written_to_the_theme(tmp_path: Path):
+def test_card_label_is_written_as_the_cardvisual_label_style(tmp_path: Path):
     doc, notes = theme.build(_rules(tmp_path, "name: T\ntypography:\n  title: {size: 18}\n"
-                                              "  card_label: {font: Segoe UI, size: 14}\n"))
-    assert doc["visualStyles"] == {"*": {"*": {"title": [{"fontSize": 18}]}}}  # nothing for the card
-    assert "label" not in doc["textClasses"]
-    assert notes == [("typography.card_label: the theme can't set its font or size (unverified); "
+                                              "  card_label: {font: Arial, size: 14}\n"))
+    # exactly the entry Desktop showed as Arial 14 in probe 15, after the "*" styles
+    assert doc["visualStyles"] == {
+        "*": {"*": {"title": [{"fontSize": 18}]}},
+        "cardVisual": {"*": {"label": [{"$id": "default", "fontSize": 14,
+                                        "fontFamily": "'Arial', helvetica, arial, sans-serif"}]}},
+    }
+    assert "label" not in doc["textClasses"]  # textClasses.label is every visual's "General" text
+    assert notes == []
+
+
+def test_card_label_notes(tmp_path: Path):
+    doc, notes = theme.build(_rules(tmp_path, "name: T\ntypography:\n"
+                                              "  card_label: {font: [Segoe UI, Arial], size: [12, 14], bold: true}\n"))
+    assert doc["visualStyles"]["cardVisual"]["*"]["label"] == [
+        {"$id": "default", "fontSize": 12, "fontFamily": "'Segoe UI', helvetica, arial, sans-serif"}]
+    assert notes == ["typography.card_label: theme uses the first allowed size, 12pt",
+                     "typography.card_label: theme uses the first allowed font, 'Segoe UI'",
+                     ("typography.card_label.bold: not expressible in a theme (unverified); "
                       "visuals are still checked")]
+    _, notes = theme.build(_rules(tmp_path, "name: T\ntypography:\n  callout: {size: 30}\n"
+                                            "  card_label: {bold: false}\n"))
+    assert notes == [("typography.card_label.bold: not expressible in a theme (unverified); "
+                      "visuals are still checked")]
+
+
+def test_theme_then_check_passes_the_card_label(tmp_path: Path, card_chart_fixture: Path):
+    report = tmp_path / "proj"
+    shutil.copytree(card_chart_fixture.parent, report)
+    guide = tmp_path / "g.yaml"
+    guide.write_text("name: T\ntypography:\n  card_label: {font: Arial, size: 14}\n")
+    rules = guidelines.load(guide)
+    before = check_report(read_report(report), rules).findings
+    assert [f.message for f in before if f.rule == "typography"] == [
+        "theme 'Fluent2-CY26SU10' card_label text: font 'Segoe UI' (allowed: Arial); size 12pt (allowed: 14)"]
+    assert main(["theme", "--report", str(report), "--guidelines", str(guide)]) == 0
+    after = check_report(read_report(report), rules).findings
+    assert [f for f in after if f.rule == "typography"] == []

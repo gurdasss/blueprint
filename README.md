@@ -193,7 +193,7 @@ Then open the report in Power BI Desktop and look at it.
 | `bp fmt` | Snap existing visuals to grid, normalise sizes. Idempotent. |
 | `bp apply <spec>` | Create or update pages from a page spec. |
 | `bp manifest` | (Re)generate the manifest from the report's current state. |
-| `bp theme` | Write a custom theme from the guidelines (palette, text colour, title/callout fonts) and make the report use it. |
+| `bp theme` | Write a custom theme from the guidelines (palette, text colour, title/callout/card label fonts) and make the report use it. |
 
 `--dry-run` is available on every mutating command and prints the planned file writes
 without performing them.
