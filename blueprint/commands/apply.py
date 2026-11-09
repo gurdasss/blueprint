@@ -21,7 +21,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from blueprint import guidelines, layouts, spec
+from blueprint import guidelines, layouts, manifest, spec
+from blueprint.commands import manifest as manifest_cmd
 from blueprint.model import Page, Report, Visual
 from blueprint.pbir import ids, registry, render, semantic, writer
 from blueprint.pbir.reader import read_report
@@ -190,11 +191,20 @@ def build_plan(args: argparse.Namespace) -> Plan:
 
 def run(args: argparse.Namespace) -> int:
     plan = build_plan(args)
-    if not args.dry_run:
+    if args.dry_run:
+        if plan.writes:
+            plan.warnings.append(f"{manifest.FILE} would be regenerated after these writes")
+    else:
         writer.apply(plan)
+        # The manifest describes the report after the writes, so it's rebuilt from disk.
+        report = read_report(args.report)
+        follow = manifest_cmd.plan_for(report, guidelines.load(args.guidelines, report.root))
+        writer.apply(follow)
+        plan.writes.extend(follow.writes)
     print(plan.render())
     if plan.writes and not args.dry_run:
         print(f"\nWrote {len(plan.writes)} file(s). If the report is open in Power BI Desktop, "
               "accept 'Apply external changes' (unsaved Desktop edits will be overwritten).",
               file=sys.stderr)
     return 0
+

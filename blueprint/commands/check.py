@@ -10,7 +10,7 @@ import argparse
 import json
 from dataclasses import asdict
 
-from blueprint import guidelines
+from blueprint import guidelines, manifest
 from blueprint.guidelines import Guidelines
 from blueprint.model import Report
 from blueprint.pbir import schemas
@@ -26,10 +26,29 @@ def run_check(args: argparse.Namespace) -> tuple[Report, Guidelines, CheckResult
     level = rules.check.severity["format"]
     if level != "off":
         result.findings[:0] = _format_findings(report, level)
+    label = f"{rules.name}@{rules.version}"
+    for page in report.pages:
+        if page.guidelines and page.guidelines != label:
+            result.notes.append(f"{page.display_name}: built with guidelines {page.guidelines}, "
+                                f"checked against {label}")
+    stale = _manifest_state(report, rules)
+    if stale:
+        result.notes.append(stale)
     if rules.unchecked:
         result.notes.append("not checked yet (set in guidelines, not implemented): "
                             + ", ".join(rules.unchecked))
     return report, rules, result
+
+
+def _manifest_state(report: Report, rules: Guidelines) -> str | None:
+    """A note when the committed manifest no longer describes the report."""
+    path = report.root / manifest.FILE
+    if not path.exists():
+        return None if not any(p.spec_page for p in report.pages) else (
+            f"no {manifest.FILE}; run `bp manifest`")
+    if manifest.render(report, rules, path.read_bytes()) != path.read_bytes():
+        return f"{manifest.FILE} is out of date (the report changed since it was generated); run `bp manifest`"
+    return None
 
 
 def _format_findings(report: Report, level: str) -> list[Finding]:

@@ -1,0 +1,143 @@
+{
+  "blueprint_version": "0.0.1",
+  "guidelines": {
+    "name": "Example Corp Reporting Standard",
+    "version": 1
+  },
+  "pbir_schema": {
+    "page": [
+      "2.1.0"
+    ],
+    "pagesMetadata": [
+      "1.1.0"
+    ],
+    "report": [
+      "3.3.0"
+    ],
+    "versionMetadata": [
+      "1.0.0"
+    ],
+    "visualContainer": [
+      "2.13.0",
+      "2.14.0 (validated as 2.13.0)"
+    ]
+  },
+  "generated_at": "2026-01-01T00:00:00Z",
+  "pages": [
+    {
+      "id": "6a692d13619c1d4c0146",
+      "name": "Overview",
+      "size": {
+        "w": 1920,
+        "h": 1080
+      },
+      "visuals": [
+        {
+          "id": "c62803c0b4a8a11ac705",
+          "type": "cardVisual",
+          "visual_type": "cardVisual",
+          "title": "Total",
+          "managed": false,
+          "position": {
+            "x": 10.29,
+            "y": 0,
+            "w": 695.71,
+            "h": 741
+          },
+          "slots": {
+            "Data": "[Total Amount]"
+          }
+        },
+        {
+          "id": "ca909884eb63347a3230",
+          "type": "clusteredColumnChart",
+          "visual_type": "clusteredColumnChart",
+          "title": null,
+          "managed": false,
+          "position": {
+            "x": 903.61,
+            "y": 236.71,
+            "w": 696,
+            "h": 329
+          },
+          "slots": {
+            "Category": [
+              "Sales[Country]",
+              "Sales[Region]"
+            ],
+            "Y": "[Total Amount]"
+          }
+        }
+      ]
+    },
+    {
+      "id": "b1df9ce53010a81607ce",
+      "name": "Sales Overview",
+      "spec_page": "Sales Overview",
+      "layout": "standard-4-up",
+      "built_with": "Example Corp Reporting Standard@1",
+      "size": {
+        "w": 1280,
+        "h": 720
+      },
+      "visuals": [
+        {
+          "id": "33677126057fa2308cba",
+          "type": "header",
+          "visual_type": "textbox",
+          "title": "Sales Overview",
+          "managed": true,
+          "spec_id": "header-1",
+          "region": "header#1",
+          "position": {
+            "x": 16,
+            "y": 16,
+            "w": 1248,
+            "h": 64
+          },
+          "slots": {}
+        },
+        {
+          "id": "816ec20d4825d39a3037",
+          "type": "card",
+          "visual_type": "cardVisual",
+          "title": "Total",
+          "managed": true,
+          "spec_id": "card-1",
+          "region": "main#1",
+          "position": {
+            "x": 16,
+            "y": 232,
+            "w": 616,
+            "h": 472
+          },
+          "slots": {
+            "value": "[Total Amount]"
+          }
+        },
+        {
+          "id": "b4f94ad3cfcc67642873",
+          "type": "column",
+          "visual_type": "clusteredColumnChart",
+          "title": "Sales by Geography",
+          "managed": true,
+          "spec_id": "column-1",
+          "region": "main#2",
+          "position": {
+            "x": 648,
+            "y": 232,
+            "w": 616,
+            "h": 472
+          },
+          "slots": {
+            "category": [
+              "Sales[Country]",
+              "Sales[Region]"
+            ],
+            "value": "[Total Amount]"
+          }
+        }
+      ]
+    }
+  ]
+}

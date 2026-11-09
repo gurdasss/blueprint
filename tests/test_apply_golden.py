@@ -38,7 +38,8 @@ def _apply(report: Path, *extra: str, spec: Path = SPEC, guide: Path | None = GU
     return main(args + (["--guidelines", str(guide)] if guide else []))
 
 
-def test_golden_output(tmp_path: Path, capsys):
+def test_golden_output(tmp_path: Path, capsys, monkeypatch):
+    monkeypatch.setenv("SOURCE_DATE_EPOCH", "1767225600")  # 2026-01-01T00:00:00Z: deterministic manifest
     report = _copy_fixture(tmp_path)
     before = _snapshot(report)
     assert _apply(report) == 0
