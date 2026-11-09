@@ -157,3 +157,18 @@ def test_title_is_owned_only_when_the_model_sets_one(tmp_path: Path):
     [w] = writer.plan_writes(r).writes
     assert w.changes == ("v1: title 'Old' -> 'New'",)
     assert b"'New'" in w.after and b"'Old'" not in w.after
+
+
+def test_failed_write_removes_folders_it_created(tmp_path: Path):
+    from blueprint.plan import FileWrite, Plan
+    rd = make_report(tmp_path, {"p": []})
+    pages = rd / "definition/pages"
+    (pages / "blocker").write_text("a file where a folder is needed")
+    before = set(pages.rglob("*"))
+    plan = Plan(root=rd, writes=[
+        FileWrite(Path("definition/pages/aaaaaaaaaaaaaaaaaaaa/visuals/bbbbbbbbbbbbbbbbbbbb/visual.json"), None, b"{}"),
+        FileWrite(Path("definition/pages/blocker/visuals/v1/visual.json"), None, b"{}"),
+    ])
+    with pytest.raises(OSError):
+        writer.apply(plan)
+    assert set(pages.rglob("*")) == before  # no empty page/visual folders left behind

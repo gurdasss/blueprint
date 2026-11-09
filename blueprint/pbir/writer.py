@@ -76,6 +76,15 @@ def _visual_write(visual: Visual, *, force_schema: bool) -> FileWrite | None:
                      (f"{visual.name}: " + (", ".join(changes) or "Blueprint annotations"),))
 
 
+def _remove_empty(dirs: list[Path]) -> None:
+    """Remove folders a failed write created, deepest first, but only if they're empty."""
+    for d in sorted(set(dirs), key=lambda p: len(p.parts), reverse=True):
+        try:
+            d.rmdir()
+        except OSError:
+            pass  # not empty, or already gone
+
+
 def add_modify(plan: Plan, doc: Document, data: dict, note: str, *, force_schema: bool = False) -> None:
     """Replace an existing document's content, subject to the same schema checks as visuals."""
     _check_schema(doc, data, force_schema=force_schema)
@@ -164,10 +173,13 @@ def apply(plan: Plan) -> None:
             raise WriteError(f"{w.path}: changed on disk since it was read; re-run the command")
 
     temps: list[tuple[Path, Path]] = []
+    made_dirs: list[Path] = []  # folders this call created, so a failure can remove them again
     try:
         for w in plan.writes:
             target = root / w.path
+            missing = [p for p in [target.parent, *target.parent.parents] if not p.exists()]
             target.parent.mkdir(parents=True, exist_ok=True)
+            made_dirs.extend(reversed(missing))
             tmp = target.with_name(f".{target.name}.bp-tmp")
             temps.append((tmp, target))
             with open(tmp, "wb") as fh:
@@ -180,6 +192,7 @@ def apply(plan: Plan) -> None:
     except BaseException:
         for tmp, _ in temps:
             tmp.unlink(missing_ok=True)
+        _remove_empty(made_dirs)
         raise
 
     done: list[Path] = []
