@@ -131,3 +131,13 @@ def test_manifest_build_is_pure(report: Path):
     r = read_report(report)
     rules = guidelines.load()
     assert manifest.build(r, rules, "t") == manifest.build(read_report(report), rules, "t")
+
+
+def test_fmt_keeps_an_existing_manifest_current_but_never_creates_one(report: Path, capsys):
+    assert _run("fmt", "--report", str(report)) == 0
+    assert not (report / manifest.FILE).exists()
+    _run("manifest", "--report", str(report))
+    _run("fmt", "--report", str(report), "--grid", "16")
+    capsys.readouterr()
+    _run("check", "--report", str(report), "--json")
+    assert not any("out of date" in n for n in json.loads(capsys.readouterr().out)["notes"])

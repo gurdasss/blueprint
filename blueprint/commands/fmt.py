@@ -5,7 +5,8 @@ from __future__ import annotations
 import argparse
 import sys
 
-from blueprint import grid, guidelines
+from blueprint import grid, guidelines, manifest
+from blueprint.commands import manifest as manifest_cmd
 from blueprint.pbir import writer
 from blueprint.pbir.reader import read_report
 from blueprint.plan import Plan
@@ -31,6 +32,12 @@ def run(args: argparse.Namespace) -> int:
         print(plan.render())
         return 0
     writer.apply(plan)
+    if plan.writes and (plan.root / manifest.FILE).exists():
+        # Keep an existing manifest describing the report (positions changed).
+        report = read_report(args.report)
+        follow = manifest_cmd.plan_for(report, guidelines.load(args.guidelines, report.root))
+        writer.apply(follow)
+        plan.writes.extend(follow.writes)
     print(plan.render())
     if not plan.empty:
         print(
