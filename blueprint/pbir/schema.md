@@ -312,6 +312,10 @@ What follows:
   `textClass: "label"`, `fontColor: foregroundNeutralSecondary` (#616161). That outranks
   `textClasses.label` (10.5), which is the same layering as titles in probe 06.
 - Colours are found by shape (`fontColor.solid.color.expr`), so the palette rule already covers them.
+- The typography role `card_label` covers `objects.label`. Its theme default is read from
+  `visualStyles.cardVisual["*"].label[0]` over `textClasses.label`. **Open:** whether a custom
+  theme's `visualStyles.cardVisual` entry overrides the base one (Blueprint doesn't write one), and the
+  legacy `card`'s category label.
 - **Open:** whether a custom theme's `textClasses.callout` reaches the card's value. By the probe 06
   layering it should, because the base sets only `textClass` at the `visualStyles` level, but no probe has applied one.
 - Step 1, an open and save with no changes, also rewrote unrelated state. A slicer projection's

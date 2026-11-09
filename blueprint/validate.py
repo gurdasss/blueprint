@@ -236,10 +236,13 @@ def _check_theme(theme: Theme, pal, c: _Collector) -> None:
 
 # --- typography --------------------------------------------------------------------------
 
-# Where a theme sets each typography role's default, as (textClasses name, visualStyles card).
+# Where a theme sets each typography role's default, as (textClasses name, Theme.visual_text key).
 # probe 03: Desktop's "Title" is textClasses.title. probe 06: visualStyles["*"]["*"].title
 # (and .subTitle) outrank textClasses, so a size set there is the one visuals actually get.
-THEME_SOURCES = {"title": ("title", "title"), "subtitle": (None, "subTitle"), "callout": ("callout", None)}
+# probe 07: the new card's Category label is visualStyles.cardVisual["*"].label (size 12) over
+# textClasses.label (its face, Segoe UI).
+THEME_SOURCES = {"title": ("title", "title"), "subtitle": (None, "subTitle"), "callout": ("callout", None),
+                 "card_label": ("label", "cardVisual.label")}
 
 
 def theme_font(theme: Theme, role: str) -> TextClass | None:

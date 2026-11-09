@@ -130,6 +130,8 @@ _CONTAINER_ROLES = {"title": "title", "subTitle": "subtitle"}
 # visualType -> the `objects` entry holding its callout value: the legacy card's `labels` (probe 03),
 # the new card's `value` (probe 07, entries tagged `"selector": {"id": "default"}`).
 _CALLOUT_OBJECTS = {"card": "labels", "cardVisual": "value"}
+# visualType -> {objects entry: role} for other card text (probe 07: the new card's Category label).
+_CARD_OBJECTS = {"cardVisual": {"label": "card_label"}}
 
 
 def first_family(stack: str) -> str | None:
@@ -197,6 +199,11 @@ def fonts_in(visual: Any) -> list[FontUse]:
             font = _font_from_props("callout", (entry or {}).get("properties") or {})
             if font:
                 out.append(font)
+    for key, role in _CARD_OBJECTS.get(visual.get("visualType"), {}).items():
+        for entry in objects.get(key) or []:
+            font = _font_from_props(role, (entry or {}).get("properties") or {})
+            if font:
+                out.append(font)
     for general in objects.get("general") or []:
         for para in ((general or {}).get("properties") or {}).get("paragraphs") or []:
             for run in (para or {}).get("textRuns") or []:
@@ -227,23 +234,27 @@ def text_classes(data: Any) -> dict[str, TextClass]:
     return out
 
 
-VISUAL_TEXT_CARDS = ("title", "subTitle")
+# Theme ``visualStyles[<visualType>]["*"].<card>[0]`` font defaults, keyed as Theme.visual_text is:
+# every visual's title and subtitle (probe 06), and the new card's Category label (probe 07: base
+# theme fontSize 12, which outranks textClasses.label's 10.5).
+VISUAL_TEXT_SOURCES = {"title": ("*", "title"), "subTitle": ("*", "subTitle"),
+                       "cardVisual.label": ("cardVisual", "label")}
 
 
 def visual_text(data: Any) -> dict[str, TextClass]:
-    """``visualStyles["*"]["*"].{title,subTitle}[0]`` font defaults for every visual (probe 06)."""
-    star = data.get("visualStyles") if isinstance(data, dict) else None
-    for key in ("*", "*"):
-        star = star.get(key) if isinstance(star, dict) else None
-    star = star if isinstance(star, dict) else {}
+    """Font defaults from the theme's ``visualStyles`` for each of ``VISUAL_TEXT_SOURCES``."""
+    styles = data.get("visualStyles") if isinstance(data, dict) else None
+    styles = styles if isinstance(styles, dict) else {}
     out: dict[str, TextClass] = {}
-    for card in VISUAL_TEXT_CARDS:
-        entries = star.get(card)
+    for key, (visual_type, card) in VISUAL_TEXT_SOURCES.items():
+        star = styles.get(visual_type)
+        star = star.get("*") if isinstance(star, dict) else None
+        entries = star.get(card) if isinstance(star, dict) else None
         entry = entries[0] if isinstance(entries, list) and entries and isinstance(entries[0], dict) else None
         if entry is None:
             continue
         face = entry.get("fontFamily")
         size = parse_size(entry.get("fontSize"))
         if isinstance(face, str) or size is not None:
-            out[card] = TextClass(first_family(face) if isinstance(face, str) else None, size)
+            out[key] = TextClass(first_family(face) if isinstance(face, str) else None, size)
     return out

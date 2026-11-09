@@ -41,7 +41,7 @@ class ColorUse:
 class FontUse:
     """Font settings written for one text role of a visual. None = not written (theme/default)."""
 
-    role: str  # "title" | "subtitle" | "callout" | "textbox"
+    role: str  # "title" | "subtitle" | "callout" | "card_label" | "textbox"
     family: str | None = None  # the face, e.g. "Segoe UI Semibold" (first entry of a font stack)
     size: float | None = None  # pt
     bold: bool | None = None
@@ -83,8 +83,9 @@ class Theme:
     foreground: str | None = None
     background: str | None = None
     text_classes: dict[str, TextClass] = field(default_factory=dict)  # title, label, callout, …
-    # visualStyles["*"]["*"].<card> defaults for every visual: "title", "subTitle". These outrank
-    # textClasses (probe 06: base theme title fontSize 15 beat textClasses.title 18).
+    # visualStyles defaults: "title"/"subTitle" from ["*"]["*"] (every visual) and "cardVisual.label"
+    # from ["cardVisual"]["*"]. These outrank textClasses (probe 06: base theme title fontSize 15
+    # beat textClasses.title 18; probe 07: the card label's 12 beat textClasses.label's 10.5).
     visual_text: dict[str, TextClass] = field(default_factory=dict)
 
 

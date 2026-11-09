@@ -67,7 +67,8 @@ def test_new_card_value_is_callout():
     vis = new_card("c", fontFamily="'Arial'", fontSize="28D", bold="true")["visual"]
     assert formatting.fonts_in(vis) == [
         FontUse("title", None, 16.0, None, None),
-        FontUse("callout", "Arial", 28.0, True, "Arial"),  # the category label has no role
+        FontUse("callout", "Arial", 28.0, True, "Arial"),
+        FontUse("card_label", None, 14.0, None, None),  # probe 07 step 3
     ]
     chart = visual("c", vtype="lineChart")["visual"]
     chart["objects"] = {"value": [{"properties": {"fontFamily": lit("'Arial'")}}]}
@@ -157,6 +158,25 @@ def test_new_card_callout_and_title_checked(tmp_path: Path):
     found, _ = _typo(tmp_path, [new_card("c", fontFamily="'Arial'", fontSize="28D", bold="true")], body)
     assert found == [("c", ("title size 16pt (allowed: 12, 14); callout font 'Arial' (allowed: Segoe UI "
                             "Semibold); callout size 28pt (allowed: 21); callout bold on (guidelines: off)"))]
+
+
+def test_new_card_label_checked(tmp_path: Path):
+    body = "typography:\n  card_label: {font: Segoe UI, size: 12}\n"
+    found, _ = _typo(tmp_path, [new_card("c", fontSize="28D")], body)
+    assert found == [("c", "card_label size 14pt (allowed: 12)")]
+    legacy = visual("old", vtype="card")  # the legacy card's `label` isn't the category label
+    legacy["visual"]["objects"] = {"label": [{"properties": {"fontSize": lit("14D")}}]}
+    assert _typo(tmp_path / "2", [legacy], body)[0] == []
+
+
+def test_card_label_theme_default_is_visual_style_over_text_class(tmp_path: Path):
+    # probe 07: base theme cardVisual label fontSize 12 outranks textClasses.label 10.5 (face Segoe UI)
+    theme = {"textClasses": {"label": {"fontFace": "Segoe UI", "fontSize": 10.5}},
+             "visualStyles": {"cardVisual": {"*": {"label": [{"$id": "default", "fontSize": 12,
+                                                              "textClass": "label"}]}}}}
+    body = "typography:\n  card_label: {font: Arial, size: 14}\n"
+    found, _ = _typo(tmp_path, [], body, theme=theme)
+    assert found == [(None, "theme 'T' card_label text: font 'Segoe UI' (allowed: Arial); size 12pt (allowed: 14)")]
 
 
 def test_theme_text_class_checked(tmp_path: Path):

@@ -4,8 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from blueprint import guidelines
+from blueprint import guidelines, validate
 from blueprint.cli import main
+from blueprint.model import TextClass
 from blueprint.pbir import jsonfmt, theme
 from blueprint.pbir.reader import read_report
 
@@ -159,3 +160,15 @@ def test_base_visual_styles_title_size_outranks_text_classes(tmp_path: Path):
 def test_fixture_base_theme_visual_text(blank_fixture: Path):
     [base] = read_report(blank_fixture).themes
     assert base.visual_text["title"].size == 15 and base.visual_text["subTitle"].size == 12
+    # probe 07: what Desktop showed as the new card's Category label default (Segoe UI 12)
+    assert base.visual_text["cardVisual.label"].size == 12
+    assert validate.theme_font(base, "card_label") == TextClass("Segoe UI", 12.0)
+
+
+def test_card_label_is_checked_but_not_written_to_the_theme(tmp_path: Path):
+    doc, notes = theme.build(_rules(tmp_path, "name: T\ntypography:\n  title: {size: 18}\n"
+                                              "  card_label: {font: Segoe UI, size: 14}\n"))
+    assert doc["visualStyles"] == {"*": {"*": {"title": [{"fontSize": 18}]}}}  # nothing for the card
+    assert "label" not in doc["textClasses"]
+    assert notes == [("typography.card_label: the theme can't set its font or size (unverified); "
+                      "visuals are still checked")]
