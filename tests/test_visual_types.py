@@ -62,3 +62,57 @@ def test_apply_writes_desktops_query_shapes(tmp_path: Path):
     names = {d["name"] for d in made.values()}
     findings = check_report(read_report(report), guidelines.load(GUIDE)).findings
     assert [f for f in findings if f.visual in names] == []
+
+
+def _fixture_with_target(tmp_path: Path) -> Path:
+    """Fixture 02 plus the measure probe 10 created in Desktop, inserted where Desktop put it."""
+    shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
+    tmdl = tmp_path / "proj" / "Fixture.SemanticModel" / "definition" / "tables" / "Sales.tmdl"
+    text = tmdl.read_bytes().decode()
+    measure = ("\tmeasure 'Target Amount' = 600\r\n\t\tformatString: 0\r\n"
+               "\t\tlineageTag: 9ab090f9-bd7f-43c4-82be-86470a46784b\r\n\r\n")
+    tmdl.write_bytes(text.replace("\tcolumn Country", measure + "\tcolumn Country", 1).encode())
+    return tmp_path / "proj" / "Fixture.Report"
+
+
+def _made(report: Path) -> dict[str, dict]:
+    out = {}
+    for f in report.glob("definition/pages/*/visuals/*/visual.json"):
+        doc = jsonfmt.load(f)
+        if any(a.get("name") == "blueprint.visual" for a in doc.get("annotations", [])):
+            out[doc["visual"]["visualType"]] = doc
+    return out
+
+
+def test_kpi_target_matches_probe_10(tmp_path: Path):
+    report = _fixture_with_target(tmp_path)
+    spec = tmp_path / "kpi-target.yaml"
+    spec.write_text('page: K\nlayout: standard-4-up\nvisuals:\n  - type: kpi\n    title: T\n'
+                    '    slots: {value: "[Total Amount]", trend: "Sales[Country]", target: "[Target Amount]"}\n')
+    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
+    state = _made(report)["kpi"]["visual"]["query"]["queryState"]
+    target = {**MEASURE, "field": {"Measure": {"Expression": {"SourceRef": {"Entity": "Sales"}},
+                                               "Property": "Target Amount"}},
+              "queryRef": "Sales.Target Amount", "nativeQueryRef": "Target Amount"}
+    # Desktop's queryState from probe 10 step 03, in its order: roles sorted, not in well order.
+    assert list(state.items()) == [("Goal", {"projections": [target]}),
+                                   ("Indicator", {"projections": [MEASURE]}),
+                                   ("TrendLine", {"projections": [col("Country")]})]
+
+
+def test_roles_are_written_in_alphabetical_order_whatever_the_spec_order(tmp_path: Path):
+    shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
+    report = tmp_path / "proj" / "Fixture.Report"
+    spec = tmp_path / "order.yaml"
+    spec.write_text('page: O\nlayout: standard-4-up\nvisuals:\n  - type: column\n    title: C\n'
+                    '    slots: {value: "[Total Amount]", category: "Sales[Region]"}\n')
+    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
+    assert list(_made(report)["clusteredColumnChart"]["visual"]["query"]["queryState"]) == ["Category", "Y"]
+
+
+def test_target_takes_a_measure_not_a_column(tmp_path: Path):
+    report = _fixture_with_target(tmp_path)
+    spec = tmp_path / "bad.yaml"
+    spec.write_text('page: B\nvisuals:\n  - type: kpi\n'
+                    '    slots: {value: "[Total Amount]", trend: "Sales[Country]", target: "Sales[Amount]"}\n')
+    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) != 0

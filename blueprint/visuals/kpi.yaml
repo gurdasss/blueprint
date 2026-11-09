@@ -1,8 +1,10 @@
 # Slot contract for spec type `kpi`. Verified in probe 08: `kpi`, Value in role `Indicator`, Trend
-# axis in role `TrendLine`. The Target well was not probed, so it has no slot yet.
+# axis in role `TrendLine`. Probe 10: Target in role `Goal`. Desktop also takes a column there (as an
+# implicit "Sum of"), but specs can't express that, so target takes a measure.
 type: kpi
 visual_type: kpi
 region: kpi-row
 slots:
-  value: { role: Indicator, accepts: measure, required: true }
-  trend: { role: TrendLine, accepts: column, required: true }
+  value:  { role: Indicator, accepts: measure, required: true }
+  trend:  { role: TrendLine, accepts: column, required: true }
+  target: { role: Goal, accepts: measure }

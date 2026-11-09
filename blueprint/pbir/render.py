@@ -157,8 +157,9 @@ def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec
     """A visual container. ``bindings``: query role -> ordered fields. ``text``: textbox content."""
     body: dict[str, Any] = {"visualType": visual_type}
     if bindings:
+        # Desktop writes roles in alphabetical order (probe 10: Goal, Indicator, TrendLine).
         body["query"] = {"queryState": {role: {"projections": [b.projection(role) for b in fields]}
-                                        for role, fields in bindings.items()}}
+                                        for role, fields in sorted(bindings.items())}}
     if text is not None:
         body["objects"] = textbox_objects(text, text_style)
     if title is not None:
