@@ -29,9 +29,9 @@ REPORT_OVERRIDE = ".blueprint.yaml"
 ENV_VAR = "BLUEPRINT_GUIDELINES"
 
 SEVERITIES = ("error", "warning", "off")
-RULES = ("format", "bounds", "grid", "margin", "overlap", "page-size", "density")
+RULES = ("format", "bounds", "grid", "margin", "overlap", "page-size", "density", "typography")
 # Documented in README but unchecked until the PBIR format for them is verified.
-NOT_IMPLEMENTED = ("typography", "page.require_title", "page.title_region",
+NOT_IMPLEMENTED = ("page.require_title", "page.title_region",
                    "canvas.gutter", "layouts")
 
 
@@ -77,6 +77,16 @@ class Palette:
         return {"strict": "error", "warn": "warning", "off": "off"}[self.enforce]
 
 
+TYPOGRAPHY_ROLES = ("title", "subtitle", "callout", "textbox")
+
+
+@dataclass(frozen=True)
+class FontRule:
+    fonts: tuple[str, ...]  # allowed faces, exact names from Desktop's font list; () = any
+    sizes: tuple[float, ...]  # allowed sizes in pt; () = any
+    bold: bool | None  # required bold setting; None = either
+
+
 @dataclass(frozen=True)
 class CheckRules:
     severity: dict[str, str]  # rule id -> error | warning | off
@@ -91,6 +101,7 @@ class Guidelines:
     canvas: Canvas
     page: PageRules
     palette: Palette
+    typography: dict[str, FontRule]  # role -> rule; only roles the guidelines mention
     check: CheckRules
     sources: tuple[str, ...]  # which layers contributed, lowest first
     raw: dict[str, Any]
@@ -182,6 +193,7 @@ def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
         page=PageRules(max_visuals=_int(raw, "page.max_visuals", minimum=1, nullable=True),
                        density_policy=policy),
         palette=_palette(raw),
+        typography=_typography(raw),
         check=CheckRules(severity=dict(severity), decorative_types=tuple(decorative)),
         sources=sources,
         raw=raw,
@@ -258,3 +270,39 @@ def _palette(raw: dict[str, Any]) -> Palette:
         extra=_hex_list(raw, "palette.extra"),
         enforce=enforce,
     )
+
+
+def _typography(raw: dict[str, Any]) -> dict[str, FontRule]:
+    section = _get(raw, "typography")
+    if section is None:
+        return {}
+    if not isinstance(section, dict):
+        raise GuidelinesError("typography must be a mapping of role -> {font, size, bold}")
+    out: dict[str, FontRule] = {}
+    for role, spec in section.items():
+        key = f"typography.{role}"
+        if role not in TYPOGRAPHY_ROLES:
+            raise GuidelinesError(f"{key}: unknown role (known: {', '.join(TYPOGRAPHY_ROLES)})")
+        if not isinstance(spec, dict):
+            raise GuidelinesError(f"{key} must be a mapping with font, size and/or bold")
+        if "weight" in spec:
+            raise GuidelinesError(
+                f"{key}.weight: Power BI has no separate weight; a weight is part of the font "
+                "face. Use the exact name from Desktop's font list, e.g. font: Segoe UI Semibold")
+        unknown = set(spec) - {"font", "size", "bold"}
+        if unknown:
+            raise GuidelinesError(f"{key}: unknown keys {', '.join(sorted(unknown))}")
+        fonts = spec.get("font", [])
+        fonts = [fonts] if isinstance(fonts, str) else fonts
+        if not isinstance(fonts, list) or not all(isinstance(f, str) and f.strip() for f in fonts):
+            raise GuidelinesError(f"{key}.font must be a font name or a list of names")
+        sizes = spec.get("size", [])
+        sizes = [sizes] if isinstance(sizes, (int, float)) and not isinstance(sizes, bool) else sizes
+        if not isinstance(sizes, list) or not all(
+                isinstance(z, (int, float)) and not isinstance(z, bool) and z > 0 for z in sizes):
+            raise GuidelinesError(f"{key}.size must be a positive number (pt) or a list of them")
+        bold = spec.get("bold")
+        if bold is not None and not isinstance(bold, bool):
+            raise GuidelinesError(f"{key}.bold must be true or false")
+        out[role] = FontRule(tuple(f.strip() for f in fonts), tuple(float(z) for z in sizes), bold)
+    return out

@@ -167,9 +167,9 @@ def test_format_findings(tmp_path: Path, capsys):
 def test_unchecked_guidelines_are_listed(tmp_path: Path, capsys):
     rd = make_report(tmp_path, {"p": []})
     g = tmp_path / "g.yaml"
-    g.write_text("typography: {title: {size: 18}}\npage: {require_title: true}\n")
+    g.write_text("canvas: {gutter: 32}\npage: {require_title: true}\n")
     main(["check", "--report", str(rd), "--guidelines", str(g)])
-    assert "not checked yet (set in guidelines, not implemented): typography, page.require_title" in capsys.readouterr().out
+    assert "not checked yet (set in guidelines, not implemented): page.require_title, canvas.gutter" in capsys.readouterr().out
 
 
 def test_example_guidelines_load():

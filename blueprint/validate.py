@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 
 from blueprint import grid
 from blueprint.guidelines import Guidelines
-from blueprint.model import ColorUse, Page, Rect, Report, Theme, Visual
+from blueprint.model import ColorUse, FontUse, Page, Rect, Report, TextClass, Theme, Visual
 from blueprint.policies import DENSITY
 
 
@@ -56,6 +56,8 @@ def check_report(report: Report, rules: Guidelines) -> CheckResult:
         _check_page(page, rules, c)
     if rules.palette.categorical and c.on("palette"):
         _check_palette(report, rules, c)
+    if rules.typography and c.on("typography"):
+        _check_typography(report, rules, c)
     return result
 
 
@@ -157,8 +159,12 @@ def effective_theme(themes: list[Theme]) -> Theme | None:
         return None
     eff = found[0]
     for t in found[1:]:
+        classes = dict(eff.text_classes)
+        for name, cls in t.text_classes.items():
+            base = classes.get(name, TextClass())
+            classes[name] = TextClass(cls.font or base.font, cls.size if cls.size is not None else base.size)
         eff = Theme(t.name, t.layer, False, t.builtin, t.data_colors or eff.data_colors,
-                    t.foreground or eff.foreground, t.background or eff.background)
+                    t.foreground or eff.foreground, t.background or eff.background, classes)
     return eff
 
 
@@ -221,3 +227,64 @@ def _check_theme(theme: Theme, pal, c: _Collector) -> None:
                                  ("foreground", theme.foreground, pal.text)):
         if expected and got != expected:
             c.add("palette", f"theme {theme.name!r} {label} is {got}, palette says {expected}")
+
+
+# --- typography --------------------------------------------------------------------------
+
+# Theme text classes that govern a typography role when a visual doesn't set its own value
+# (probe 03: "Title" in Desktop's theme dialog is textClasses.title).
+THEME_CLASS = {"title": "title", "callout": "callout"}
+# Family names seen in reports but not offered by Desktop's font list (probe 03); they look
+# like theme font tokens. Reported as unresolved rather than as violations.
+UNRESOLVED_FAMILIES = frozenset({"Heading"})
+
+
+def _num(v: float) -> str:
+    return str(int(v)) if float(v).is_integer() else f"{v:g}"
+
+
+def _font_problems(font: FontUse | TextClass, rule, *, bold: bool | None = None) -> list[str]:
+    family = font.family if isinstance(font, FontUse) else font.font
+    out = []
+    if family is not None and rule.fonts and family not in rule.fonts:
+        out.append(f"font {family!r} (allowed: {', '.join(rule.fonts)})")
+    if font.size is not None and rule.sizes and font.size not in rule.sizes:
+        out.append(f"size {_num(font.size)}pt (allowed: {', '.join(_num(z) for z in rule.sizes)})")
+    if bold is not None and rule.bold is not None and bold != rule.bold:
+        out.append(f"bold {'on' if bold else 'off'} (guidelines: {'on' if rule.bold else 'off'})")
+    return out
+
+
+def _check_typography(report: Report, rules: Guidelines, c: _Collector) -> None:
+    roles = rules.typography
+    theme = effective_theme(report.themes)
+    if theme is None:
+        if any(r in THEME_CLASS for r in roles):
+            c.result.notes.append("theme text classes not checked (no readable theme)")
+    else:
+        for role, cls_name in THEME_CLASS.items():
+            cls = theme.text_classes.get(cls_name)
+            if role in roles and cls is not None:
+                problems = _font_problems(cls, roles[role])
+                if problems:
+                    c.add("typography", f"theme {theme.name!r} {cls_name} text: " + "; ".join(problems))
+
+    unresolved: set[str] = set()
+    for page in report.pages:
+        for v in page.visuals:
+            if v.ignored:
+                continue
+            problems = []
+            for font in v.fonts:
+                rule = roles.get(font.role)
+                if rule is None:
+                    continue
+                if font.family in UNRESOLVED_FAMILIES:
+                    unresolved.add(font.family)
+                    font = FontUse(font.role, None, font.size, font.bold, font.raw_family)
+                problems += [f"{font.role} {p}" for p in _font_problems(font, rule, bold=font.bold)]
+            if problems:
+                c.add("typography", "; ".join(dict.fromkeys(problems)), page, v)
+    if unresolved:
+        c.result.notes.append(f"font name(s) {', '.join(sorted(unresolved))} not checked "
+                              "(not a font Desktop offers; likely a theme font token)")

@@ -20,7 +20,7 @@ palette:
   enforce: strict        # strict | warn | off
 
 typography:
-  title:    { font: Segoe UI, size: 18, weight: semibold }
+  title:    { font: Segoe UI Semibold, size: 18 }   # weight is part of the face name
   subtitle: { font: Segoe UI, size: 12 }
 
 page:

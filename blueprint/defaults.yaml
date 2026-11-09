@@ -34,6 +34,13 @@ palette:
                        # textbox text are stored as resolved hex and must be listed here)
   enforce: strict      # strict: violations are errors | warn: warnings | off
 
+# typography: per text role, the allowed font face(s), size(s) in pt, and bold. Roles:
+# title, subtitle, callout (card value) and textbox. A font weight is part of the face name,
+# exactly as in Desktop's font list (e.g. "Segoe UI Semibold"). Nothing is checked by default.
+#   typography:
+#     title:   {font: Segoe UI Semibold, size: 14}
+#     textbox: {font: [Segoe UI, Segoe UI Light], size: [10, 12, 28]}
+
 check:
   severity:            # error fails `bp check`; warning is reported; off is skipped
     format: error      # schema-invalid files, names Desktop ignores, missing required files
@@ -43,5 +50,6 @@ check:
     overlap: warning   # visuals partially overlap
     page-size: warning # page size differs from canvas.width/height
     density: warning   # more visuals than page.max_visuals
+    typography: error  # a font, size or bold setting outside the typography guidelines
   # Visual types allowed to contain other visuals (backgrounds, panels); exempt from margin.
   decorative_types: [image, shape, basicShape]
