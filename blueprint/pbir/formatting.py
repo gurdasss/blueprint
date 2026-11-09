@@ -124,9 +124,12 @@ def theme_from(layer: str, name: str, data: Any, builtin: bool = False) -> Theme
 _SIZE = re.compile(r"^\s*(-?\d+(?:\.\d+)?)\s*(?:D|L|pt)?\s*$")
 
 # Formatting objects whose font settings Blueprint understands, by role. Only these were
-# observed in probe 03. Chart data labels also use `labels`, but only a card's `labels` is the
+# observed (probes 03 and 07). Chart data labels also use `labels`, but only a card's `labels` is the
 # callout value.
 _CONTAINER_ROLES = {"title": "title", "subTitle": "subtitle"}
+# visualType -> the `objects` entry holding its callout value: the legacy card's `labels` (probe 03),
+# the new card's `value` (probe 07, entries tagged `"selector": {"id": "default"}`).
+_CALLOUT_OBJECTS = {"card": "labels", "cardVisual": "value"}
 
 
 def first_family(stack: str) -> str | None:
@@ -188,8 +191,9 @@ def fonts_in(visual: Any) -> list[FontUse]:
             if font:
                 out.append(font)
     objects = visual.get("objects") or {}
-    if visual.get("visualType") == "card":
-        for entry in objects.get("labels") or []:
+    callout = _CALLOUT_OBJECTS.get(visual.get("visualType"))
+    if callout is not None:
+        for entry in objects.get(callout) or []:
             font = _font_from_props("callout", (entry or {}).get("properties") or {})
             if font:
                 out.append(font)

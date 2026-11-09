@@ -53,6 +53,27 @@ def test_card_labels_are_callout_but_chart_labels_are_not():
     assert formatting.fonts_in(chart) == []
 
 
+def new_card(name: str, **value) -> dict:
+    """A cardVisual with probe 07's callout value shape (step 2) and its title (step 4)."""
+    v = titled(name, vtype="cardVisual", text="'Total'", fontSize="16D")
+    v["visual"]["objects"] = {
+        "value": [{"properties": {k: lit(x) for k, x in value.items()}, "selector": {"id": "default"}}],
+        "label": [{"properties": {"fontSize": lit("14D")}, "selector": {"id": "default"}}],
+    }
+    return v
+
+
+def test_new_card_value_is_callout():
+    vis = new_card("c", fontFamily="'Arial'", fontSize="28D", bold="true")["visual"]
+    assert formatting.fonts_in(vis) == [
+        FontUse("title", None, 16.0, None, None),
+        FontUse("callout", "Arial", 28.0, True, "Arial"),  # the category label has no role
+    ]
+    chart = visual("c", vtype="lineChart")["visual"]
+    chart["objects"] = {"value": [{"properties": {"fontFamily": lit("'Arial'")}}]}
+    assert formatting.fonts_in(chart) == []
+
+
 def test_textbox_runs():
     tb = textbox("t", fontWeight="bold", fontFamily="Arial", fontStyle="italic", fontSize="20pt")["visual"]
     assert formatting.fonts_in(tb) == [FontUse("textbox", "Arial", 20.0, True, "Arial")]
@@ -129,6 +150,13 @@ def test_violations_are_reported_per_visual(tmp_path: Path):
         ("a", "title font 'Arial' (allowed: Segoe UI Semibold); title size 18pt (allowed: 12, 14)"),
         ("t", "textbox font 'Arial' (allowed: Segoe UI, Segoe UI Light); textbox bold on (guidelines: off)"),
     ]
+
+
+def test_new_card_callout_and_title_checked(tmp_path: Path):
+    body = RULES + "  callout: {font: Segoe UI Semibold, size: 21, bold: false}\n"
+    found, _ = _typo(tmp_path, [new_card("c", fontFamily="'Arial'", fontSize="28D", bold="true")], body)
+    assert found == [("c", ("title size 16pt (allowed: 12, 14); callout font 'Arial' (allowed: Segoe UI "
+                            "Semibold); callout size 28pt (allowed: 21); callout bold on (guidelines: off)"))]
 
 
 def test_theme_text_class_checked(tmp_path: Path):

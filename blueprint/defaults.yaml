@@ -39,7 +39,7 @@ layouts:
   default: null        # layout used when a page spec doesn't name one
 
 # typography: per text role, the allowed font face(s), size(s) in pt, and bold. Roles:
-# title, subtitle, callout (card value), header (the textboxes bp apply creates for `type: header`)
+# title, subtitle, callout (a card's value, old or new card), header (the textboxes bp apply creates for `type: header`)
 # and textbox (all other textboxes). A font weight is part of the face name,
 # exactly as in Desktop's font list (e.g. "Segoe UI Semibold"). Nothing is checked by default.
 #   typography:
