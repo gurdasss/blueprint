@@ -17,3 +17,22 @@ def sample_report(name: str) -> Path:
 @pytest.fixture
 def retail_report() -> Path:
     return sample_report("retail-analysis")
+
+
+FIXTURES = ROOT / "fixtures"
+
+
+def fixture_report(name: str) -> Path:
+    """Path to a committed fixture's .Report folder (always present; see fixtures/README.md)."""
+    [report] = sorted((FIXTURES / name).glob("*.Report"))
+    return report
+
+
+@pytest.fixture
+def blank_fixture() -> Path:
+    return fixture_report("01-blank-report")
+
+
+@pytest.fixture
+def card_chart_fixture() -> Path:
+    return fixture_report("02-card-and-chart")
