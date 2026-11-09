@@ -94,6 +94,42 @@ def test_unverified_aggregation_function_is_shown_by_number(tmp_path: Path):
     assert [str(f) for f in _fields_of(tmp_path, [_agg(3)])] == ["Aggregate3(Sales[Amount])"]
 
 
+def test_average_and_count_codes(tmp_path: Path):
+    # probe 13 step 05: Desktop's "Average of Amount" is 1 and "Count of Region" is 5
+    assert [str(f) for f in _fields_of(tmp_path, [_agg(1), _agg(5)])] == [
+        "Average(Sales[Amount])", "Count(Sales[Amount])"]
+
+
+def _level(level, entity="Sales", prop="Order Date") -> dict:
+    """A date hierarchy level projection, as Desktop wrote it in probe 13 step 03."""
+    source = {"PropertyVariationSource": {"Expression": {"SourceRef": {"Entity": entity}},
+                                          "Name": "Variation", "Property": prop}}
+    return {"field": {"HierarchyLevel": {"Expression": {"Hierarchy": {"Expression": source,
+                                                                      "Hierarchy": "Date Hierarchy"}},
+                                         "Level": level}},
+            "queryRef": f"Sales.Order Date.Variation.Date Hierarchy.{level}",
+            "nativeQueryRef": f"Order Date {level}", "active": level == "Year"}
+
+
+def test_date_hierarchy_levels_are_read(tmp_path: Path):
+    fields = _fields_of(tmp_path, [_level(lv) for lv in ("Year", "Quarter", "Month", "Day")])
+    assert [str(f) for f in fields] == ["Sales[Order Date].Year", "Sales[Order Date].Quarter",
+                                        "Sales[Order Date].Month", "Sales[Order Date].Day"]
+    assert {(f.kind, f.table, f.name) for f in fields} == {("date_level", "Sales", "Order Date")}
+
+
+@pytest.mark.parametrize("projection", [
+    _level(None),
+    _level("Year", entity=None),
+    _level("Year", prop=7),
+    {"field": {"HierarchyLevel": {"Expression": {"Hierarchy": {"Expression": {"SourceRef": {"Entity": "Sales"}},
+                                                               "Hierarchy": "Geo"}}, "Level": "Country"}}},
+    {"field": {"HierarchyLevel": "Year"}},
+], ids=["no-level", "no-table", "non-string-column", "user-hierarchy", "string"])
+def test_unknown_hierarchy_shapes_are_skipped(tmp_path: Path, projection: dict):
+    assert _fields_of(tmp_path, [projection]) == []
+
+
 @pytest.mark.parametrize("projection", [
     _agg(None),                                    # no function code
     _agg(True),                                    # bool is not a code

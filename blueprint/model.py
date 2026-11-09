@@ -58,17 +58,23 @@ class TextClass:
 class Field:
     """A field a visual is bound to."""
 
-    kind: str  # "measure" | "column" | "aggregation" (an implicit aggregate of a column)
+    # "measure" | "column" | "aggregation" (an implicit aggregate of a column) | "date_level" (one
+    # level of a date column's automatic date hierarchy)
+    kind: str
     table: str | None
     name: str
     function: str | None = None  # aggregation only, e.g. "Sum"
+    level: str | None = None  # date_level only, e.g. "Year"
 
     def __str__(self) -> str:
-        # Spec/manifest syntax (README): [Measure], Table[Column]; manifest only: Sum(Table[Column])
+        # Spec/manifest syntax (README): [Measure], Table[Column]. Manifest only:
+        # Sum(Table[Column]) and Table[Column].Year
         if self.kind == "measure":
             return f"[{self.name}]"
         column = f"{self.table}[{self.name}]"
-        return f"{self.function}({column})" if self.kind == "aggregation" else column
+        if self.kind == "aggregation":
+            return f"{self.function}({column})"
+        return f"{column}.{self.level}" if self.kind == "date_level" else column
 
 
 @dataclass(frozen=True)

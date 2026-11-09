@@ -302,9 +302,9 @@ class _Reader:
         )
 
 
-# Aggregation "Function" codes. Probe 10 verified only 0 (Desktop's "Sum of"). Other codes are
-# shown by number rather than guessed.
-AGGREGATE_FUNCTIONS = {0: "Sum"}
+# Aggregation "Function" codes, as Desktop names them: probe 10 "Sum of", probe 13 "Average of" and
+# "Count of". Other codes are shown by number rather than guessed.
+AGGREGATE_FUNCTIONS = {0: "Sum", 1: "Average", 5: "Count"}
 
 
 def _field(f: dict) -> Field | None:
@@ -314,12 +314,35 @@ def _field(f: dict) -> Field | None:
         if isinstance(f.get(key), dict):
             src = (f[key].get("Expression") or {}).get("SourceRef") or {}
             return Field(kind, src.get("Entity"), f[key].get("Property", ""))
+    level = f.get("HierarchyLevel")
+    if isinstance(level, dict):
+        return _date_level(level)
     agg = f.get("Aggregation")
     if isinstance(agg, dict):
         inner = _field(agg.get("Expression") or {})
         code = agg.get("Function")
         if inner is not None and inner.kind == "column" and isinstance(code, int) and not isinstance(code, bool):
             return Field("aggregation", inner.table, inner.name, AGGREGATE_FUNCTIONS.get(code, f"Aggregate{code}"))
+    return None
+
+
+def _path(node: Any, *keys: str) -> Any:
+    """``node[k1][k2]…``, or None as soon as a step isn't a dict holding that key."""
+    for key in keys:
+        node = node.get(key) if isinstance(node, dict) else None
+    return node
+
+
+def _date_level(level: dict) -> Field | None:
+    """A level of a date column's automatic date hierarchy (probe 13): ``{"HierarchyLevel":
+    {"Expression": {"Hierarchy": {"Expression": {"PropertyVariationSource": {"Expression":
+    {"SourceRef": {"Entity": T}}, "Name": "Variation", "Property": C}}, "Hierarchy": "Date
+    Hierarchy"}}, "Level": L}}``. Other hierarchies (user-defined ones) were not probed: skipped."""
+    source = _path(level, "Expression", "Hierarchy", "Expression", "PropertyVariationSource")
+    table = _path(source, "Expression", "SourceRef", "Entity")
+    column, lvl = _path(source, "Property"), level.get("Level")
+    if all(isinstance(v, str) for v in (table, column, lvl)):
+        return Field("date_level", table, column, level=lvl)
     return None
 
 
