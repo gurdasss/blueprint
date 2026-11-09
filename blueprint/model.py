@@ -38,6 +38,7 @@ class Visual:
     is_group: bool = False
     parent_group: str | None = None
     hidden: bool = False
+    bound: bool = False  # has at least one field projection (measure/column)
     ignored: bool = False  # `blueprint: ignore` escape hatch
     source: Any = field(default=None, repr=False, compare=False)
 

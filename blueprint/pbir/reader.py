@@ -216,9 +216,16 @@ class _Reader:
             is_group="visualGroup" in d,
             parent_group=d.get("parentGroupName"),
             hidden=bool(d.get("isHidden", False)),
+            bound=_bound(visual),
             ignored=str(notes.get(IGNORE_ANNOTATION, "")).lower() == "true",
             source=doc,
         )
+
+
+def _bound(visual: dict) -> bool:
+    """True when ``visual.query.queryState`` has at least one field projection."""
+    state = (visual.get("query") or {}).get("queryState") or {}
+    return any((role or {}).get("projections") for role in state.values() if isinstance(role, dict))
 
 
 def _title(visual: dict) -> str | None:
