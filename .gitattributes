@@ -1,0 +1,6 @@
+# Byte-exact test data: fixtures are Power BI Desktop's own output (CRLF, no trailing newline)
+# and golden files are what Blueprint must produce. Never let git convert their line endings
+# (e.g. core.autocrlf on Windows), or the byte-for-byte tests fail on checkout.
+fixtures/** -text
+tests/golden/** -text
+docs/probes/** -text
