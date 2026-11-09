@@ -28,6 +28,23 @@ produced **no diff**: Desktop doesn't re-serialise unchanged files (README Q13),
 our integers (`"x": 640`) as written. This also confirms the writer's output is accepted
 on load.
 
+## What Desktop changes on its own when saving
+
+**Verified 2026-11-09, Desktop 2.159.1231.0 (by hand):** the untouched sample was copied into a
+git repo, opened, browsed, and saved. Desktop modified exactly two files:
+
+- `definition/pages/pages.json`: `activePageName` became the page on screen at save time
+  (`ReportSection` → `ReportSection3`). This is UI state: any save can change it. **Blueprint
+  must never treat `activePageName` as owned**, and golden tests must not depend on it.
+- `definition/report.json`: appended `"settings": {"useEnhancedTooltips": false}`. Desktop
+  adds a default setting that was missing from the older file. Expect similar one-off
+  upgrades the first time Desktop saves an older report.
+
+Both rewritten files still use CRLF line endings with no trailing newline, and new keys
+are appended at the end. `jsonfmt` round-trips both byte for byte, and both validate.
+Git prints `^M` only on *added* lines, which is a display artefact; `git config
+core.whitespace cr-at-eol` hides it.
+
 ## Report folder
 
 **Verified [sample]:**
