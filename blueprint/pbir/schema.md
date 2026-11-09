@@ -187,8 +187,36 @@ What follows for a palette or typography check:
 - Map visuals were unavailable in this Desktop (step 7 skipped). Desktop didn't rewrite
   or convert the existing map `visual.json` files.
 
-**Open (probe 02 phase 2):** where the theme lives and what `ColorId` indexes, which
-`report.json` `themeCollection` and `StaticResources` should show when the theme is switched.
+**Verified 2026-11-09, Desktop 2.159.1231.0, probe 02 phase 2** (evidence
+`docs/probes/02-formatting-phase2-theme.diff`). Switching to the built-in "Dark" theme
+("Classic" isn't offered in this version):
+
+- Only `report.json` changed. **No `visual.json` was rewritten.** Theme references
+  (`ThemeDataColor`) stay as they are and resolve against the new theme, while hex literals
+  (and textbox hex) stay fixed.
+- `themeCollection` has two layers: `baseTheme` (`Fluent2-CY26SU10`, type
+  `SharedResources`) and `customTheme` (`ReportThemeDark`, type `SharedResources`, which
+  replaced `Concourse`/`RegisteredResources`). Both gain `reportVersionAtImport`
+  `{"visual":"2.14.0","report":"3.4.0","page":"2.3.1"}`. Note that `report` 3.4.0 is
+  newer than the file's own `$schema` (3.3.0).
+- Desktop **copies the theme files into the report**:
+  `StaticResources/SharedResources/BaseThemes/Fluent2-CY26SU10.json` and
+  `…/BuiltInThemes/ReportThemeDark.json`. It registers them in `resourcePackages` as package
+  `SharedResources` with items `{name, path, type: "BaseTheme" | "CustomTheme"}`. A theme
+  file's location is `StaticResources/<package name>/<item path>`.
+- Theme files are standard Power BI theme JSON with no `$schema`: `dataColors` (32 in the base
+  theme, 31 in Dark), `foreground`, `background`, `tableAccent`, `good`/`bad`/`neutral`,
+  `textClasses` (`callout`, `title`, `header`, `label` with `fontSize`, `fontFace`, `color`)
+  and `visualStyles`. The custom theme overrides the base theme: Dark's `textClasses` set
+  only `color`. They're written in Desktop's JSON format, so `jsonfmt` round-trips them byte for
+  byte, which means they could be patched like any other file.
+- Earlier finding still stands: the sample's original `Concourse` theme had no file. A theme
+  reference whose file is missing must be reported, not assumed.
+
+**Open:** what `ThemeDataColor.ColorId` indexes. The commonly cited mapping (0 =
+background, 1 = foreground, n ≥ 2 = `dataColors[n-2]`) is **unverified**, and so is the
+shade formula for `Percent`. A check that only needs "is this a theme reference" doesn't
+depend on either.
 
 ## Field bindings
 

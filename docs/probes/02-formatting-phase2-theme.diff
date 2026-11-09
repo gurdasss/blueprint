@@ -1,0 +1,58 @@
+# Probe 02 phase 2: switch theme to built-in 'Dark'. Desktop 2.159.1231.0, 2026-11-09.
+# Also added (untracked, not reproduced here): StaticResources/SharedResources/BaseThemes/Fluent2-CY26SU10.json, .../BuiltInThemes/ReportThemeDark.json
+diff --git a/Retail Analysis Sample PBIX.Report/definition/report.json b/Retail Analysis Sample PBIX.Report/definition/report.json
+index 1c4db37..1b00e0e 100644
+--- a/Retail Analysis Sample PBIX.Report/definition/report.json	
++++ b/Retail Analysis Sample PBIX.Report/definition/report.json	
+@@ -1,14 +1,23 @@
+ {
+   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.3.0/schema.json",
+   "themeCollection": {
++    "baseTheme": {
++      "name": "Fluent2-CY26SU10",
++      "reportVersionAtImport": {
++        "visual": "2.14.0",
++        "report": "3.4.0",
++        "page": "2.3.1"
++      },
++      "type": "SharedResources"
++    },
+     "customTheme": {
+-      "name": "Concourse",
++      "name": "ReportThemeDark",
+       "reportVersionAtImport": {
+-        "visual": "1.8.26",
+-        "report": "2.0.26",
+-        "page": "1.3.26"
++        "visual": "2.14.0",
++        "report": "3.4.0",
++        "page": "2.3.1"
+       },
+-      "type": "RegisteredResources"
++      "type": "SharedResources"
+     }
+   },
+   "objects": {
+@@ -37,6 +46,22 @@
+           "type": "Image"
+         }
+       ]
++    },
++    {
++      "name": "SharedResources",
++      "type": "SharedResources",
++      "items": [
++        {
++          "name": "Fluent2-CY26SU10",
++          "path": "BaseThemes/Fluent2-CY26SU10.json",
++          "type": "BaseTheme"
++        },
++        {
++          "name": "ReportThemeDark",
++          "path": "BuiltInThemes/ReportThemeDark.json",
++          "type": "CustomTheme"
++        }
++      ]
+     }
+   ],
+   "settings": {
