@@ -84,3 +84,49 @@ def test_search_path_resolves_relative_to_declaring_file(tmp_path: Path, monkeyp
 def test_region_rects():
     layout = layouts.parse(LAYOUT)
     assert layout.regions[1].rect == Rect(16, 96, 616, 608)
+
+
+def test_conflicts_with_guidelines():
+    on_grid = layouts.parse(LAYOUT)
+    assert layouts.conflicts(on_grid, 8, 16) == []
+    off = layouts.parse({**LAYOUT, "regions": [{"role": "header", "x": 10, "y": 16, "w": 1250, "h": 64},
+                                               {"role": "main", "x": 8, "y": 96, "w": 616, "h": 608}]})
+    assert layouts.conflicts(off, 8, 16) == [
+        "region header#1 is off the 8px grid (left=10, right=1260)",
+        "region header#1 is inside the 16px margin (left)",
+        "region main#1 is inside the 16px margin (left)",
+    ]
+    assert layouts.conflicts(off, 2, 0) == []  # the same layout is fine for a 2px grid, no margin
+
+
+def test_apply_refuses_a_layout_that_would_fight_fmt(tmp_path: Path, capsys):
+    import shutil
+
+    from blueprint.cli import main
+    shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
+    (tmp_path / "offgrid.yaml").write_text(
+        "name: offgrid\ncanvas: {width: 1280, height: 720}\n"
+        "regions:\n  - {role: header, x: 10, y: 10, w: 1250, h: 61}\n")
+    g = tmp_path / "g.yaml"
+    g.write_text(f"grid: {{size: 8}}\ncanvas: {{margin: 16}}\nlayouts: {{search_path: ['{tmp_path}']}}\n")
+    s = tmp_path / "s.yaml"
+    s.write_text("page: P\nlayout: offgrid\nvisuals:\n  - {type: header, title: Hi}\n")
+    assert main(["apply", str(s), "--report", str(tmp_path / "proj"), "--guidelines", str(g)]) == 2
+    err = capsys.readouterr().err
+    assert "would keep moving its visuals back and forth" in err and "region header#1 is off the 8px grid" in err
+
+
+def test_apply_fmt_apply_converges(tmp_path: Path, capsys):
+    import shutil
+
+    from blueprint.cli import main
+    shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
+    args = ["--report", str(tmp_path / "proj"), "--guidelines", str(ROOT / "guidelines" / "example.yaml")]
+    spec_path = str(ROOT / "examples" / "sales-overview.yaml")
+    assert main(["apply", spec_path, *args]) == 0
+    assert main(["fmt", *args]) == 0
+    capsys.readouterr()
+    assert main(["apply", spec_path, *args]) == 0
+    assert "No changes." in capsys.readouterr().out
+    assert main(["fmt", *args]) == 0
+    assert "No changes." in capsys.readouterr().out

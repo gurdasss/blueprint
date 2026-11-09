@@ -112,6 +112,26 @@ def parse(data: Any, source: str = "<layout>", expected_name: str | None = None)
     return Layout(name, width, height, tuple(regions), source)
 
 
+def conflicts(layout: Layout, grid: int, margin: int) -> list[str]:
+    """Ways ``layout`` breaks the guidelines it's used with. A region off the grid or inside the
+    margin would make `bp apply` and `bp fmt` undo each other forever (behaviour audit)."""
+    from blueprint.grid import off_grid_edges  # local: grid imports model only, no cycle
+
+    problems = []
+    for r in layout.regions:
+        off = off_grid_edges(r.rect, grid, layout.width, layout.height)
+        if off:
+            problems.append(f"region {r.key} is off the {grid}px grid ("
+                            + ", ".join(f"{k}={v:g}" for k, v in off.items()) + ")")
+        if margin:
+            near = [k for k, d in (("left", r.rect.x), ("top", r.rect.y),
+                                   ("right", layout.width - r.rect.right),
+                                   ("bottom", layout.height - r.rect.bottom)) if d < margin]
+            if near:
+                problems.append(f"region {r.key} is inside the {margin}px margin ({', '.join(near)})")
+    return problems
+
+
 def place(spec: PageSpec, layout: Layout) -> list[Placement]:
     """Assign each non-ignored visual the next free region of its role, in spec order."""
     known = contracts()
