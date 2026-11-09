@@ -26,6 +26,14 @@ page:
   #   data     visible visuals bound to fields (excludes textboxes, images, shapes)
   density_policy: visible
 
+palette:
+  categorical: []      # empty: palette not checked
+  background: null
+  text: null
+  extra: []            # other allowed colours, e.g. approved shades (theme shades picked for
+                       # textbox text are stored as resolved hex and must be listed here)
+  enforce: strict      # strict: violations are errors | warn: warnings | off
+
 check:
   severity:            # error fails `bp check`; warning is reported; off is skipped
     format: error      # schema-invalid files, names Desktop ignores, missing required files

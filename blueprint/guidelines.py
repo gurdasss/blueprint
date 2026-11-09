@@ -15,6 +15,7 @@ what it didn't check instead of passing them silently.
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -30,7 +31,7 @@ ENV_VAR = "BLUEPRINT_GUIDELINES"
 SEVERITIES = ("error", "warning", "off")
 RULES = ("format", "bounds", "grid", "margin", "overlap", "page-size", "density")
 # Documented in README but unchecked until the PBIR format for them is verified.
-NOT_IMPLEMENTED = ("palette", "typography", "page.require_title", "page.title_region",
+NOT_IMPLEMENTED = ("typography", "page.require_title", "page.title_region",
                    "canvas.gutter", "layouts")
 
 
@@ -59,6 +60,24 @@ class PageRules:
 
 
 @dataclass(frozen=True)
+class Palette:
+    categorical: tuple[str, ...]  # uppercase hex; empty = palette rule inactive
+    background: str | None
+    text: str | None
+    extra: tuple[str, ...]  # further allowed colours, e.g. sanctioned shades
+    enforce: str  # strict (error) | warn (warning) | off
+
+    @property
+    def allowed(self) -> frozenset[str]:
+        return frozenset([*self.categorical, *self.extra,
+                          *(c for c in (self.background, self.text) if c)])
+
+    @property
+    def severity(self) -> str:
+        return {"strict": "error", "warn": "warning", "off": "off"}[self.enforce]
+
+
+@dataclass(frozen=True)
 class CheckRules:
     severity: dict[str, str]  # rule id -> error | warning | off
     decorative_types: tuple[str, ...]  # may contain other visuals; exempt from margin
@@ -71,6 +90,7 @@ class Guidelines:
     grid: Grid
     canvas: Canvas
     page: PageRules
+    palette: Palette
     check: CheckRules
     sources: tuple[str, ...]  # which layers contributed, lowest first
     raw: dict[str, Any]
@@ -161,6 +181,7 @@ def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
                       margin=_int(raw, "canvas.margin", minimum=0)),
         page=PageRules(max_visuals=_int(raw, "page.max_visuals", minimum=1, nullable=True),
                        density_policy=policy),
+        palette=_palette(raw),
         check=CheckRules(severity=dict(severity), decorative_types=tuple(decorative)),
         sources=sources,
         raw=raw,
@@ -203,3 +224,37 @@ def _number(raw: dict[str, Any], key: str, *, nullable: bool = False) -> float |
     if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
         raise GuidelinesError(f"{key} must be a number >= 0 (e.g. 0.25) or null, got {value!r}")
     return float(value)
+
+
+_HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
+
+
+def _hex(value: Any, key: str, *, nullable: bool = False) -> str | None:
+    if value is None and nullable:
+        return None
+    if not isinstance(value, str) or not _HEX.match(value):
+        raise GuidelinesError(f"{key} must be a #RRGGBB colour, got {value!r}")
+    return value.upper()
+
+
+def _hex_list(raw: dict[str, Any], key: str) -> tuple[str, ...]:
+    value = _get(raw, key, [])
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise GuidelinesError(f"{key} must be a list of #RRGGBB colours")
+    return tuple(_hex(v, f"{key}[{i}]") or "" for i, v in enumerate(value))
+
+
+def _palette(raw: dict[str, Any]) -> Palette:
+    enforce = _get(raw, "palette.enforce")
+    enforce = "off" if enforce is False else enforce  # unquoted YAML `off` parses as false
+    if enforce not in ("strict", "warn", "off"):
+        raise GuidelinesError(f"palette.enforce must be strict, warn or off, got {enforce!r}")
+    return Palette(
+        categorical=_hex_list(raw, "palette.categorical"),
+        background=_hex(_get(raw, "palette.background"), "palette.background", nullable=True),
+        text=_hex(_get(raw, "palette.text"), "palette.text", nullable=True),
+        extra=_hex_list(raw, "palette.extra"),
+        enforce=enforce,
+    )
