@@ -109,3 +109,25 @@ def test_action_metadata_matches_the_script():
     assert "scripts/ci_check.sh" in check["run"]
     script = (ROOT / "scripts" / "ci_check.sh").read_text()
     assert all(f"${{{name}" in script for name in check["env"])
+
+
+def test_findings_beyond_githubs_cap_are_announced(tmp_path, capsys, monkeypatch):
+    """GitHub shows 10 error and 10 warning annotations per step and drops the rest silently."""
+    from tests.builders import make_report, visual
+    # 13 visuals off the 8px grid (errors), one per row so nothing overlaps
+    rd = make_report(tmp_path / "r", {"p": [visual(f"v{i:02d}", x=19, y=19 + 40 * i, w=101, h=21)
+                                             for i in range(13)]})
+    monkeypatch.setenv("GITHUB_WORKSPACE", str(tmp_path))
+    main(["check", "--report", str(rd), "--guidelines", str(GUIDE), "--github"])
+    out = capsys.readouterr().out
+    errors = [ln for ln in out.splitlines() if ln.startswith("::error ")]
+    assert len(errors) > 10
+    [notice] = [ln for ln in out.splitlines() if "aren't annotated" in ln]
+    assert f"{len(errors) - 10} more error(s)" in notice
+
+
+def test_no_cap_notice_within_the_limit(card_chart_fixture, tmp_path, capsys, monkeypatch):
+    shutil.copytree(card_chart_fixture.parent, tmp_path / "proj")
+    monkeypatch.setenv("GITHUB_WORKSPACE", str(tmp_path))
+    _github(capsys, tmp_path / "proj")
+    assert "aren't annotated" not in capsys.readouterr().out

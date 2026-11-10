@@ -230,7 +230,10 @@ jobs:
 
 The job fails if any report has errors (exit 1) or can't be read (exit 2). Each report's text
 output goes to the job summary, and the `exit-code` output holds the worst exit code.
-A report's own `.blueprint.yaml` still applies, as it does locally.
+A report's own `.blueprint.yaml` still applies, as it does locally. GitHub shows at most 10 error and
+10 warning annotations per step (50 per job) and drops the rest silently, so when a report has
+more, `bp check --github` adds a notice saying how many aren't annotated; the job summary always
+has every finding.
 
 ---
 

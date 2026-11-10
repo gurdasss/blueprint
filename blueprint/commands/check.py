@@ -117,6 +117,11 @@ def to_json(report: Report, rules: Guidelines, result: CheckResult) -> str:
     }, indent=2, ensure_ascii=False)
 
 
+# GitHub's documented cap per step and type (actions/toolkit docs/problem-matchers.md); the job
+# allows 50 in all.
+GITHUB_ANNOTATIONS_PER_STEP = 10
+
+
 def _escape(text: str, prop: bool = False) -> str:
     """Escape a workflow command's message (or, with ``prop``, a property value)."""
     text = text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
@@ -156,6 +161,14 @@ def to_github(report: Report, rules: Guidelines, result: CheckResult) -> str:
         where += f" / {f.visual}" if f.visual else ""
         message = f"{where}: {f.message}" if where else f.message
         lines.append(f"::{f.severity} {','.join(props)}::{_escape(message)}")
+    hidden = {s: n - GITHUB_ANNOTATIONS_PER_STEP for s in ("error", "warning")
+              if (n := sum(f.severity == s for f in result.findings)) > GITHUB_ANNOTATIONS_PER_STEP}
+    if hidden:  # GitHub drops the rest without saying so; the full report is in the log and summary
+        lines.append("::notice title=bp check::GitHub shows at most "
+                     f"{GITHUB_ANNOTATIONS_PER_STEP} error and {GITHUB_ANNOTATIONS_PER_STEP} warning "
+                     "annotations per step, so "
+                     + " and ".join(f"{n} more {s}(s)" for s, n in hidden.items())
+                     + " aren't annotated: see the full report in the log or the job summary")
     for n in result.notes:
         lines.append(f"::notice title=bp check::{_escape(n)}")
     return "\n".join(lines + [to_text(report, rules, result)])
