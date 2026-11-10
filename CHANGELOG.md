@@ -4,7 +4,7 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
-## Unreleased
+## v0.5.0 (2026-11-10)
 
 - `line` and `area` take a drill-down of plain columns on `category`
   (`category: ["Sales[Country]", "Sales[Region]"]`), verified in Desktop (probe 27).
