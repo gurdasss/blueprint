@@ -1,7 +1,7 @@
 # Example page spec. Fields refer to the invented model in fixtures/02-card-and-chart
 # (table Sales: Country, Region, Amount; measure [Total Amount]).
 page: Sales Overview
-layout: standard-4-up
+layout: two-up
 
 visuals:
   - type: header

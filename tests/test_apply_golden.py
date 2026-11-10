@@ -185,7 +185,7 @@ def test_resized_page_is_an_error_not_a_rescale(tmp_path: Path, capsys):
     doc = jsonfmt.load(report / page.source.path)
     write(report / page.source.path, {**doc, "width": 1920, "height": 1080})
     assert _apply(report) == 2
-    assert "is 1920x1080 but layout 'standard-4-up' is 1280x720" in capsys.readouterr().err
+    assert "is 1920x1080 but layout 'two-up' is 1280x720" in capsys.readouterr().err
 
 
 def test_overlap_with_hand_placed_visual_warns(tmp_path: Path, capsys):
@@ -206,7 +206,7 @@ def test_overlap_with_hand_placed_visual_warns(tmp_path: Path, capsys):
 def test_no_layout_and_by_connection_are_errors(tmp_path: Path, capsys):
     report = _copy_fixture(tmp_path)
     spec = tmp_path / "sales-overview.yaml"
-    spec.write_text(SPEC.read_text().replace("layout: standard-4-up\n", ""))
+    spec.write_text(SPEC.read_text().replace("layout: two-up\n", ""))
     assert _apply(report, spec=spec, guide=None) == 2
     assert "no layout" in capsys.readouterr().err
     rd = make_report(tmp_path / "conn", {"p": []})

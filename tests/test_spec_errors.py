@@ -18,7 +18,7 @@ def problems(data) -> list[str]:
 
 def test_example_spec_parses():
     s = spec.load(ROOT / "examples" / "sales-overview.yaml")
-    assert (s.page, s.layout, [v.type for v in s.visuals]) == ("Sales Overview", "standard-4-up",
+    assert (s.page, s.layout, [v.type for v in s.visuals]) == ("Sales Overview", "two-up",
                                                                 ["header", "card", "column"])
     column = s.visuals[2]
     assert column.id == "column-1"
@@ -96,3 +96,27 @@ def test_unreadable_spec_file(tmp_path: Path):
     f.write_text("page: [oops")
     with pytest.raises(SpecError):
         spec.load(f)
+
+
+def test_every_full_spec_in_the_readme_parses(tmp_path):
+    """README spec examples once drifted from the code (a `kpi-row` visual type that never
+    existed). Every ```yaml block with top-level `visuals:` must parse as a spec, and every block
+    with top-level `palette:` must load as guidelines."""
+    import re
+
+    import yaml
+
+    from blueprint import guidelines
+    from blueprint.spec import parse
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    blocks = re.findall(r"```yaml\n(.*?)```", readme, re.DOTALL)
+    specs = [b for b in blocks if re.search(r"^visuals:", b, re.MULTILINE)]
+    guides = [b for b in blocks if re.search(r"^palette:", b, re.MULTILINE)]
+    assert specs and guides
+    for block in specs:
+        parse(yaml.safe_load(block), "README.md")
+    for i, block in enumerate(guides):
+        g = tmp_path / f"g{i}.yaml"
+        g.write_text(block, encoding="utf-8")
+        guidelines.load(g)

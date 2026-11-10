@@ -56,6 +56,9 @@ SPEC_SYNTAX = {
         "  - type: column\n"
         "    title: By Country\n"
         "    slots: {category: [\"Sales[Country]\", \"Sales[Region]\"], value: \"[Total Amount]\"}\n"
+        "  - type: pie\n"
+        "    title: Share by Region\n"
+        "    slots: {category: \"Sales[Region]\", value: \"[Total Amount]\"}\n"
     ),
 }
 

@@ -240,7 +240,7 @@ A page spec is the input a human — or an AI agent — writes. It describes *in
 geometry.
 
 ```yaml
-# examples/sales-overview.yaml
+# specs/sales-overview.yaml (examples/ has runnable specs for the bundled fixtures)
 # id: sales-overview    (optional; defaults to the file name. See "Which page a spec builds" below.)
 page: Sales Overview
 layout: standard-4-up
@@ -249,12 +249,12 @@ visuals:
   - type: header
     title: Sales Overview
 
-  - type: kpi-row
+  - type: kpi                  # fills the KPI row (a kpi's default region)
+    title: Sales vs target
     slots:
-      values:
-        - "[Total Sales]"
-        - "[Gross Margin %]"
-        - "[Orders]"
+      value: "[Total Sales]"
+      trend: "Calendar[Month]"
+      target: "[Sales Target]"
 
   - type: pie
     title: Sales by Category
@@ -472,7 +472,7 @@ every change, and `bp manifest` rebuilds it from the report at any time.
       "id": "b1df9ce53010a81607ce",
       "name": "Sales Overview",
       "spec_page": "Sales Overview",
-      "layout": "standard-4-up",
+      "layout": "two-up",
       "built_with": "Example Corp Reporting Standard@1",
       "size": { "w": 1280, "h": 720 },
       "visuals": [
@@ -484,7 +484,7 @@ every change, and `bp manifest` rebuilds it from the report at any time.
           "managed": true,
           "spec_id": "column-1",
           "region": "main#2",
-          "position": { "x": 648, "y": 272, "w": 616, "h": 432 },
+          "position": { "x": 648, "y": 96, "w": 616, "h": 608 },
           "slots": {
             "category": ["Sales[Country]", "Sales[Region]"],
             "value": "[Total Amount]"

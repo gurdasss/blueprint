@@ -47,11 +47,15 @@ def test_model_fields_are_written_in_spec_syntax(capsys, tmp_path: Path):
     assert [(p["name"], p["spec"]) for p in d["pages"]] == [("Overview", None)]
 
 
-def test_the_documented_example_spec_applies(tmp_path: Path):
+def test_the_documented_example_spec_applies(tmp_path: Path, capsys):
+    """And cleanly: an agent copies it, so it mustn't start with a warning (it once left
+    standard-4-up's second main region empty)."""
     shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
     s = tmp_path / "example.yaml"
     s.write_text(SPEC_SYNTAX["example"])
+    capsys.readouterr()
     assert main(["apply", str(s), "--report", str(tmp_path / "proj"), "--guidelines", str(GUIDE)]) == 0
+    assert "Warnings:" not in capsys.readouterr().out
 
 
 def test_spec_keys_documented_match_the_parser():

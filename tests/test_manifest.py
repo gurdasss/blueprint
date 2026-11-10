@@ -48,7 +48,7 @@ def test_manifest_of_a_hand_built_report(report: Path, capsys):
 def test_apply_writes_manifest_with_spec_names_layout_and_regions(report: Path):
     _run("apply", str(SPEC), "--report", str(report), "--guidelines", str(GUIDE))
     page = next(p for p in _read(report)["pages"] if p.get("spec_page"))
-    assert (page["layout"], page["built_with"]) == ("standard-4-up", "Example Corp Reporting Standard@1")
+    assert (page["layout"], page["built_with"]) == ("two-up", "Example Corp Reporting Standard@1")
     assert [(v["type"], v["spec_id"], v["region"], v["title"]) for v in page["visuals"]] == [
         ("header", "header-1", "header#1", "Sales Overview"),
         ("card", "card-1", "main#1", "Total"),

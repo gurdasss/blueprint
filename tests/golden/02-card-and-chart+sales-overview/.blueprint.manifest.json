@@ -75,7 +75,7 @@
       "name": "Sales Overview",
       "spec": "sales-overview",
       "spec_page": "Sales Overview",
-      "layout": "standard-4-up",
+      "layout": "two-up",
       "built_with": "Example Corp Reporting Standard@1",
       "size": {
         "w": 1280,
@@ -108,9 +108,9 @@
           "region": "main#1",
           "position": {
             "x": 16,
-            "y": 272,
+            "y": 96,
             "w": 616,
-            "h": 432
+            "h": 608
           },
           "slots": {
             "value": "[Total Amount]"
@@ -126,9 +126,9 @@
           "region": "main#2",
           "position": {
             "x": 648,
-            "y": 272,
+            "y": 96,
             "w": 616,
-            "h": 432
+            "h": 608
           },
           "slots": {
             "category": [
