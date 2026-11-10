@@ -111,7 +111,7 @@ def test_typography_config_forms(tmp_path: Path):
 
 @pytest.mark.parametrize(("body", "match"), [
     ("typography: {visual_title: {font: Segoe UI, weight: semibold}}", "no separate weight"),
-    ("typography: {visual_title: {font: Segoe UI, bold: true}}", "weight in the font face name"),
+    ("typography: {visual_title: {font: Segoe UI, bold: true}}", "doesn't check bold"),
     ("typography: {heading: {font: Arial}}", "unknown role"),
     ("typography: {visual_title: {size: big}}", "size must be a positive number"),
     ("typography: {visual_title: {font: 3}}", "font must be a font name"),

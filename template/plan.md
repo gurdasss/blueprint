@@ -210,7 +210,13 @@ so `validate.py`, `pbir/theme.py` and `apply.py` keep working unchanged:
 
 `subtitle`, `callout` and `card_label` stay reachable under `extensions.typography.*`
 (same internal names). They are probe-verified behaviour (probes 07, 15), so they moved
-rather than being deleted. `bold` is gone everywhere: a weight is part of the face name.
+rather than being deleted.
+
+`bold` is gone everywhere, which **drops a check**: for a visual's text a weight is part
+of the face name (`Segoe UI Semibold`), so nothing is lost there, but a textbox run does
+carry its own `fontWeight` (probe 03) and a guidelines file could previously require or
+forbid it. Bold textboxes now go unchecked. Re-add it as an extension rule if clients
+want it back.
 
 **Carried forward:** two items of the old step 3 depend on later steps and are *not*
 done — `apply.py` passing layout rows through `compute_regions()` (moved to step 2) and

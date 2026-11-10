@@ -410,8 +410,9 @@ def _font_rule(spec: Any, key: str) -> FontRule:
     for banned, why in (
         ("weight", ("Power BI has no separate weight; a weight is part of the font face. Use "
                     "the exact name from Desktop's font list, e.g. font: Segoe UI Semibold")),
-        ("bold", ("Power BI encodes weight in the font face name. "
-                  "Use font: Segoe UI Semibold instead of bold: true")),
+        ("bold", ("the core typography rule doesn't check bold. For a visual's text a weight "
+                   "is part of the face name (font: Segoe UI Semibold); a textbox run's own "
+                   "fontWeight is no longer checked")),
     ):
         if banned in spec:
             raise GuidelinesError(f"{key}.{banned}: {why}")
