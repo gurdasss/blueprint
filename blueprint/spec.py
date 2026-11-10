@@ -30,7 +30,7 @@ All problems are collected and reported together, each with its location.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -52,14 +52,24 @@ class SpecError(Exception):
         super().__init__(f"{source}: {len(problems)} problem(s)\n  " + "\n  ".join(problems))
 
 
+# A visual-level aggregation of a column: spec name -> the label render.AGGREGATIONS uses, which
+# is also what the reader calls the code Desktop writes (probe 29). `count` is Desktop's "Count"
+# (non-null, code 5) and `distinctcount` its "Count (Distinct)" (code 2).
+AGGREGATIONS = {"sum": "Sum", "average": "Average", "count": "Count",
+                "distinctcount": "DistinctCount", "min": "Min", "max": "Max"}
+
+
 @dataclass(frozen=True)
 class FieldRef:
     kind: str  # "measure" | "column"
     name: str
     table: str | None = None  # None for a measure until resolved against the model
+    aggregate: str | None = None  # a key of AGGREGATIONS; columns only (long form)
+    format: str | None = None  # a Power BI format string scoped to the visual (long form)
 
     def __str__(self) -> str:
-        return f"[{self.name}]" if self.table is None else f"{self.table}[{self.name}]"
+        ref = f"[{self.name}]" if self.table is None else f"{self.table}[{self.name}]"
+        return f"{self.aggregate} of {ref}" if self.aggregate else ref
 
 
 @dataclass(frozen=True)
@@ -99,6 +109,48 @@ def parse_field(text: Any) -> FieldRef | None:
         table = m["qt"].replace("''", "'") if m["qt"] is not None else m["t"].strip()
         return FieldRef("column", m["c"].strip(), table)
     return None
+
+
+_SLOT_KEYS = ("field", "aggregate", "format")
+
+
+def parse_slot(item: Any, at: str, problems: list[str]) -> FieldRef | None:
+    """One slot entry: a field reference, or a mapping of a field plus per-slot decisions.
+
+    ``"Sales[Amount]"`` and ``{field: "Sales[Amount]"}`` mean the same thing. The mapping is the
+    only way to say more, so there is one way to write each thing (template/plan.md step 5).
+    """
+    if not isinstance(item, dict):
+        ref = parse_field(item)
+        if ref is None:
+            problems.append(f"{at}: {item!r} is not a field reference "
+                            "(use Table[Column], [Measure], or {field: …, aggregate: …, format: …})")
+        return ref
+    unknown = set(item) - set(_SLOT_KEYS)
+    if unknown:
+        problems.append(f"{at}: unknown keys {', '.join(sorted(map(str, unknown)))} "
+                        f"(a slot mapping takes {', '.join(_SLOT_KEYS)})")
+        return None
+    ref = parse_field(item.get("field"))
+    if ref is None:
+        problems.append(f"{at}.field: {item.get('field')!r} is not a field reference "
+                        "(use Table[Column] or [Measure])")
+        return None
+    aggregate = item.get("aggregate")
+    if aggregate is not None:
+        if not isinstance(aggregate, str) or aggregate not in AGGREGATIONS:
+            problems.append(f"{at}.aggregate: {aggregate!r} isn't one of "
+                            f"{', '.join(sorted(AGGREGATIONS))}")
+            return None
+        if ref.kind != "column":
+            problems.append(f"{at}.aggregate: {ref} is a measure; an aggregation is Blueprint "
+                            "summarising a column, so write the column, or drop aggregate")
+            return None
+    fmt = item.get("format")
+    if fmt is not None and (not isinstance(fmt, str) or not fmt.strip()):
+        problems.append(f"{at}.format: must be a Power BI format string, e.g. \"#,0.00\"")
+        return None
+    return replace(ref, aggregate=aggregate, format=fmt.strip() if isinstance(fmt, str) else None)
 
 
 def load(path: Path, visual_dirs: tuple[Path, ...] = ()) -> PageSpec:
@@ -231,11 +283,18 @@ def _slots(at: str, raw: Any, contract: Contract, problems: list[str]) -> dict[s
             continue
         refs = []
         for j, item in enumerate(values):
-            ref = parse_field(item)
             item_at = f"{where}[{j}]" if isinstance(value, list) else where
+            ref = parse_slot(item, item_at, problems)
             if ref is None:
-                problems.append(f"{item_at}: {item!r} is not a field reference "
-                                "(use Table[Column] or [Measure])")
+                continue
+            # An aggregated column is a summarised value, so it belongs where a measure does
+            # (probe 29 put one in a table's Values well beside measures), not where a plain
+            # column does: a drill-down category of "Sum of Amount" isn't a thing.
+            if ref.aggregate and "measure" not in slot.accepts:
+                problems.append(f"{item_at}: {name} takes {' or '.join(slot.accepts)}, so it can't "
+                                f"take an aggregation ({ref})")
+            elif ref.aggregate:
+                refs.append(ref)
             elif ref.kind not in slot.accepts:
                 hint = ""
                 if ref.kind == "column" and slot.accepts == ("measure",):

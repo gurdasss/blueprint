@@ -106,37 +106,47 @@ visuals:
 #   (probe 20). `bp describe` marks which slots take a list.
 #
 #
-# ── Not built yet: per-slot decisions ──
+# ── Saying more about a field: the long form ──
 #
-#   Nothing below is accepted by `bp apply` today. It is recorded here
-#   so the shape is settled when the evidence is:
+#   A slot entry can be a mapping instead of a string. The two forms
+#   mean the same thing when only `field` is set:
+#
+#     value: "Sales[Amount]"
+#     value: { field: "Sales[Amount]" }
+#
+#   The mapping is the only way to add a per-slot decision:
 #
 #     value:
-#       field: "Sales[Amount]"        # a mapping = field + decisions
-#       aggregate: sum                # visual-level aggregation
-#       format: "#,0.00"              # format string scoped to the visual
+#       field: "Sales[Amount]"
+#       aggregate: sum             # summarise the column in this visual
+#       format: "#,0.00"           # a Power BI format string
 #
-#   The mapping form is the only planned way to say more about a field.
-#   An earlier draft of this template also showed a pipe syntax
-#   ("Sales[Amount] | distinctcount"); that is dropped. It is a second
-#   language inside a string, invisible to validation, and it says what
-#   `aggregate:` already says.
+# ── aggregate (a column summarised in the visual) ──
 #
-#   Why it waits: `apply` writes what a Desktop probe has verified, and
-#   neither shape is verified yet.
-#     - aggregate: Desktop's read shape is known (probes 10, 13:
-#       {"Aggregation": {"Expression": {"Column": …}, "Function": N}}),
-#       and codes 0 Sum, 1 Average, 5 Count are attested. The codes for
-#       distinct count, min and max are not, and Blueprint writing any
-#       of them is unverified. An aggregated column also puts a column
-#       in a measure-only slot, so a slot has to accept that kind.
-#     - format: the vendored Microsoft schema (visualConfiguration
-#       2.8.0) carries a per-projection "format" — "format string scoped
-#       to the visual" — so the unit is a Power BI format string, not a
-#       named enum. A table of friendly names (currency, percentage)
-#       would make Blueprint invent a currency symbol and decimal
-#       places; naming them belongs in an extension, over a core that
-#       takes the string the client wrote.
+#   sum  average  min  max         as the names say
+#   count                          Desktop's "Count": non-null values
+#   distinctcount                  Desktop's "Count (Distinct)"
 #
-#   See template/plan.md step 5 and blueprint/pbir/schema.md.
+#   Only where the slot takes a measure: an aggregated column is a
+#   value, so `category: {aggregate: sum}` is refused.
+#   Use a measure when the calculation is reusable business logic;
+#   use `aggregate` for a one-off summary in one visual.
+#
+#   Codes come from probe 29, where each was chosen on a fresh field
+#   in Desktop. Two fields Desktop would name alike (count and
+#   distinct count of one column) are refused rather than guessed.
+#
+# ── format (a format string scoped to the visual) ──
+#
+#   format: "#,0"                  1,234
+#   format: "#,0.00"               1,234.56
+#   format: "0.00%"                45.20%
+#   format: '"$" #,0.00;("$" #,0.00);"$" #,0.00'      $1,234.56
+#
+#   The string is written exactly as given. Blueprint has no `currency`
+#   shorthand on purpose: probe 29 showed Desktop writes the *locale's*
+#   symbol, so a shorthand would mean Blueprint inventing one.
+#   A measure's own format lives in the model (TMDL formatString) and
+#   is a different thing; this one is per visual.
+#
 # ─────────────────────────────────────────────────────────────────────

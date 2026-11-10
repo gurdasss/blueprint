@@ -66,6 +66,7 @@ class Field:
     name: str
     function: str | None = None  # aggregation only, e.g. "Sum"
     level: str | None = None  # date_level/hierarchy_level only, e.g. "Year", "Country"
+    format: str | None = None  # the projection's format string scoped to the visual (probe 29)
 
     def __str__(self) -> str:
         # Spec/manifest syntax (README): [Measure], Table[Column]. Manifest only:

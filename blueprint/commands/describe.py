@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from blueprint import guidelines, layouts
+from blueprint import guidelines, layouts, spec
 from blueprint.guidelines import Guidelines
 from blueprint.model import Report
 from blueprint.pbir import semantic
@@ -33,7 +33,8 @@ SPEC_SYNTAX = {
         "id": "optional; stable identity within the page (default: <type>-<n>)",
         "title": "optional text; required for header (it is the header's text)",
         "region": "optional; a region role in the layout, overriding the type's default role",
-        "slots": "mapping of slot name -> field reference, or a list where the slot allows one",
+        "slots": "mapping of slot name -> field reference, or a list where the slot allows one. "
+                 "A slot entry may also be a mapping {field, aggregate, format} (see slot_keys)",
         "options": "optional mapping of option name -> value, from the type's options "
                    "(left out: Desktop's default)",
         "blueprint": "`ignore`: leave this visual alone (it takes no region)",
@@ -42,6 +43,16 @@ SPEC_SYNTAX = {
         "Table[Column]": "a column ('Table name'[Column] when the name has spaces or symbols)",
         "[Measure]": "a measure; its table is found in the model",
         "Table[Hierarchy]": "a hierarchy built in the model; binds all its levels in order",
+    },
+    "slot_keys": {
+        "field": "required; the field reference, exactly as in the short form",
+        "aggregate": "optional; summarise a column in this visual: "
+                     + ", ".join(sorted(spec.AGGREGATIONS))
+                     + ". `count` counts non-null values and `distinctcount` distinct ones "
+                       "(probe 29). Only where the slot takes a measure",
+        "format": "optional; a Power BI format string scoped to this visual, e.g. \"#,0.00\" or "
+                  "'\"$\" #,0.00;(\"$\" #,0.00);\"$\" #,0.00' (probe 29). Blueprint writes the "
+                  "string as given: it never invents a currency symbol",
     },
     "example": (
         "page: Sales Overview\n"

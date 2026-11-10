@@ -560,19 +560,42 @@ content, so Blueprint's theme file matches Desktop's format exactly.
   well's menu set every level `active` (expand) and **did not switch to the plain column**.
   Probe 14 settled how Blueprint binds a date: `Table[Column]` as a plain `Column`, which Desktop draws
   and keeps as written.
-- **Open: the rest of the aggregation codes, and writing one.** Only 0 (Sum), 1 (Average) and 5
-  (Count) have been seen, and only 0 appears in the real samples. Distinct count, min and max are
-  unknown, and the UI's "Count" being 5 shows the enum doesn't follow the menu order, so no code
-  is guessed. Nothing has verified that Desktop accepts an `Aggregation` **Blueprint** wrote, or
-  which `queryRef`/`nativeQueryRef` it wants: probe 13 showed Desktop keeps a field's stale
-  `queryRef` after an in-place change, so that diff doesn't answer it either.
-  `scripts/probe_aggregate_format.py` (probe 29) settles both, aggregating fresh fields.
-- **Open: a per-visual data format.** The vendored schema (visualConfiguration 2.8.0) carries a
-  per-projection `"format"`, described as "format string scoped to the visual". Unverified:
-  whether Desktop writes it there rather than in `visual.objects`, whether the Format pane's
-  display units and decimal places land there, and what the string is for the common cases. A
-  measure's TMDL `formatString` is a model fact and a different thing. Probe 29 covers this too,
-  with a card formatted in the Format pane next to a measure formatted on the ribbon.
+**Verified 2026-11-10, probe 29** (`scripts/probe_aggregate_format.py`; evidence
+`docs/probes/29-aggregate-format.diff`, fixture 02, all content invented). Each aggregation was
+chosen on a **fresh** field, because an aggregation changed in place keeps the field's old
+`queryRef` (probe 13, and seen again here in step 08).
+
+- **Every `Function` code**, from Desktop's own output. The codes do **not** follow the menu
+  order, and the two counts are the trap: the UI's "Count" is 5 and "Count (Distinct)" is 2.
+
+  | Desktop's menu | `Function` | `queryRef` | `nativeQueryRef` |
+  |---|---|---|---|
+  | Sum | 0 | `Sum(Sales.Amount)` | `Sum of Amount` |
+  | Average | 1 | `Avg(Sales.Amount)` | `Average of Amount` |
+  | Count (Distinct) | 2 | `Count(Sales.Amount)` | `Count of Amount` |
+  | Minimum | 3 | `Min(Sales.Amount)` | `Min of Amount` |
+  | Maximum | 4 | `Max(Sales.Amount)` | `Max of Amount` |
+  | Count | 5 | `CountNonNull(Sales.Amount)` | `Count of Amount` |
+
+- **`nativeQueryRef` is a display name, unique within the visual.** Count and distinct count of
+  one column are both "Count of <Column>" (the user saw "Count of Country" for both in the
+  wells), so when the second one collided Desktop wrote `Count of Amount1`. A spec binding both
+  of the same column in one visual is refused rather than guessing that suffix rule.
+- **Changing an aggregation in place leaves a stale `queryRef`:** step 08's distinct count of
+  `Country` still said `"queryRef": "Sales.Country"`. Never copy a shape from a changed field.
+- **A per-visual data format is a projection key**, exactly where the vendored schema
+  (visualConfiguration 2.8.0) describes it: `"format"`, a format string "scoped to the visual",
+  beside `queryRef`/`nativeQueryRef`. Desktop wrote a three-part positive;negative;zero string
+  carrying the **locale's** currency symbol:
+  `"format": "\"₹\" #,0.###############;\"₹\" -#,0.###############;\"₹\" #,0.###############"`.
+  So a format is a string the client gives, not a name Blueprint maps: a `currency` alias would
+  have to invent a symbol that the probe shows is the user's choice.
+- **A measure's format is a different thing:** setting Format on the ribbon (Measure tools)
+  changed TMDL only — `formatString: \$#,0.###############;(\$#,0.###############);…` — and left
+  the report untouched. The model is read-only to Blueprint, so `format:` is the report-side one.
+- **No "Display units" on the new card** in this build: that part of the probe (step 10) was
+  skipped, so display units stay unverified.
+
 - **Aggregation codes:** "Average of Amount" is `Function: 1` and "Count of Region" (a text column) is
   `Function: 5`. Desktop kept the field's old `queryRef` (`Sum(Sales.Amount)` on the Average,
   `Sales.Region` on the Count), so a `queryRef` says nothing reliable about the aggregation.

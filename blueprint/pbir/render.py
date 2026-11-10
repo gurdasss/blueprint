@@ -40,12 +40,28 @@ def schema_url(kind: str) -> str:
     return schemas.SchemaRef(f"{_KIND}/{kind}", versions[-1]).url
 
 
+# An implicit aggregate of a column, exactly as Desktop wrote each one on a fresh field
+# (probe 29): function label -> (Function code, queryRef function, nativeQueryRef verb). The codes
+# don't follow the menu order, and Desktop's own "Count" is 5 while "Count (Distinct)" is 2.
+# The labels are reader.AGGREGATE_FUNCTIONS', so a re-read round-trips.
+AGGREGATIONS: dict[str, tuple[int, str, str]] = {
+    "Sum": (0, "Sum", "Sum of"),
+    "Average": (1, "Avg", "Average of"),
+    "DistinctCount": (2, "Count", "Count of"),
+    "Min": (3, "Min", "Min of"),
+    "Max": (4, "Max", "Max of"),
+    "Count": (5, "CountNonNull", "Count of"),
+}
+
+
 @dataclass(frozen=True)
 class Binding:
-    kind: str  # "measure" | "column" | "hierarchy_level"
+    kind: str  # "measure" | "column" | "hierarchy_level" | "aggregation"
     table: str
     name: str  # the measure, column or hierarchy
     level: str | None = None  # hierarchy_level only
+    function: str | None = None  # aggregation only, a key of AGGREGATIONS (probe 29)
+    format: str | None = None  # format string scoped to the visual (probe 29)
 
     def field(self) -> dict:
         source = {"SourceRef": {"Entity": self.table}}
@@ -53,6 +69,10 @@ class Binding:
             # probe 16: a level of a hierarchy built in the model
             return {"HierarchyLevel": {"Expression": {"Hierarchy": {"Expression": source, "Hierarchy": self.name}},
                                        "Level": self.level}}
+        column = {"Column": {"Expression": source, "Property": self.name}}
+        if self.kind == "aggregation":
+            # probe 10 shape, every code from probe 29
+            return {"Aggregation": {"Expression": column, "Function": AGGREGATIONS[self.function][0]}}
         key = "Measure" if self.kind == "measure" else "Column"
         return {key: {"Expression": source, "Property": self.name}}
 
@@ -60,9 +80,15 @@ class Binding:
         if self.kind == "hierarchy_level":
             refs = {"queryRef": f"{self.table}.{self.name}.{self.level}",
                     "nativeQueryRef": f"{self.name} {self.level}"}
+        elif self.kind == "aggregation":
+            _, func, verb = AGGREGATIONS[self.function]
+            refs = {"queryRef": f"{func}({self.table}.{self.name})",
+                    "nativeQueryRef": f"{verb} {self.name}"}
         else:
             refs = {"queryRef": f"{self.table}.{self.name}", "nativeQueryRef": self.name}
         p: dict[str, Any] = {"field": self.field(), **refs}
+        if self.format:
+            p["format"] = self.format  # probe 29: beside the refs, inside the projection
         if active is not None:
             p["active"] = active
         return p

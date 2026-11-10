@@ -79,7 +79,21 @@ def _resolve(placements: list[layouts.Placement], report: Report,
                 except semantic.ModelError as exc:
                     problems.append(f"{at}: {exc}")
                     continue
-                roles.setdefault(slot.role, []).append(render.Binding(ref.kind, table, ref.name))
+                if ref.aggregate:
+                    roles.setdefault(slot.role, []).append(render.Binding(
+                        "aggregation", table, ref.name,
+                        function=spec.AGGREGATIONS[ref.aggregate], format=ref.format))
+                else:
+                    roles.setdefault(slot.role, []).append(
+                        render.Binding(ref.kind, table, ref.name, format=ref.format))
+        for role, fields in roles.items():
+            names = [f.projection()["nativeQueryRef"] for f in fields]
+            clashes = sorted({n for n in names if names.count(n) > 1})
+            for n in clashes:
+                problems.append(
+                    f"visuals[{v.index}]: two fields in {role} would both be called {n!r}. Desktop "
+                    "names count and distinct count of a column the same and adds a digit by hand "
+                    "(probe 29); Blueprint won't guess that, so bind one of them")
         out[v.id] = roles
     if problems:
         raise ApplyError("field references don't match the semantic model:\n  " + "\n  ".join(problems))
@@ -131,8 +145,18 @@ def _next(page: Page | None, key: str) -> int:
 
 
 def _bound(fields: dict) -> dict[str, list[tuple]]:
-    """Role -> (kind, table, name, level) per field, for the report's fields or the spec's bindings."""
-    return {role: [(f.kind, f.table, f.name, f.level) for f in fs] for role, fs in fields.items()}
+    """Role -> (kind, table, name, level-or-function) per field, for the report's fields or the
+    spec's bindings. An aggregation has no level and a hierarchy level has no function, so the
+    two share the slot: the tuple keeps its shape, and marks written before aggregations existed
+    stay valid."""
+    return {role: [(f.kind, f.table, f.name, f.level or f.function) for f in fs]
+            for role, fs in fields.items()}
+
+
+def _formats(fields: dict) -> dict[str, list[str | None]]:
+    """Role -> each field's format string. Kept out of the fingerprint: the mark is what is
+    *bound*, and a format is formatting that travels inside the projection (probe 29)."""
+    return {role: [getattr(f, "format", None) for f in fs] for role, fs in fields.items()}
 
 
 def _bindings_text(bound: dict[str, list[tuple]]) -> str:
@@ -268,7 +292,7 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
             # title, formatting and position are kept.
             have = _bound(current.fields)
             edited = current.bindings_mark is not None and current.bindings_mark != render.bindings_fingerprint(have)
-            if have != _bound(want):
+            if have != _bound(want) or _formats(current.fields) != _formats(want):
                 if edited and not getattr(args, "overwrite_edits", False):
                     problems.append(
                         f"visuals[{vs.index}] ({vs.id}): its fields were changed in Desktop since "
@@ -277,7 +301,10 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
                         "--overwrite-edits to replace it")
                     continue
                 current.source.data = render.with_bindings(current.source.data, contract.visual_type, want)
-                current.notes.append(f"rebind {_bindings_text(have)} -> {_bindings_text(_bound(want))}")
+                if have != _bound(want):
+                    current.notes.append(f"rebind {_bindings_text(have)} -> {_bindings_text(_bound(want))}")
+                else:
+                    current.notes.append("format changed")
             if want and (have != _bound(want) or edited):  # record what is bound now
                 mark = render.bindings_fingerprint(_bound(want))
                 current.source.data = render.with_annotations(current.source.data,

@@ -328,75 +328,48 @@ is for types a client adds. A test pins that reasoning.
 
 **Result:** 598 passed, `ruff` clean, demo byte-identical.
 
-### Step 5 (decided, blocked on a probe): one way to say more about a field
+### Step 5 + 6 (done): one way to say more about a field
 
 **The decision.** A slot's field is a **string**; anything further is a **mapping key**:
 
 ```yaml
-value: "[Total Revenue]"              # a field, the common case
-value:                                 # a field plus decisions (planned)
-  field: "Sales[Amount]"
-  aggregate: sum
-  format: "#,0.00"
+value: "[Total Revenue]"                       # a field, the common case
+value: {field: "Sales[Amount]", aggregate: sum, format: "#,0.00"}
 ```
 
-**Pipe syntax is dropped.** `"Sales[Amount] | distinctcount"` was a second language inside a
-string: invisible to YAML, invisible to the parser's error locations, and it says exactly what
-`aggregate:` says. Three ways to write one binding is the opposite of one client-friendly unit.
+Pipe syntax is dropped: `"Sales[Amount] | distinctcount"` was a second language inside a string,
+invisible to YAML and to the parser's error locations, saying what `aggregate:` says. The short
+string stays as the shorthand for "just the field" — `"X"` means `{field: X}`.
 
-The short string stays as the shorthand for "just the field" — `"X"` means `{field: X}`. That is
-two surface forms with one meaning, which is worth it: every probe replay, demo spec, README
-example and shipped example already uses the string, and it is the form a client writes nine
-times out of ten.
+**Probe 29 settled both shapes** (`docs/probes/29-aggregate-format.diff`), each aggregation taken
+on a *fresh* field because one changed in place keeps its old `queryRef`:
 
-**Why no code yet.** `apply` only writes shapes a Desktop probe has verified, and neither key
-has one:
+| Desktop's menu | `Function` | `queryRef` | `nativeQueryRef` |
+|---|---|---|---|
+| Sum | 0 | `Sum(Sales.Amount)` | `Sum of Amount` |
+| Average | 1 | `Avg(Sales.Amount)` | `Average of Amount` |
+| Count (Distinct) | 2 | `Count(Sales.Amount)` | `Count of Amount` |
+| Minimum | 3 | `Min(Sales.Amount)` | `Min of Amount` |
+| Maximum | 4 | `Max(Sales.Amount)` | `Max of Amount` |
+| Count | 5 | `CountNonNull(Sales.Amount)` | `Count of Amount` |
 
-| Key | Evidence today | Missing |
-|---|---|---|
-| `aggregate:` | Desktop's read shape is known (probe 10: `{"Aggregation": {"Expression": {"Column": …}, "Function": N}}`), codes 0 Sum, 1 Average, 5 Count attested (probes 10, 13); only code 0 appears in the real samples | the codes for distinct count, min and max — probe 13 showed the UI's "Count" on a text column is 5, so the enum can't be inferred — and whether Desktop accepts Blueprint writing any of them, with which `queryRef`/`nativeQueryRef` |
-| `format:` | the vendored Microsoft schema (visualConfiguration 2.8.0) has a per-projection `"format"`: "format string scoped to the visual" | whether Desktop writes it there at all, rather than in `visual.objects` or only as the measure's TMDL `formatString`, and what a format string is for the common cases |
+Guessing would have been wrong twice over: the codes don't follow the menu order, and the UI's
+"Count" is 5 while "Count (Distinct)" is 2.
 
-Building the parse layer alone would be worse than waiting: `apply` would accept a spec and
-silently ignore half of it.
+A per-visual format is a **projection key**, exactly where the vendored schema said:
+`"format": "\"₹\" #,0.###############;…"`. Desktop wrote the *locale's* currency symbol, which
+settles the named-format question: a `currency` alias would make Blueprint invent a symbol the
+client never stated, so the core takes the string and the template lists copyable ones. A
+measure's format is a different thing and lives in TMDL, which Blueprint only reads.
 
-**`scripts/probe_aggregate_format.py` (probe 29) is written and ready to run.** It needs a
-Desktop session with the user's clicks, because the bridge can't do UI edits: each aggregation is
-chosen on a *fresh* field (probe 13 showed a changed one keeps its stale `queryRef`), and one
-card plus one measure separate a visual format from a model format.
+**What shipped:** the long form in `spec.py` (`FieldRef.aggregate`/`.format`), the shapes in
+`render.Binding`, the codes in `reader.AGGREGATE_FUNCTIONS` so a re-read round-trips, the
+`aggregate`-needs-a-measure-slot rule, a changed format rewriting the query on re-apply, and
+`bp describe` listing both keys. Two fields Desktop would name alike (count and distinct count of
+one column) are refused rather than guessing its suffix rule.
 
-**Named formats are an extension, not core.** The template's `currency` / `percentage` /
-`whole_number` table looked client-friendly, but the unit PBIR stores is a format string, so a
-name has to become one — and `currency` means picking a symbol and a decimal count that the
-client never stated. The core takes the string the client wrote; friendly aliases map to strings
-in an extension. `template/page.template.yaml` lists the ready-to-copy strings instead, the same
-way the layout template lists the worked column arithmetic.
-
-**Done in this step:** the decision recorded; `template/page.template.yaml` corrected (it
-advertised pipe syntax, six aggregations and five named formats, all of which the parser
-refuses) and covered by a parses-cleanly test, like the other two templates.
-
-### Step 6: Wire aggregation and formats into render — after probe 29
-
-**What:** once probe 29 has settled the shapes, carry the long form through
-`spec.py` → `commands/apply.py` → `pbir/render.py`.
-
-**Changes:**
-- `spec.py`: accept the mapping form of a slot (`field`, `aggregate`, `format`), with the
-  short string still meaning `{field: X}`; `FieldRef` gains the optional keys
-- a slot that may hold an aggregated column has to **accept that kind** — an aggregated column
-  sits in a measure-only slot, and `schema.md` keeps `kpi.target` measure-only for that reason.
-  Per slot, with a probe citation; never by widening every `value` slot.
-- `render.py`: write `Aggregation`/`Function` for `aggregate:`, and the projection `format`
-  (or whatever probe 29 shows) for `format:`
-- `commands/describe.py`: list the aggregations and the format key a spec may use
-  (carried over from the old step 3)
-
-**Tests:** golden output for each shape, and a probe-29 replay.
-
-**Risk:** Medium, and entirely in the shapes — which is what probe 29 removes. Only ship the
-aggregations whose `Function` code the probe shows; a code nobody has seen stays unsupported
-rather than guessed.
+**Not verified yet:** that Desktop *accepts* these shapes when **Blueprint** writes them, which is
+the repo's bar (probe 20's shapes → probe 21's acceptance). Probe 30 does that.
 
 ### Step 7 (mostly done): shipped layouts and example files
 
@@ -490,7 +463,7 @@ landed together.
 - [x] Step 3: Wire guidelines into consumers (done with step 1)
 - [x] Step 2: Layout structural format — dropped, pixels stay (see above)
 - [x] Step 4: Core seven visual types + `inherits:`
-- [~] Step 5: One way to say more about a field — decided; code waits on probe 29
-- [ ] Step 6: Wire into render (after probe 29)
+- [x] Step 5: One way to say more about a field (probe 29 settled the shapes)
+- [x] Step 6: Aggregation and format wired into render
 - [x] Step 7: Shipped layouts and examples (layouts already conform)
 - [x] Step 8: Test sweep + consistency checks

@@ -77,7 +77,8 @@ def test_ignored_visual_needs_no_slots():
     ({"page": "P", "visuals": [{"type": "card", "slots": {"value": "[A]", "legend": "T[x]"}}]},
      ["visuals[0].slots.legend: card has no slot 'legend' (slots: value)"]),
     ({"page": "P", "visuals": [{"type": "column", "slots": {"category": ["T[a]", "nope"], "value": "[v]"}}]},
-     ["visuals[0].slots.category[1]: 'nope' is not a field reference (use Table[Column] or [Measure])"]),
+     [("visuals[0].slots.category[1]: 'nope' is not a field reference "
+       "(use Table[Column], [Measure], or {field: \u2026, aggregate: \u2026, format: \u2026})")]),
     ({"page": "P", "visuals": [{"type": "card", "id": "Bad Id", "slots": {"value": "[A]"}}]},
      ["visuals[0].id: 'Bad Id' must be lowercase letters, digits and hyphens (max 40)"]),
     ({"page": "P", "visuals": [{"type": "card", "blueprint": "skip", "slots": {"value": "[A]"}}]},

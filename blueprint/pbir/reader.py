@@ -10,7 +10,7 @@ Facts this module relies on are recorded, with evidence, in ``schema.md``.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -306,9 +306,10 @@ class _Reader:
         )
 
 
-# Aggregation "Function" codes, as Desktop names them: probe 10 "Sum of", probe 13 "Average of" and
-# "Count of". Other codes are shown by number rather than guessed.
-AGGREGATE_FUNCTIONS = {0: "Sum", 1: "Average", 5: "Count"}
+# Aggregation "Function" codes, as Desktop names them. Probe 29 took each one from Desktop's own
+# output on a fresh field: the codes don't follow the menu order, and the UI's "Count" is 5 while
+# "Count (Distinct)" is 2. An unknown code is still shown by number rather than guessed.
+AGGREGATE_FUNCTIONS = {0: "Sum", 1: "Average", 2: "DistinctCount", 3: "Min", 4: "Max", 5: "Count"}
 
 
 def _field(f: dict) -> Field | None:
@@ -369,6 +370,9 @@ def _fields(visual: dict) -> dict[str, list[Field]]:
             f = (p or {}).get("field")
             field = _field(f) if isinstance(f, dict) else None
             if field is not None:
+                fmt = (p or {}).get("format")  # probe 29: a format string scoped to the visual
+                if isinstance(fmt, str) and fmt:
+                    field = replace(field, format=fmt)
                 out.setdefault(role, []).append(field)
     return out
 

@@ -91,7 +91,16 @@ def test_implicit_aggregation_is_read(tmp_path: Path):
 
 
 def test_unverified_aggregation_function_is_shown_by_number(tmp_path: Path):
-    assert [str(f) for f in _fields_of(tmp_path, [_agg(3)])] == ["Aggregate3(Sales[Amount])"]
+    # 9 is no code Desktop has written in a probe: shown, not guessed
+    assert [str(f) for f in _fields_of(tmp_path, [_agg(9)])] == ["Aggregate9(Sales[Amount])"]
+
+
+def test_probe_29_settled_every_code_desktops_menu_offers(tmp_path: Path):
+    """The codes don't follow the menu order, and the UI's "Count" is 5 while
+    "Count (Distinct)" is 2 (probe 29, each on a fresh field)."""
+    codes = [_agg(c) for c in (0, 1, 2, 3, 4, 5)]
+    assert [f.function for f in _fields_of(tmp_path, codes)] == [
+        "Sum", "Average", "DistinctCount", "Min", "Max", "Count"]
 
 
 def test_average_and_count_codes(tmp_path: Path):

@@ -1,0 +1,698 @@
+######## 01 open and save (no changes)
+
+
+######## 02 table sum
+
+diff --git a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/page.json b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/page.json
+new file mode 100644
+index 0000000..e41bdf6
+--- /dev/null
++++ b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/page.json
+@@ -0,0 +1,8 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
++  "name": "d0289d49d0b0d9a108ea",
++  "displayName": "Agg",
++  "displayOption": "FitToPage",
++  "height": 1080,
++  "width": 1920
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+new file mode 100644
+index 0000000..1b58a69
+--- /dev/null
++++ b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+@@ -0,0 +1,94 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
++  "name": "1b33fc3dcd2736ec3711",
++  "position": {
++    "x": 10,
++    "y": 0,
++    "z": 0,
++    "height": 280,
++    "width": 280,
++    "tabOrder": 0
++  },
++  "visual": {
++    "visualType": "tableEx",
++    "query": {
++      "queryState": {
++        "Values": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region"
++            },
++            {
++              "field": {
++                "Aggregation": {
++                  "Expression": {
++                    "Column": {
++                      "Expression": {
++                        "SourceRef": {
++                          "Entity": "Sales"
++                        }
++                      },
++                      "Property": "Amount"
++                    }
++                  },
++                  "Function": 0
++                }
++              },
++              "queryRef": "Sum(Sales.Amount)",
++              "nativeQueryRef": "Sum of Amount"
++            }
++          ]
++        }
++      }
++    },
++    "drillFilterOtherVisuals": true
++  },
++  "filterConfig": {
++    "filters": [
++      {
++        "name": "a56accc5da98a4c5796a",
++        "field": {
++          "Column": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Region"
++          }
++        },
++        "type": "Categorical"
++      },
++      {
++        "name": "5f2a2d505eed713c4b5d",
++        "field": {
++          "Aggregation": {
++            "Expression": {
++              "Column": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Property": "Amount"
++              }
++            },
++            "Function": 0
++          }
++        },
++        "type": "Advanced"
++      }
++    ]
++  }
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/pages.json b/Fixture.Report/definition/pages/pages.json
+index e28de5a..93a6b6d 100644
+--- a/Fixture.Report/definition/pages/pages.json
++++ b/Fixture.Report/definition/pages/pages.json
+@@ -1,7 +1,8 @@
+ {
+   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.1.0/schema.json",
+   "pageOrder": [
+-    "6a692d13619c1d4c0146"
++    "6a692d13619c1d4c0146",
++    "d0289d49d0b0d9a108ea"
+   ],
+-  "activePageName": "6a692d13619c1d4c0146"
++  "activePageName": "d0289d49d0b0d9a108ea"
+ }
+\ No newline at end of file
+
+######## 03 average
+
+diff --git a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+index 1b58a69..9b35b43 100644
+--- a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
++++ b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+@@ -47,6 +47,25 @@
+               },
+               "queryRef": "Sum(Sales.Amount)",
+               "nativeQueryRef": "Sum of Amount"
++            },
++            {
++              "field": {
++                "Aggregation": {
++                  "Expression": {
++                    "Column": {
++                      "Expression": {
++                        "SourceRef": {
++                          "Entity": "Sales"
++                        }
++                      },
++                      "Property": "Amount"
++                    }
++                  },
++                  "Function": 1
++                }
++              },
++              "queryRef": "Avg(Sales.Amount)",
++              "nativeQueryRef": "Average of Amount"
+             }
+           ]
+         }
+@@ -71,7 +90,7 @@
+         "type": "Categorical"
+       },
+       {
+-        "name": "5f2a2d505eed713c4b5d",
++        "name": "f3ac83792d3410ece131",
+         "field": {
+           "Aggregation": {
+             "Expression": {
+@@ -88,6 +107,25 @@
+           }
+         },
+         "type": "Advanced"
++      },
++      {
++        "name": "44e6173121377d6e1c72",
++        "field": {
++          "Aggregation": {
++            "Expression": {
++              "Column": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Property": "Amount"
++              }
++            },
++            "Function": 1
++          }
++        },
++        "type": "Advanced"
+       }
+     ]
+   }
+
+######## 04 count
+
+diff --git a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+index 9b35b43..bf8373b 100644
+--- a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
++++ b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+@@ -66,6 +66,25 @@
+               },
+               "queryRef": "Avg(Sales.Amount)",
+               "nativeQueryRef": "Average of Amount"
++            },
++            {
++              "field": {
++                "Aggregation": {
++                  "Expression": {
++                    "Column": {
++                      "Expression": {
++                        "SourceRef": {
++                          "Entity": "Sales"
++                        }
++                      },
++                      "Property": "Amount"
++                    }
++                  },
++                  "Function": 5
++                }
++              },
++              "queryRef": "CountNonNull(Sales.Amount)",
++              "nativeQueryRef": "Count of Amount"
+             }
+           ]
+         }
+@@ -90,7 +109,26 @@
+         "type": "Categorical"
+       },
+       {
+-        "name": "f3ac83792d3410ece131",
++        "name": "44e6173121377d6e1c72",
++        "field": {
++          "Aggregation": {
++            "Expression": {
++              "Column": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Property": "Amount"
++              }
++            },
++            "Function": 1
++          }
++        },
++        "type": "Advanced"
++      },
++      {
++        "name": "8ffddae138c73b201834",
+         "field": {
+           "Aggregation": {
+             "Expression": {
+@@ -109,7 +147,7 @@
+         "type": "Advanced"
+       },
+       {
+-        "name": "44e6173121377d6e1c72",
++        "name": "153a031f3086ba2bc433",
+         "field": {
+           "Aggregation": {
+             "Expression": {
+@@ -122,7 +160,7 @@
+                 "Property": "Amount"
+               }
+             },
+-            "Function": 1
++            "Function": 5
+           }
+         },
+         "type": "Advanced"
+
+######## 05 distinct count
+
+diff --git a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+index bf8373b..db63b9e 100644
+--- a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
++++ b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+@@ -85,6 +85,25 @@
+               },
+               "queryRef": "CountNonNull(Sales.Amount)",
+               "nativeQueryRef": "Count of Amount"
++            },
++            {
++              "field": {
++                "Aggregation": {
++                  "Expression": {
++                    "Column": {
++                      "Expression": {
++                        "SourceRef": {
++                          "Entity": "Sales"
++                        }
++                      },
++                      "Property": "Amount"
++                    }
++                  },
++                  "Function": 2
++                }
++              },
++              "queryRef": "Count(Sales.Amount)",
++              "nativeQueryRef": "Count of Amount1"
+             }
+           ]
+         }
+@@ -128,7 +147,26 @@
+         "type": "Advanced"
+       },
+       {
+-        "name": "8ffddae138c73b201834",
++        "name": "153a031f3086ba2bc433",
++        "field": {
++          "Aggregation": {
++            "Expression": {
++              "Column": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Property": "Amount"
++              }
++            },
++            "Function": 5
++          }
++        },
++        "type": "Advanced"
++      },
++      {
++        "name": "ff08e855568588e99025",
+         "field": {
+           "Aggregation": {
+             "Expression": {
+@@ -147,7 +185,7 @@
+         "type": "Advanced"
+       },
+       {
+-        "name": "153a031f3086ba2bc433",
++        "name": "f406f309a1d2c5bcb012",
+         "field": {
+           "Aggregation": {
+             "Expression": {
+@@ -160,7 +198,7 @@
+                 "Property": "Amount"
+               }
+             },
+-            "Function": 5
++            "Function": 2
+           }
+         },
+         "type": "Advanced"
+
+######## 06 minimum
+
+diff --git a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+index db63b9e..2d47af2 100644
+--- a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
++++ b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+@@ -104,6 +104,25 @@
+               },
+               "queryRef": "Count(Sales.Amount)",
+               "nativeQueryRef": "Count of Amount1"
++            },
++            {
++              "field": {
++                "Aggregation": {
++                  "Expression": {
++                    "Column": {
++                      "Expression": {
++                        "SourceRef": {
++                          "Entity": "Sales"
++                        }
++                      },
++                      "Property": "Amount"
++                    }
++                  },
++                  "Function": 3
++                }
++              },
++              "queryRef": "Min(Sales.Amount)",
++              "nativeQueryRef": "Min of Amount"
+             }
+           ]
+         }
+@@ -166,7 +185,26 @@
+         "type": "Advanced"
+       },
+       {
+-        "name": "ff08e855568588e99025",
++        "name": "f406f309a1d2c5bcb012",
++        "field": {
++          "Aggregation": {
++            "Expression": {
++              "Column": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Property": "Amount"
++              }
++            },
++            "Function": 2
++          }
++        },
++        "type": "Advanced"
++      },
++      {
++        "name": "da602bb854dc33521087",
+         "field": {
+           "Aggregation": {
+             "Expression": {
+@@ -185,7 +223,7 @@
+         "type": "Advanced"
+       },
+       {
+-        "name": "f406f309a1d2c5bcb012",
++        "name": "80873b23b09e90c0526e",
+         "field": {
+           "Aggregation": {
+             "Expression": {
+@@ -198,7 +236,7 @@
+                 "Property": "Amount"
+               }
+             },
+-            "Function": 2
++            "Function": 3
+           }
+         },
+         "type": "Advanced"
+
+######## 07 maximum
+
+diff --git a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+index 2d47af2..2fdb1f5 100644
+--- a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
++++ b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+@@ -123,6 +123,25 @@
+               },
+               "queryRef": "Min(Sales.Amount)",
+               "nativeQueryRef": "Min of Amount"
++            },
++            {
++              "field": {
++                "Aggregation": {
++                  "Expression": {
++                    "Column": {
++                      "Expression": {
++                        "SourceRef": {
++                          "Entity": "Sales"
++                        }
++                      },
++                      "Property": "Amount"
++                    }
++                  },
++                  "Function": 4
++                }
++              },
++              "queryRef": "Max(Sales.Amount)",
++              "nativeQueryRef": "Max of Amount"
+             }
+           ]
+         }
+@@ -204,7 +223,26 @@
+         "type": "Advanced"
+       },
+       {
+-        "name": "da602bb854dc33521087",
++        "name": "80873b23b09e90c0526e",
++        "field": {
++          "Aggregation": {
++            "Expression": {
++              "Column": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Property": "Amount"
++              }
++            },
++            "Function": 3
++          }
++        },
++        "type": "Advanced"
++      },
++      {
++        "name": "e651f85eb02d0354ab9a",
+         "field": {
+           "Aggregation": {
+             "Expression": {
+@@ -223,7 +261,7 @@
+         "type": "Advanced"
+       },
+       {
+-        "name": "80873b23b09e90c0526e",
++        "name": "65df6d89056d501b2179",
+         "field": {
+           "Aggregation": {
+             "Expression": {
+@@ -236,7 +274,7 @@
+                 "Property": "Amount"
+               }
+             },
+-            "Function": 3
++            "Function": 4
+           }
+         },
+         "type": "Advanced"
+
+######## 08 distinct count of text
+
+diff --git a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+index 2fdb1f5..2c79e1d 100644
+--- a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
++++ b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+@@ -142,6 +142,25 @@
+               },
+               "queryRef": "Max(Sales.Amount)",
+               "nativeQueryRef": "Max of Amount"
++            },
++            {
++              "field": {
++                "Aggregation": {
++                  "Expression": {
++                    "Column": {
++                      "Expression": {
++                        "SourceRef": {
++                          "Entity": "Sales"
++                        }
++                      },
++                      "Property": "Country"
++                    }
++                  },
++                  "Function": 2
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Count of Country1"
+             }
+           ]
+         }
+@@ -278,6 +297,25 @@
+           }
+         },
+         "type": "Advanced"
++      },
++      {
++        "name": "c83d1d870408d806d833",
++        "field": {
++          "Aggregation": {
++            "Expression": {
++              "Column": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Property": "Country"
++              }
++            },
++            "Function": 2
++          }
++        },
++        "type": "Advanced"
+       }
+     ]
+   }
+
+######## 09 card plain
+
+diff --git a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/aa79e3a003811ae3e030/visual.json b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/aa79e3a003811ae3e030/visual.json
+new file mode 100644
+index 0000000..ed49ab0
+--- /dev/null
++++ b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/aa79e3a003811ae3e030/visual.json
+@@ -0,0 +1,74 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
++  "name": "aa79e3a003811ae3e030",
++  "position": {
++    "x": 10,
++    "y": 290,
++    "z": 1,
++    "height": 280,
++    "width": 280,
++    "tabOrder": 1
++  },
++  "visual": {
++    "visualType": "cardVisual",
++    "query": {
++      "queryState": {
++        "Data": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      },
++      "sortDefinition": {
++        "sort": [
++          {
++            "field": {
++              "Measure": {
++                "Expression": {
++                  "SourceRef": {
++                    "Entity": "Sales"
++                  }
++                },
++                "Property": "Total Amount"
++              }
++            },
++            "direction": "Descending"
++          }
++        ],
++        "isDefaultSort": true
++      }
++    },
++    "drillFilterOtherVisuals": true
++  },
++  "filterConfig": {
++    "filters": [
++      {
++        "name": "f2475390192ae3d76e7e",
++        "field": {
++          "Measure": {
++            "Expression": {
++              "SourceRef": {
++                "Entity": "Sales"
++              }
++            },
++            "Property": "Total Amount"
++          }
++        },
++        "type": "Advanced"
++      }
++    ]
++  }
++}
+\ No newline at end of file
+
+######## 11 measure currency
+
+diff --git a/Fixture.SemanticModel/definition/tables/Sales.tmdl b/Fixture.SemanticModel/definition/tables/Sales.tmdl
+index 4b3c8d8..0664f85 100644
+--- a/Fixture.SemanticModel/definition/tables/Sales.tmdl
++++ b/Fixture.SemanticModel/definition/tables/Sales.tmdl
+@@ -2,7 +2,7 @@ table Sales
+ 	lineageTag: c7e8cdc0-b59b-4642-8775-e5294a7c49e5
+ 
+ 	measure 'Total Amount' = SUM(Sales[Amount])
+-		formatString: 0
++		formatString: \$#,0.###############;(\$#,0.###############);\$#,0.###############
+ 		lineageTag: e6eb2d64-b4c3-497b-941e-816943dec7e2
+ 
+ 	column Country
+
+######## 12 per-field format
+
+diff --git a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+index 2c79e1d..0e6d955 100644
+--- a/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
++++ b/Fixture.Report/definition/pages/d0289d49d0b0d9a108ea/visuals/1b33fc3dcd2736ec3711/visual.json
+@@ -46,7 +46,8 @@
+                 }
+               },
+               "queryRef": "Sum(Sales.Amount)",
+-              "nativeQueryRef": "Sum of Amount"
++              "nativeQueryRef": "Sum of Amount",
++              "format": "\"₹\" #,0.###############;\"₹\" -#,0.###############;\"₹\" #,0.###############"
+             },
+             {
+               "field": {
+
