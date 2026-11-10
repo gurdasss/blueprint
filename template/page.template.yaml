@@ -25,22 +25,21 @@ layout: standard-dashboard
 
 # ── Visuals ──────────────────────────────────────────────────────────
 # An ordered list. Each visual fills the next free region of its role.
-# Every visual has:
 #
+# Required per visual:
 #   type     A Blueprint visual type (see `bp describe` for the list).
 #   title    The visual's display title.
-#   slots    Data bindings — which fields from the semantic model go
-#            into which slot. Slot names and what they accept depend
-#            on the visual type.
+#   slots    Data bindings — which fields go into which slot.
 #
-# Optional:
+# Optional per visual:
 #   region   Override the visual type's default region role.
-#            Example: a `card` normally goes to `main`, but
-#            `region: kpi-row` places it in the KPI row.
+#   options  Formatting choices the visual type declares (e.g. labels,
+#            legend position). See `bp describe` for available options.
 
 visuals:
 
-  # ── Header (required when guidelines say require_title: true) ──
+  # ── Header ─────────────────────────────────────────────────────
+  # Required when guidelines say require_title: true.
   - type: header
     title: Sales Overview
 
@@ -52,49 +51,77 @@ visuals:
       trend: "Calendar[Month]"
       target: "[Revenue Target]"
 
-  # ── Card overridden into the KPI row ───────────────────────────
+  # ── Card with formatting ───────────────────────────────────────
+  # A slot value can be a string (just the field) or a mapping
+  # (field + optional micro decisions like format).
   - type: card
-    title: Total Orders
+    title: Unique Investors
     region: kpi-row
     slots:
-      value: "[Order Count]"
+      value:
+        field: "Investors[ID] | distinctcount"
+        format: "#,##0"                          # → 1,234
 
-  # ── Column chart in a main region ──────────────────────────────
+  # ── Column chart with formatted axis ───────────────────────────
   - type: column
     title: Revenue by Region
+    options: { labels: "on" }
     slots:
       category: "Geography[Region]"
-      value: "[Total Revenue]"
+      value:
+        field: "[Total Revenue]"
+        format: "$#,##0,.0K"                     # → $1.2K on axis
 
-  # ── Table in a main region ─────────────────────────────────────
+  # ── Table ──────────────────────────────────────────────────────
   - type: table
     title: Order Detail
     slots:
       columns:
         - "Geography[Region]"
         - "Product[Category]"
-        - "[Total Revenue]"
+        - field: "[Total Revenue]"
+          format: "$#,##0"                       # → $1,234,567
         - "[Order Count]"
 
 
 # ─────────────────────────────────────────────────────────────────────
-# Field syntax reference
+# Slot syntax reference
 # ─────────────────────────────────────────────────────────────────────
 #
-# Measures (pre-aggregated in the semantic model):
-#   "[Measure Name]"                  a measure
+# ── Short form (just the field — the common case) ──
 #
-# Columns (raw model columns):
+#   value: "[Total Revenue]"
+#   value: "Table[Column]"
+#   value: "Table[Column] | distinctcount"
+#
+# ── Long form (field + optional micro decisions) ──
+#
+#   value:
+#     field: "[Total Revenue]"
+#     format: "$#,##0"
+#
+# The short form and long form are interchangeable. Use the short form
+# when you just need the field. Use the long form when you need to set
+# format or other per-slot options.
+#
+#
+# ── Field syntax ──
+#
+#   "[Measure Name]"                  a measure
 #   "Table[Column]"                   a column
 #   "Table[Hierarchy]"                a model hierarchy (binds all levels)
 #
-# Ordered lists (drill-down paths):
+#
+# ── Ordered lists (drill-down paths) ──
+#
 #   category:
 #     - "Geography[Country]"
 #     - "Geography[State]"
 #     - "Geography[City]"
 #
-# Aggregated columns (visual-level aggregation on a column):
+#
+# ── Aggregated columns (visual-level aggregation) ──
+#
 #   "Table[Column] | sum"             Sum
 #   "Table[Column] | average"         Average
 #   "Table[Column] | distinctcount"   Distinct count
@@ -102,12 +129,19 @@ visuals:
 #   "Table[Column] | min"             Minimum
 #   "Table[Column] | max"             Maximum
 #
-# Use a measure when the aggregation is reusable business logic (DAX).
-# Use `| aggregate` when it's a one-off visual-level summary.
+#   Use a measure when the aggregation is reusable business logic.
+#   Use `| aggregate` when it's a one-off visual-level summary.
 #
-# Examples:
-#   value: "[Total Revenue]"                    ← measure (preferred)
-#   value: "Orders[Amount] | sum"               ← column with Sum
-#   value: "Investors[ID] | distinctcount"      ← distinct count of IDs
-#   value: "Orders[Shipping Cost] | average"    ← average shipping cost
+#
+# ── Format strings ──
+#
+#   Power BI format strings (same syntax as DAX FORMAT function):
+#     "#,##0"          → 1,234
+#     "#,##0.00"       → 1,234.56
+#     "$#,##0"         → $1,234
+#     "$#,##0,.0K"     → $1.2K
+#     "0.0%"           → 45.2%
+#     "0"              → 1234 (plain integer)
+#
+#   Omit format to use Power BI's default for the field's data type.
 # ─────────────────────────────────────────────────────────────────────
