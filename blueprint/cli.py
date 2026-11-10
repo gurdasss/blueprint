@@ -40,7 +40,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--report", type=Path, required=True, help=REPORT_HELP)
     p.add_argument("--guidelines", type=Path, help="guidelines file (default: $BLUEPRINT_GUIDELINES)")
     p.add_argument("--grid", type=int, help="override grid.size")
-    p.add_argument("--json", action="store_true", help="machine-readable output")
+    out = p.add_mutually_exclusive_group()
+    out.add_argument("--json", action="store_true", help="machine-readable output")
+    out.add_argument("--github", action="store_true",
+                     help="also print GitHub Actions annotations, one per finding")
     p.add_argument("--strict", action="store_true", help="exit 1 on warnings too")
     p.set_defaults(func=check_cmd.run)
 

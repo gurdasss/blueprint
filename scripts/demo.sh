@@ -4,6 +4,7 @@
 #
 #   bash scripts/demo.sh                          # builds /tmp/bp-demo
 #   DEMO=/mnt/c/Users/<you>/bp-demo bash scripts/demo.sh   # on the Windows drive, to open in Desktop
+#   SPEC_PAGES_ONLY=1 bash scripts/demo.sh        # drop fixture 02's hand-built page (CI's action job)
 #
 # Open <DEMO>/project/Fixture.pbip in Power BI Desktop afterwards (close it before re-running).
 # Specs: examples/demo/*.yaml. The user opened this demo in Desktop on 2026-11-09 and every page
@@ -57,6 +58,31 @@ step "5. build: apply every spec, snap to the grid, write the theme"
 for s in "${SPECS[@]}"; do bp apply "examples/demo/$s.yaml" --report "$R"; done
 bp fmt --report "$R"
 bp theme --report "$R"
+
+if [ -n "${SPEC_PAGES_ONLY:-}" ]; then
+  step "5b. drop the fixture's hand-built page (its page size and margin are judgement calls)"
+  python - "$R/Fixture.Report" <<'PY'
+import shutil
+import sys
+from pathlib import Path
+
+from blueprint.pbir import jsonfmt, registry
+from blueprint.pbir.reader import read_report
+
+report = read_report(Path(sys.argv[1]))
+pages_json = report.root / "definition/pages/pages.json"
+doc = jsonfmt.load(pages_json)
+for page in report.pages:
+    if page.spec is None:
+        shutil.rmtree(report.root / "definition/pages" / page.name)
+        doc = registry.without_page(doc, page.name)
+        print(f"removed page {page.display_name!r} ({page.name})")
+if doc.get("activePageName") not in doc["pageOrder"]:
+    doc["activePageName"] = doc["pageOrder"][0]
+pages_json.write_bytes(jsonfmt.dump_bytes(doc))
+PY
+  bp manifest --report "$R"
+fi
 
 step "6. after (0 errors expected)"
 bp check --report "$R"

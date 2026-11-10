@@ -2,13 +2,17 @@
 
 Exit status: 0 if no errors, 1 if there are errors (or any warnings, with ``--strict``),
 2 if the report or guidelines couldn't be read. The exit codes are stable so CI can rely on them.
+``--github`` adds GitHub Actions workflow commands, so each finding is annotated on its
+``page.json``/``visual.json`` (the composite action in ``action.yml`` uses it).
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 from dataclasses import asdict
+from pathlib import Path
 
 from blueprint import guidelines, manifest
 from blueprint.guidelines import Guidelines
@@ -113,6 +117,50 @@ def to_json(report: Report, rules: Guidelines, result: CheckResult) -> str:
     }, indent=2, ensure_ascii=False)
 
 
+def _escape(text: str, prop: bool = False) -> str:
+    """Escape a workflow command's message (or, with ``prop``, a property value)."""
+    text = text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    return text.replace(":", "%3A").replace(",", "%2C") if prop else text
+
+
+def _finding_file(report: Report, f: Finding, workspace: Path) -> str | None:
+    """The finding's visual.json (or page.json), relative to the workspace; None if outside it."""
+    if f.page is None:
+        return None
+    try:
+        page = report.page(f.page)
+    except KeyError:
+        return None
+    obj = next((v for v in page.visuals if v.name == f.visual), None) if f.visual else page
+    if obj is None or obj.source is None:
+        return None
+    path = Path(os.path.abspath(report.root / obj.source.path))
+    try:
+        return path.relative_to(workspace).as_posix()
+    except ValueError:
+        return None
+
+
+def to_github(report: Report, rules: Guidelines, result: CheckResult) -> str:
+    """One workflow command per finding (error/warning) and note (notice), then the text report.
+    Files are relative to $GITHUB_WORKSPACE (else the current directory), as GitHub expects."""
+    workspace = Path(os.path.abspath(os.environ.get("GITHUB_WORKSPACE") or os.getcwd()))
+    names = {p.name: p.display_name for p in report.pages}
+    lines = []
+    for f in _ordered(report, result.findings):
+        props = [f"title={_escape(f'bp check: {f.rule}', prop=True)}"]
+        file = _finding_file(report, f, workspace)
+        if file:
+            props.insert(0, f"file={_escape(file, prop=True)}")
+        where = "" if f.page is None else f"{names.get(f.page, f.page)}"
+        where += f" / {f.visual}" if f.visual else ""
+        message = f"{where}: {f.message}" if where else f.message
+        lines.append(f"::{f.severity} {','.join(props)}::{_escape(message)}")
+    for n in result.notes:
+        lines.append(f"::notice title=bp check::{_escape(n)}")
+    return "\n".join(lines + [to_text(report, rules, result)])
+
+
 def exit_code(result: CheckResult, strict: bool) -> int:
     failing = {"error", "warning"} if strict else {"error"}
     return 1 if any(f.severity in failing for f in result.findings) else 0
@@ -120,5 +168,6 @@ def exit_code(result: CheckResult, strict: bool) -> int:
 
 def run(args: argparse.Namespace) -> int:
     report, rules, result = run_check(args)
-    print(to_json(report, rules, result) if args.json else to_text(report, rules, result))
+    render = to_json if args.json else to_github if args.github else to_text
+    print(render(report, rules, result))
     return exit_code(result, args.strict)

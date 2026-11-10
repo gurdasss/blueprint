@@ -1,0 +1,54 @@
+name: Blueprint check
+description: >-
+  Check Power BI PBIP/PBIR reports against Blueprint guidelines (bp check), annotating each
+  finding on its page.json or visual.json. Fails on errors (or on warnings, with strict).
+author: Gurdas Satwani
+branding:
+  icon: layout
+  color: blue
+
+inputs:
+  reports:
+    description: >-
+      Reports to check, one per line: a .Report folder, a .pbip file or the folder holding one,
+      relative to the repository root.
+    required: true
+  guidelines:
+    description: Guidelines YAML file. Empty uses $BLUEPRINT_GUIDELINES, else Blueprint's defaults.
+    required: false
+    default: ""
+  strict:
+    description: "true to fail on warnings too (bp check --strict)."
+    required: false
+    default: "false"
+  python-version:
+    description: Python used to install Blueprint (3.12 or newer).
+    required: false
+    default: "3.12"
+
+outputs:
+  exit-code:
+    description: "The worst bp check exit code: 0 clean, 1 findings that fail, 2 unreadable."
+    value: ${{ steps.check.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+    # Blueprint is installed from this action's own checkout, so the version is the ref the
+    # workflow pinned (gurdasss/blueprint@<ref>), into a venv of its own.
+    - name: Install Blueprint
+      shell: bash
+      run: |
+        python -m venv "$RUNNER_TEMP/blueprint-venv"
+        "$RUNNER_TEMP/blueprint-venv/bin/pip" install --quiet "$GITHUB_ACTION_PATH"
+    - name: bp check
+      id: check
+      shell: bash
+      env:
+        REPORTS: ${{ inputs.reports }}
+        GUIDELINES: ${{ inputs.guidelines }}
+        STRICT: ${{ inputs.strict }}
+      run: bash "$GITHUB_ACTION_PATH/scripts/ci_check.sh"

@@ -26,3 +26,26 @@ jobs:
       # against the committed, Desktop-built fixtures.
       - name: Test
         run: pytest -q
+
+  # Runs this repository's own action (action.yml) on the demo report, as another repo would.
+  action:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Build the demo report
+        run: |
+          pip install -e .
+          SPEC_PAGES_ONLY=1 DEMO="$GITHUB_WORKSPACE/demo-out" bash scripts/demo.sh > /dev/null
+      - id: check
+        uses: ./
+        with:
+          reports: demo-out/project
+          guidelines: guidelines/example.yaml
+      # Only the spec-built pages, so a clean run has no annotations at all.
+      - name: The demo passes
+        run: test "${{ steps.check.outputs.exit-code }}" = 0

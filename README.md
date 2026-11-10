@@ -197,12 +197,40 @@ Then open the report in Power BI Desktop and look at it.
 | `bp theme` | Write a custom theme from the guidelines (palette, text colour, title/callout/card label fonts) and make the report use it. |
 
 `--dry-run` is available on every mutating command and prints the planned file writes
-without performing them. `inspect`, `check` and `describe` take `--json`.
+without performing them. `inspect`, `check` and `describe` take `--json`; `check` also takes `--github`.
 
 **For agents writing specs:** run `bp describe --report <report> --json` first. It's the whole
 vocabulary in one call: which types, slots, layouts and fields exist, written the way a spec uses
 them. `bp apply` reports every problem with its location (`visuals[2].slots.value: …`), and
 `bp check --json` validates the result.
+
+### In CI
+
+`bp check --github` prints a GitHub Actions annotation per finding, on the `page.json` or
+`visual.json` it's about, before the usual report. The repository is also a composite action
+that installs Blueprint and runs it over one or more reports:
+
+```yaml
+# .github/workflows/report-standards.yml
+name: report standards
+on: [pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gurdasss/blueprint@main          # pin a commit SHA for repeatable checks
+        with:
+          reports: |                           # one per line: .Report folder, .pbip, or its folder
+            reports/Sales.Report
+            reports/Operations.pbip
+          guidelines: guidelines/corp.yaml     # optional; else $BLUEPRINT_GUIDELINES, else defaults
+          strict: false                        # true fails on warnings too
+```
+
+The job fails if any report has errors (exit 1) or can't be read (exit 2). Each report's text
+output goes to the job summary, and the `exit-code` output holds the worst exit code.
+A report's own `.blueprint.yaml` still applies, as it does locally.
 
 ---
 
@@ -679,7 +707,8 @@ four visual types. Manifest emitted. No field bindings yet.
 tool becomes genuinely end-to-end with the Modeling MCP.
 
 **Later, in no particular order.** Conditional formatting. Bookmarks. More visual types.
-Theme file generation. A `bp new` scaffold. CI action for `bp check`.
+Theme file generation (done: `bp theme`). A `bp new` scaffold. CI action for `bp check`
+(done: [In CI](#in-ci)).
 
 **Deliberately unscheduled:** an interactive wizard. The declarative spec is the primary
 interface; a prompt-driven shell on top is a convenience, and conveniences come after the
