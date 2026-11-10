@@ -1,18 +1,18 @@
 # ─────────────────────────────────────────────────────────────────────
 # Blueprint Layout — Core Template
 # ─────────────────────────────────────────────────────────────────────
-# A layout is a named arrangement of regions on a canvas. Each region
-# is a rectangle that a visual fills. `bp apply` places visuals into
-# regions by matching their role.
+# A layout describes the structure of a page: which rows it has, how
+# tall each row is, and how many columns each row splits into.
+#
+# The client writes structure. Blueprint computes pixel coordinates.
+#
+# Blueprint reads the guidelines (canvas, grid, margin, gutter) and
+# this file, then calculates every region's x, y, width and height
+# automatically — snapped to the grid, inside the margin, with correct
+# gutters between regions.
 #
 # A layout file lives in a directory on the guidelines' search_path.
 # The file name (without .yaml) is the layout name a page spec uses.
-#
-# Rules enforced by `bp apply`:
-#   - Every region must sit on the guidelines grid.
-#   - Every region must be inside the guidelines margin.
-#   - Every pair of regions must be at least the guidelines gutter apart.
-#   - Violating any of these refuses the layout, not the spec.
 # ─────────────────────────────────────────────────────────────────────
 
 
@@ -23,48 +23,61 @@
 name: standard-dashboard
 
 
-# ── Canvas ───────────────────────────────────────────────────────────
-# Must match the guidelines canvas dimensions exactly. A layout built
-# for 1280×720 refuses to run under guidelines that say 1920×1080.
-
-canvas:
-  width: 1280
-  height: 720
-
-
-# ── Regions ──────────────────────────────────────────────────────────
-# An ordered list of named rectangles. Visuals fill regions of their
-# role in declaration order: the first `main` visual gets the first
-# `main` region, the second gets the second, and so on.
+# ── Rows ─────────────────────────────────────────────────────────────
+# An ordered list of rows, top to bottom. Each row becomes one or more
+# regions that visuals fill.
 #
-# Each region has:
-#   role   What kind of visual fills it. Core roles:
-#            header   — the page title textbox
-#            kpi-row  — KPI cards and small summary visuals
-#            main     — charts, tables, matrices — everything else
-#   x, y   Top-left corner in pixels (must be on the grid)
-#   w, h   Width and height in pixels (edges must be on the grid)
+# Each row has:
 #
-# Running out of regions is an error. Unfilled regions are gaps
-# (a warning, never a reflow).
-
-regions:
-  - { role: header,  x: 16,  y: 16,  w: 1248, h: 64 }
-  - { role: kpi-row, x: 16,  y: 96,  w: 616,  h: 160 }
-  - { role: kpi-row, x: 648, y: 96,  w: 616,  h: 160 }
-  - { role: main,    x: 16,  y: 272, w: 616,  h: 432 }
-  - { role: main,    x: 648, y: 272, w: 616,  h: 432 }
-
-
-# ── Design notes (not parsed) ───────────────────────────────────────
-# This layout assumes:
-#   grid: 8, margin: 16, gutter: 16
+#   role       What kind of visual fills it. Core roles:
+#                header   — the page title textbox
+#                kpi-row  — KPI cards and small summary visuals
+#                main     — charts, tables, matrices
 #
-# The KPI row is 160px high. At 120px Desktop clips a KPI visual's
-# goal line and a titled card's label.
+#   height     Row height in pixels. Omit to fill remaining vertical
+#              space (divided equally among all rows that omit it).
+#              Tip: KPI rows need at least 160px or Desktop clips
+#              the visual's goal line and card labels.
 #
-# Column math:
-#   usable width = 1280 - 2×16 = 1248
-#   2 columns + 1 gutter: (1248 - 16) / 2 = 616 each
-#   kpi-row x₂ = 16 + 616 + 16 = 648  ✓ (on grid)
-#   main x₂    = 648                    ✓ (same)
+#   columns    How many side-by-side regions the row splits into.
+#              Default: 1 (full-width). The engine divides the usable
+#              width equally, placing gutters between columns and
+#              snapping every edge to the grid.
+#
+# How regions are filled:
+#   Visuals fill regions of their role in declaration order. The first
+#   `main` visual gets the first `main` region, left to right, top to
+#   bottom. Running out of regions is an error. Unfilled regions are
+#   gaps (a warning, never a reflow).
+#
+# What the engine computes from the guidelines:
+#   - Usable width  = canvas.width − 2 × margin
+#   - Column widths = (usable width − (columns−1) × gutter) / columns
+#   - x positions   = margin, margin + col_width + gutter, ...
+#   - y positions   = margin, margin + row₁_height + gutter, ...
+#   - All values snapped to the nearest grid line
+
+rows:
+  - role: header
+    height: 64
+
+  - role: kpi-row
+    height: 160
+    columns: 2
+
+  - role: main
+    columns: 2
+
+
+# ─────────────────────────────────────────────────────────────────────
+# What this produces (under guidelines: grid 8, margin 16, gutter 16,
+# canvas 1280×720):
+#
+#   header   → x:16  y:16  w:1248 h:64    (full-width)
+#   kpi-row  → x:16  y:96  w:616  h:160   (left)
+#   kpi-row  → x:648 y:96  w:616  h:160   (right)
+#   main     → x:16  y:272 w:616  h:432   (left)
+#   main     → x:648 y:272 w:616  h:432   (right)
+#
+# The client didn't calculate any of this. The engine did.
+# ─────────────────────────────────────────────────────────────────────

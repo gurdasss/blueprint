@@ -1,66 +1,110 @@
 # How the three templates interact
 
 > Guidelines → Layout → Page Spec: a dependency chain where each file
-> constrains the next.
+> constrains the next. The guidelines own the numbers (canvas, grid,
+> margin, gutter). The layout describes structure (rows, columns). The
+> engine connects them and computes every pixel coordinate.
 
 ---
 
 ## The dependency chain
 
 ```
-┌─────────────┐     constrains     ┌──────────┐     constrains     ┌───────────┐
-│  Guidelines  │ ──────────────────▶│  Layout   │ ──────────────────▶│ Page Spec │
-│              │                    │           │                    │           │
-│  canvas      │   canvas must      │  canvas   │   layout must      │  layout   │
-│  spacing     │   match; regions   │  regions  │   match; visuals   │  visuals  │
-│  page rules  │   must obey grid,  │           │   fill regions     │  slots    │
-│  palette     │   margin, gutter   │           │   by role           │           │
-│  typography  │                    │           │                    │           │
-│  layouts     │                    │           │                    │           │
-└─────────────┘                    └──────────┘                    └───────────┘
-                                        ▲                               │
-                                        │         references            │
-                                        └───────────────────────────────┘
-                                          (page spec names a layout)
+┌─────────────┐       feeds into       ┌──────────┐     constrains     ┌───────────┐
+│  Guidelines  │ ──────────────────────▶│  Engine   │ ──────────────────▶│ Page Spec │
+│              │                        │           │                    │           │
+│  canvas      │   canvas, grid,        │  computes │   region count,    │  layout   │
+│  spacing     │   margin, gutter       │  pixel    │   roles, sizes     │  visuals  │
+│  page rules  │   ─────────────────▶   │  regions  │   constrain what   │  slots    │
+│  palette     │                        │  from     │   the spec can do  │           │
+│  typography  │       ┌──────────┐     │  both     │                    │           │
+│  layouts     │       │  Layout  │────▶│  inputs   │                    │           │
+│              │       │          │     │           │                    │           │
+│              │       │  rows    │     └──────────┘                    └───────────┘
+│              │       │  roles   │          ▲                               │
+│              │       │  heights │          │         references            │
+│              │       │  columns │          └───────────────────────────────┘
+└─────────────┘       └──────────┘            (page spec names a layout)
 ```
 
 ---
 
-## 1. Guidelines → Layout
+## 1. Guidelines + Layout → Engine (coordinate computation)
 
-The guidelines file **constrains** which layouts are valid.
+The layout describes **structure** — rows and columns. The guidelines provide
+**numbers** — canvas size, grid, margin, gutter. Neither file contains pixel
+coordinates. The engine connects them.
 
-| Guideline key | What it constrains on the layout |
+### What the engine computes
+
+Given guidelines `canvas: 1280×720, grid: 8, margin: 16, gutter: 16` and
+layout `rows: [{header, 64}, {kpi-row, 160, columns: 2}, {main, columns: 2}]`:
+
+```
+Step 1 — Usable area
+  usable_width  = canvas.width  − 2 × margin = 1280 − 32 = 1248
+  usable_height = canvas.height − 2 × margin = 720  − 32 = 688
+
+Step 2 — Row heights
+  header:  64px (explicit)
+  kpi-row: 160px (explicit)
+  gutters: 2 × gutter = 32px (between header→kpi-row and kpi-row→main)
+  main:    688 − 64 − 160 − 32 = 432px (fills remaining space)
+
+Step 3 — Column widths (per row)
+  header (1 col):  1248px
+  kpi-row (2 col): (1248 − 16) / 2 = 616px each
+  main (2 col):    (1248 − 16) / 2 = 616px each
+
+Step 4 — Snap every value to grid (nearest multiple of 8)
+  All values already on grid ✓
+
+Step 5 — Compute x, y for each region
+  header   → x:16  y:16  w:1248 h:64
+  kpi-row₁ → x:16  y:96  w:616  h:160
+  kpi-row₂ → x:648 y:96  w:616  h:160
+  main₁    → x:16  y:272 w:616  h:432
+  main₂    → x:648 y:272 w:616  h:432
+```
+
+### What guidelines provide to the engine
+
+| Guideline key | What the engine uses it for |
 |---|---|
-| `canvas.width` / `canvas.height` | The layout's `canvas` must match exactly. A 1920×1080 layout is refused under 1280×720 guidelines. |
-| `spacing.grid` | Every region edge (x, x+w, y, y+h) must land on a multiple of the grid size. |
-| `spacing.margin` | Every region must be at least `margin` pixels from every page edge. |
-| `spacing.gutter` | Every pair of adjacent regions must be at least `gutter` pixels apart. |
-| `layouts.search_path` | Tells `bp apply` where to find layout files. Paths are relative to the guidelines file. |
+| `canvas.width` / `canvas.height` | The bounding box. All regions live inside it. |
+| `spacing.grid` | Snap target. Every computed edge rounds to the nearest multiple. |
+| `spacing.margin` | Inset from page edges. Regions start at `(margin, margin)`. |
+| `spacing.gutter` | Gap between adjacent regions — both horizontal (between columns) and vertical (between rows). |
+| `layouts.search_path` | Where to find layout files. |
 | `layouts.default` | The layout used when a page spec doesn't name one. |
 
-**Enforcement point:** `bp apply` calls `layouts.conflicts()` before placing
-anything. A layout that violates grid, margin or gutter is refused — the error
-names the specific region and the rule it breaks. This prevents `apply` and
-`fmt` from fighting each other (apply places, fmt snaps, apply moves back…).
+### What the layout provides to the engine
 
-**What guidelines do NOT constrain:** the number of regions, which roles
-exist, or the visual arrangement. Those are the layout's job.
+| Layout key | What the engine uses it for |
+|---|---|
+| `name` | Identity — what the page spec references. |
+| `rows[].role` | The region role visuals fill (`header`, `kpi-row`, `main`). |
+| `rows[].height` | Explicit row height in pixels. Omitted = fill remaining space. |
+| `rows[].columns` | How many side-by-side regions. Default 1. |
+
+### What neither file provides
+
+Pixel coordinates. Those are the engine's output, not anyone's input.
 
 ---
 
-## 2. Layout → Page Spec
+## 2. Computed regions → Page Spec
 
-The layout **constrains** what a page spec can ask for.
+The computed regions **constrain** what a page spec can ask for.
 
-| Layout property | What it constrains on the page spec |
+| Computed property | What it constrains on the page spec |
 |---|---|
 | Region count per role | The spec can place at most N visuals of a given role. Exceeding the count is an error ("running out of regions"), never a reflow. |
-| Region roles available | A spec can only use roles the layout defines. If the layout has no `kpi-row` regions, a KPI visual (whose default role is `kpi-row`) needs an explicit `region: main` override or a different layout. |
-| Region dimensions | The visual gets exactly the region's size. No stretching, no splitting. |
+| Region roles available | A spec can only use roles the layout defines. If the layout has no `kpi-row` row, a KPI visual (whose default role is `kpi-row`) needs an explicit `region: main` override or a different layout. |
+| Region dimensions | The visual gets exactly the computed region size. No stretching, no splitting. |
 
-**What the layout does NOT constrain:** which visual types go in a region,
-what fields are bound, or the visual's title. Those are the spec's job.
+**What the computed regions do NOT constrain:** which visual types go in a
+region, what fields are bound, or the visual's title. Those are the spec's job.
 
 ---
 
@@ -85,7 +129,7 @@ If that's also unset, it's an error.
 ## 4. Page Spec ↔ Guidelines (direct constraints)
 
 Some guideline keys constrain the page spec directly, without going through
-the layout.
+the layout engine.
 
 | Guideline key | What it constrains on the page spec |
 |---|---|
@@ -118,19 +162,20 @@ confusing result in Desktop. This is validated before any file is written.
 
 ## What each file is responsible for
 
-| Concern | Guidelines | Layout | Page Spec |
-|---|:---:|:---:|:---:|
-| Page dimensions | ✅ declares | ✅ must match | — |
-| Grid / margin / gutter | ✅ declares | ✅ must obey | — |
-| Region positions and sizes | — | ✅ declares | — |
-| Region roles (header, kpi-row, main) | — | ✅ declares | ✅ fills |
-| Which layout to use | ✅ default | — | ✅ selects |
-| Visual types | — | — | ✅ declares |
-| Data bindings (fields) | — | — | ✅ declares |
-| Colour rules | ✅ declares | — | — (checked after) |
-| Font rules | ✅ declares | — | — (checked after) |
-| Density limit | ✅ declares | — | ✅ must obey |
-| Title requirement | ✅ declares | — | ✅ must obey |
+| Concern | Guidelines | Layout | Engine | Page Spec |
+|---|:---:|:---:|:---:|:---:|
+| Page dimensions | ✅ declares | — | ✅ reads | — |
+| Grid / margin / gutter | ✅ declares | — | ✅ reads | — |
+| Row structure (roles, heights, columns) | — | ✅ declares | ✅ reads | — |
+| Region pixel coordinates | — | — | ✅ computes | — |
+| Region roles | — | ✅ declares | ✅ passes through | ✅ fills |
+| Which layout to use | ✅ default | — | — | ✅ selects |
+| Visual types | — | — | — | ✅ declares |
+| Data bindings (fields) | — | — | — | ✅ declares |
+| Colour rules | ✅ declares | — | — | — (checked after) |
+| Font rules | ✅ declares | — | — | — (checked after) |
+| Density limit | ✅ declares | — | — | ✅ must obey |
+| Title requirement | ✅ declares | — | — | ✅ must obey |
 
 ---
 
@@ -142,11 +187,11 @@ confusing result in Desktop. This is validated before any file is written.
 
    a. Load guidelines (defaults ← org file ← report override ← CLI flags)
    b. Parse the page spec
-   c. Resolve the layout name → load the layout file from search_path
-   d. Validate layout against guidelines (grid, margin, gutter)
+   c. Resolve the layout name → load the structural layout from search_path
+   d. Compute pixel regions from layout + guidelines (grid, margin, gutter)
    e. Validate page spec against guidelines (title, density)
    f. Resolve field references against the TMDL model
-   g. Place visuals into layout regions by role
+   g. Place visuals into computed regions by role
    h. Write PBIR files (or refuse if anything failed)
    i. Run `bp check` rules on the result (palette, typography, etc.)
    j. Regenerate the manifest
@@ -164,9 +209,9 @@ The smallest complete set of files a client needs:
 ```
 my-guidelines.yaml           ← 7 sections, ~30 lines
 layouts/
-  standard-dashboard.yaml    ← 1 canvas + N regions, ~15 lines
+  standard-dashboard.yaml    ← name + rows, ~10 lines
 pages/
-  overview.yaml              ← 1 page name + 1 layout + N visuals
+  overview.yaml              ← page name + layout + visuals, ~20 lines
 ```
 
 Plus the PBIP project folder and its TMDL model (which already exist —
