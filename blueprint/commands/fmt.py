@@ -14,13 +14,9 @@ from blueprint.plan import Plan
 
 def build_plan(args: argparse.Namespace) -> Plan:
     report = read_report(args.report)
-    overrides = {"grid": {"size": args.grid}} if args.grid is not None else None
+    overrides = {"spacing": {"grid": args.grid}} if args.grid is not None else None
     rules = guidelines.load(args.guidelines, report.root, overrides)
-    if not rules.grid.snap:
-        plan = Plan(root=report.root)
-        plan.warnings.append("grid.snap is false in the guidelines; nothing to do")
-        return plan
-    result = grid.snap_report(report, rules.grid.size, rules.grid.max_resize)
+    result = grid.snap_report(report, rules.spacing.grid, rules.max_resize)
     plan = writer.plan_writes(report, force_schema=args.force_schema)
     plan.warnings = report.warnings + result.warnings + plan.warnings
     return plan

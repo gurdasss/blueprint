@@ -70,12 +70,12 @@ def test_reapply_updates_header_text_and_style(report: Path, tmp_path: Path, cap
     main(["apply", str(SPEC), "--report", str(report), "--guidelines", str(GUIDE)])
     spec = tmp_path / "sales-overview.yaml"
     spec.write_text(SPEC.read_text().replace("title: Sales Overview", "title: Sales at a Glance"))
-    g = _guide(tmp_path, "{ font: Segoe UI, size: 24, bold: true }")
+    g = _guide(tmp_path, "{ font: Segoe UI, size: 24 }")
     capsys.readouterr()
     assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(g)]) == 0
     header = _header(report)
     [font] = header.fonts
-    assert (header.text, font.family, font.size, font.bold) == ("Sales at a Glance", "Segoe UI", 24.0, True)
+    assert (header.text, font.family, font.size, font.bold) == ("Sales at a Glance", "Segoe UI", 24.0, None)
 
 
 def test_hand_edited_header_is_left_alone_with_a_warning(report: Path, capsys):
@@ -95,7 +95,9 @@ def test_hand_edited_header_is_left_alone_with_a_warning(report: Path, capsys):
 def test_check_applies_header_rule_to_blueprint_headers_only(report: Path, tmp_path: Path, capsys):
     main(["apply", str(SPEC), "--report", str(report), "--guidelines", str(GUIDE)])
     g = _guide(tmp_path, "{ font: Segoe UI Semibold, size: 32 }")  # stricter than what was written
-    g.write_text(g.read_text() + "  textbox:  { font: Arial }\n")
+    # a body (textbox) rule must not reach a Blueprint header: that is page_title's to check
+    g.write_text(g.read_text().replace("body:          { font: Segoe UI, size: 12 }",
+                                       "body:          { font: Arial }"))
     capsys.readouterr()
     main(["check", "--report", str(report), "--guidelines", str(g), "--json"])
     found = [(f["visual"], f["message"]) for f in json.loads(capsys.readouterr().out)["findings"]

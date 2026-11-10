@@ -147,7 +147,7 @@ def page(name: str, display_name: str, width: int, height: int, spec_page: str, 
     }
 
 
-def text_style(font: str | None, size: float | None, bold: bool | None) -> dict:
+def text_style(font: str | None, size: float | None, bold: bool | None = None) -> dict:
     """A textbox run's ``textStyle`` (probe 03: ``{"fontFamily": "Arial", "fontSize": "20pt",
     "fontWeight": "bold"}``). Desktop drops ``"normal"`` weights, so not-bold writes nothing."""
     style: dict = {}

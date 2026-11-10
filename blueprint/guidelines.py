@@ -8,16 +8,20 @@ Layers, later overriding earlier (mappings merge key by key; anything else is re
 4. command-line overrides                       e.g. ``--grid 8``
 
 Core keys (v1): version, name, canvas, spacing, page, palette, typography, layouts.
-The ``extensions:`` key is reserved for future opt-in features; the core validator
-ignores it. Keys some command uses are validated; unrecognised keys in ``extensions:``
-are silently passed through.
+Everything else is opt-in under ``extensions:`` (see ``template/extensions.md``): extra
+typography roles, severity overrides, decorative types and ``max_resize``. Keys the core
+doesn't know inside ``extensions:`` are passed through untouched.
+
+Keys from the pre-template schema (``grid:``, ``canvas.margin``, ``canvas.gutter``,
+``check:``, the six old typography roles) are refused with the new key named, rather than
+ignored: ignoring them would silently change what is checked.
 """
 
 from __future__ import annotations
 
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -34,22 +38,27 @@ RULES = ("format", "bounds", "grid", "margin", "gutter", "overlap", "page-size",
          "title")
 NOT_IMPLEMENTED: tuple[str, ...] = ()
 
-# Severity defaults baked into code — no longer in the client's YAML.
+# Severity defaults baked into code: not part of the client's core file (extensions.severity
+# overrides them). error fails `bp check`; warning is reported; off is skipped.
 DEFAULT_SEVERITY: dict[str, str] = {
-    "format": "error",
-    "bounds": "error",
-    "grid": "error",
-    "margin": "warning",
-    "gutter": "warning",
-    "overlap": "warning",
-    "page-size": "warning",
-    "density": "warning",
-    "typography": "error",
-    "title": "error",
+    "format": "error",      # schema-invalid files, names Desktop ignores, missing required files
+    "bounds": "error",      # visual extends outside the page
+    "grid": "error",        # an edge is off the grid (page edges count as grid lines)
+    "margin": "warning",    # an edge is closer to the page edge than spacing.margin
+    "gutter": "warning",    # two side-by-side or stacked visuals are closer than spacing.gutter
+    "overlap": "warning",   # visuals partially overlap
+    "page-size": "warning", # page size differs from canvas.width/height
+    "density": "warning",   # more visuals than page.max_visuals
+    "typography": "error",  # a font or size outside the typography guidelines
+    "title": "error",       # a spec-built page has no header, or it's outside page.title_region
 }
 
 # Visual types allowed to contain other visuals (backgrounds, panels); exempt from margin/gutter.
 DEFAULT_DECORATIVE_TYPES = ("image", "shape", "basicShape")
+
+# `bp fmt` leaves a visual alone (with a warning) if snapping would change its width or height
+# by more than this fraction. extensions.max_resize overrides it; null disables the limit.
+DEFAULT_MAX_RESIZE = 0.25
 
 
 class GuidelinesError(Exception):
@@ -59,7 +68,7 @@ class GuidelinesError(Exception):
 @dataclass(frozen=True)
 class Spacing:
     grid: int
-    margin: int
+    margin: int  # minimum distance from visual edges to the page edge
     gutter: int  # minimum gap between neighbouring visuals; 0: not checked
 
 
@@ -95,10 +104,14 @@ class Palette:
         return {"strict": "error", "warn": "warning", "off": "off"}[self.enforce]
 
 
-TYPOGRAPHY_ROLES = ("page_title", "visual_title", "body")
-# Old role names accepted for backward compat; mapped to new names internally.
-_ROLE_COMPAT = {"header": "page_title", "title": "visual_title", "subtitle": "body",
-                "callout": "body", "card_label": "body", "textbox": "body"}
+# The core's three client-facing roles, each mapped to the internal checking role it covers
+# (the names `formatting.fonts_in` produces). page_title is the textbox `bp apply` creates for
+# a `type: header` visual, visual_title a visual's own title, body any other textbox.
+CORE_ROLES = {"page_title": "header", "visual_title": "title", "body": "textbox"}
+# Further internal roles, opt-in under `extensions.typography` (template/extensions.md):
+# subtitle, the old card's value and the new card's value (callout) and its Category label.
+EXTENSION_ROLES = ("subtitle", "callout", "card_label")
+TYPOGRAPHY_ROLES = tuple(CORE_ROLES) + EXTENSION_ROLES
 
 
 @dataclass(frozen=True)
@@ -119,76 +132,20 @@ class CheckRules:
     decorative_types: tuple[str, ...]  # may contain other visuals; exempt from margin and gutter
 
 
-# --- Backward-compatible shims (consumed by validate.py and commands until step 3) -----------
-
 @dataclass(frozen=True)
-class _GridCompat:
-    """Shim so ``rules.grid.size`` still works while consumers use the old paths."""
-    size: int
-    snap: bool = True
-    max_resize: float | None = 0.25
-
-
-@dataclass(frozen=True)
-class _CanvasCompat:
-    """Shim so ``rules.canvas.margin`` and ``rules.canvas.gutter`` still work."""
-    width: int | None
-    height: int | None
-    margin: int
-    gutter: int
-
-
 class Guidelines:
-    """Frozen guidelines object. Uses __slots__ + __init__ instead of dataclass
-    to allow a ``canvas`` property that returns the backward-compatible shim."""
-
-    __slots__ = ("name", "version", "spacing", "_canvas", "page", "palette",
-                 "typography", "layouts", "check", "sources", "raw")
-
-    def __init__(self, *, name: str, version: int, spacing: Spacing, canvas: Canvas,
-                 page: PageRules, palette: Palette, typography: dict[str, FontRule],
-                 layouts: Layouts, check: CheckRules, sources: tuple[str, ...],
-                 raw: dict[str, Any]) -> None:
-        object.__setattr__(self, "name", name)
-        object.__setattr__(self, "version", version)
-        object.__setattr__(self, "spacing", spacing)
-        object.__setattr__(self, "_canvas", canvas)
-        object.__setattr__(self, "page", page)
-        object.__setattr__(self, "palette", palette)
-        object.__setattr__(self, "typography", typography)
-        object.__setattr__(self, "layouts", layouts)
-        object.__setattr__(self, "check", check)
-        object.__setattr__(self, "sources", sources)
-        object.__setattr__(self, "raw", raw)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        raise AttributeError("Guidelines is immutable")
-
-    # --- Backward-compatible access (step 3 simplifies this back to a dataclass) ---
-
-    @property
-    def canvas(self) -> _CanvasCompat:
-        """Returns a compat shim with width, height, margin AND gutter so old code
-        that reads ``rules.canvas.margin`` still works."""
-        return _CanvasCompat(
-            width=self._canvas.width, height=self._canvas.height,
-            margin=self.spacing.margin, gutter=self.spacing.gutter,
-        )
-
-    @property
-    def grid(self) -> _GridCompat:
-        snap = _get(self.raw, "grid.snap")
-        snap = snap if isinstance(snap, bool) else True
-        max_resize = _get(self.raw, "grid.max_resize", _MISSING)
-        if max_resize is _MISSING:
-            max_resize = 0.25  # default when not explicitly set
-        elif max_resize is None:
-            pass  # explicit null disables it
-        elif isinstance(max_resize, bool) or not isinstance(max_resize, (int, float)):
-            max_resize = 0.25
-        return _GridCompat(size=self.spacing.grid, snap=snap,
-                           max_resize=float(max_resize) if max_resize is not None else None)
-
+    name: str
+    version: int
+    canvas: Canvas
+    spacing: Spacing
+    page: PageRules
+    palette: Palette
+    typography: dict[str, FontRule]  # keyed by internal role (see CORE_ROLES)
+    layouts: Layouts
+    check: CheckRules
+    max_resize: float | None
+    sources: tuple[str, ...]
+    raw: dict[str, Any] = field(repr=False)
 
     def has(self, dotted: str) -> bool:
         return _get(self.raw, dotted, _MISSING) is not _MISSING
@@ -236,28 +193,56 @@ def load(
     if overrides:
         layers.append(("command line", overrides))
 
+    for name, layer in layers:
+        _refuse_retired_keys(layer, name)
+
     raw: dict[str, Any] = {}
     for _, layer in layers:
         raw = merge(raw, layer)
     return _build(raw, tuple(name for name, _ in layers))
 
 
-def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
-    # Severity: use defaults, allow overrides from raw for backward compat with existing files.
-    severity = dict(DEFAULT_SEVERITY)
-    raw_severity = _get(raw, "check.severity", {})
-    if isinstance(raw_severity, dict):
-        for rule, level in raw_severity.items():
-            level = "off" if level is False else level  # YAML 1.1: unquoted off → False
-            if rule not in RULES:
-                raise GuidelinesError(f"check.severity: unknown rule {rule!r} (known: {', '.join(RULES)})")
-            if not isinstance(level, str) or level not in SEVERITIES:
-                raise GuidelinesError(f"check.severity.{rule} must be one of {', '.join(SEVERITIES)}")
-            severity[rule] = level
+# Keys of the pre-template schema -> what replaces them. Refused per layer, so the file that
+# still carries one is named.
+RETIRED: tuple[tuple[str, str], ...] = (
+    ("grid.size", "spacing.grid"),
+    ("grid.snap", "nothing: bp fmt always snaps"),
+    ("grid.max_resize", "extensions.max_resize"),
+    ("canvas.margin", "spacing.margin"),
+    ("canvas.gutter", "spacing.gutter"),
+    ("check.severity", "extensions.severity"),
+    ("check.decorative_types", "extensions.decorative_types"),
+)
 
-    decorative = _get(raw, "check.decorative_types", list(DEFAULT_DECORATIVE_TYPES))
-    if not isinstance(decorative, list) or not all(isinstance(t, str) for t in decorative):
-        raise GuidelinesError("check.decorative_types must be a list of visual type names")
+
+def _refuse_retired_keys(layer: dict[str, Any], source: str) -> None:
+    for old, new in RETIRED:
+        if _get(layer, old, _MISSING) is not _MISSING:
+            raise GuidelinesError(f"{source}: {old} was replaced by {new}")
+    if isinstance(layer.get("grid"), dict):
+        raise GuidelinesError(f"{source}: the grid: section was replaced by spacing.grid")
+    if isinstance(layer.get("check"), dict):
+        raise GuidelinesError(f"{source}: the check: section moved to extensions "
+                              "(extensions.severity, extensions.decorative_types)")
+    section = layer.get("typography")
+    if isinstance(section, dict):
+        for role in section:
+            if role in EXTENSION_ROLES:
+                raise GuidelinesError(
+                    f"{source}: typography.{role} is an extension role; "
+                    f"move it to extensions.typography.{role}")
+            if role not in CORE_ROLES:
+                raise GuidelinesError(
+                    f"{source}: typography.{role}: unknown role "
+                    f"(core roles: {', '.join(CORE_ROLES)})")
+
+
+def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
+    ext = _get(raw, "extensions", {})
+    if ext is None:
+        ext = {}
+    if not isinstance(ext, dict):
+        raise GuidelinesError("extensions must be a mapping")
 
     policy = _get(raw, "page.density_policy")
     if not isinstance(policy, str) or policy not in DENSITY:
@@ -267,17 +252,20 @@ def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
     return Guidelines(
         name=str(raw.get("name", "")),
         version=_int(raw, "version", minimum=1),
-        spacing=_spacing(raw),
         canvas=Canvas(width=_int(raw, "canvas.width", minimum=1, nullable=True),
                       height=_int(raw, "canvas.height", minimum=1, nullable=True)),
+        spacing=Spacing(grid=_int(raw, "spacing.grid", minimum=1),
+                        margin=_int(raw, "spacing.margin", minimum=0),
+                        gutter=_int(raw, "spacing.gutter", minimum=0)),
         page=PageRules(max_visuals=_int(raw, "page.max_visuals", minimum=1, nullable=True),
                        density_policy=policy,
                        require_title=_bool(raw, "page.require_title"),
                        title_region=_title_region(raw)),
         palette=_palette(raw),
-        typography=_typography(raw),
+        typography=_typography(raw, ext),
         layouts=_layouts(raw),
-        check=CheckRules(severity=severity, decorative_types=tuple(decorative)),
+        check=CheckRules(severity=_severity(ext), decorative_types=_decorative(ext)),
+        max_resize=_max_resize(ext),
         sources=sources,
         raw=raw,
     )
@@ -332,43 +320,44 @@ def _hex_list(raw: dict[str, Any], key: str) -> tuple[str, ...]:
     return tuple(_hex(v, f"{key}[{i}]") or "" for i, v in enumerate(value))
 
 
-def _spacing(raw: dict[str, Any]) -> Spacing:
-    # Accept both new paths (spacing.*) and old paths (grid.size, canvas.margin, canvas.gutter).
-    # New paths take priority if both exist.
-    grid = _get(raw, "spacing.grid")
-    if grid is None:
-        grid = _get(raw, "grid.size")
-    if grid is None:
-        grid = 8  # fallback
-    if isinstance(grid, bool) or not isinstance(grid, int) or grid < 1:
-        raise GuidelinesError(f"spacing.grid must be an integer >= 1, got {grid!r}")
+def _severity(ext: dict[str, Any]) -> dict[str, str]:
+    severity = dict(DEFAULT_SEVERITY)
+    raw_severity = ext.get("severity", {})
+    if raw_severity is None:
+        return severity
+    if not isinstance(raw_severity, dict):
+        raise GuidelinesError("extensions.severity must be a mapping of rule -> error|warning|off")
+    for rule, level in raw_severity.items():
+        level = "off" if level is False else level  # YAML 1.1: unquoted off -> False
+        if rule not in RULES:
+            raise GuidelinesError(
+                f"extensions.severity: unknown rule {rule!r} (known: {', '.join(RULES)})")
+        if not isinstance(level, str) or level not in SEVERITIES:
+            raise GuidelinesError(
+                f"extensions.severity.{rule} must be one of {', '.join(SEVERITIES)}")
+        severity[rule] = level
+    return severity
 
-    margin = _get(raw, "spacing.margin")
-    if margin is None:
-        margin = _get(raw, "canvas.margin")
-    if margin is None:
-        margin = 0
-    if isinstance(margin, bool) or not isinstance(margin, int) or margin < 0:
-        raise GuidelinesError(f"spacing.margin must be an integer >= 0, got {margin!r}")
 
-    gutter = _get(raw, "spacing.gutter")
-    if gutter is None:
-        gutter = _get(raw, "canvas.gutter")
-    if gutter is None:
-        gutter = 0
-    if isinstance(gutter, bool) or not isinstance(gutter, int) or gutter < 0:
-        raise GuidelinesError(f"spacing.gutter must be an integer >= 0, got {gutter!r}")
+def _decorative(ext: dict[str, Any]) -> tuple[str, ...]:
+    value = ext.get("decorative_types", list(DEFAULT_DECORATIVE_TYPES))
+    if value is None:
+        return ()
+    if not isinstance(value, list) or not all(isinstance(t, str) for t in value):
+        raise GuidelinesError("extensions.decorative_types must be a list of visual type names")
+    return tuple(value)
 
-    # Validate old-path keys that the compat shim exposes (step 3 removes these).
-    snap = _get(raw, "grid.snap")
-    if snap is not None and not isinstance(snap, bool):
-        raise GuidelinesError(f"grid.snap must be true or false, got {snap!r}")
-    max_resize = _get(raw, "grid.max_resize")
-    if max_resize is not None:
-        if isinstance(max_resize, bool) or not isinstance(max_resize, (int, float)) or max_resize < 0:
-            raise GuidelinesError(f"grid.max_resize must be a number >= 0 or null, got {max_resize!r}")
 
-    return Spacing(grid=grid, margin=margin, gutter=gutter)
+def _max_resize(ext: dict[str, Any]) -> float | None:
+    if "max_resize" not in ext:
+        return DEFAULT_MAX_RESIZE
+    value = ext["max_resize"]
+    if value is None:
+        return None  # explicit null: no limit
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+        raise GuidelinesError(
+            f"extensions.max_resize must be a number >= 0 or null, got {value!r}")
+    return float(value)
 
 
 def _palette(raw: dict[str, Any]) -> Palette:
@@ -385,43 +374,50 @@ def _palette(raw: dict[str, Any]) -> Palette:
     )
 
 
-def _typography(raw: dict[str, Any]) -> dict[str, FontRule]:
-    section = _get(raw, "typography")
-    if section is None:
-        return {}
-    if not isinstance(section, dict):
-        raise GuidelinesError("typography must be a mapping of role -> {font, size}")
+def _typography(raw: dict[str, Any], ext: dict[str, Any]) -> dict[str, FontRule]:
+    """Core roles from `typography:`, extension roles from `extensions.typography:`, both keyed
+    by the internal role name the checking code and the theme writer use."""
     out: dict[str, FontRule] = {}
-    for role, spec in section.items():
-        key = f"typography.{role}"
-        if role in _ROLE_COMPAT:
-            role = _ROLE_COMPAT[role]
-        if role not in TYPOGRAPHY_ROLES:
-            raise GuidelinesError(f"{key}: unknown role (known: {', '.join(TYPOGRAPHY_ROLES)})")
-        if not isinstance(spec, dict):
-            raise GuidelinesError(f"{key} must be a mapping with font and/or size")
-        if "weight" in spec:
-            raise GuidelinesError(
-                f"{key}.weight: Power BI has no separate weight; a weight is part of the font "
-                "face. Use the exact name from Desktop's font list, e.g. font: Segoe UI Semibold")
-        if "bold" in spec:
-            raise GuidelinesError(
-                f"{key}.bold: Power BI encodes weight in the font face name. "
-                "Use font: Segoe UI Semibold instead of bold: true")
-        unknown = set(spec) - {"font", "size"}
-        if unknown:
-            raise GuidelinesError(f"{key}: unknown keys {', '.join(sorted(map(str, unknown)))}")
-        fonts = spec.get("font", [])
-        fonts = [fonts] if isinstance(fonts, str) else fonts
-        if not isinstance(fonts, list) or not all(isinstance(f, str) and f.strip() for f in fonts):
-            raise GuidelinesError(f"{key}.font must be a font name or a list of names")
-        sizes = spec.get("size", [])
-        sizes = [sizes] if isinstance(sizes, (int, float)) and not isinstance(sizes, bool) else sizes
-        if not isinstance(sizes, list) or not all(
-                isinstance(z, (int, float)) and not isinstance(z, bool) and z > 0 for z in sizes):
-            raise GuidelinesError(f"{key}.size must be a positive number (pt) or a list of them")
-        out[role] = FontRule(tuple(f.strip() for f in fonts), tuple(float(z) for z in sizes))
+    for section, prefix, allowed in (
+            (_get(raw, "typography"), "typography", CORE_ROLES),
+            (ext.get("typography"), "extensions.typography",
+             {r: r for r in EXTENSION_ROLES})):
+        if section is None:
+            continue
+        if not isinstance(section, dict):
+            raise GuidelinesError(f"{prefix} must be a mapping of role -> {{font, size}}")
+        for role, spec in section.items():
+            key = f"{prefix}.{role}"
+            if role not in allowed:
+                raise GuidelinesError(f"{key}: unknown role (known: {', '.join(allowed)})")
+            out[allowed[role]] = _font_rule(spec, key)
     return out
+
+
+def _font_rule(spec: Any, key: str) -> FontRule:
+    if not isinstance(spec, dict):
+        raise GuidelinesError(f"{key} must be a mapping with font and/or size")
+    for banned, why in (
+        ("weight", ("Power BI has no separate weight; a weight is part of the font face. Use "
+                    "the exact name from Desktop's font list, e.g. font: Segoe UI Semibold")),
+        ("bold", ("Power BI encodes weight in the font face name. "
+                  "Use font: Segoe UI Semibold instead of bold: true")),
+    ):
+        if banned in spec:
+            raise GuidelinesError(f"{key}.{banned}: {why}")
+    unknown = set(spec) - {"font", "size"}
+    if unknown:
+        raise GuidelinesError(f"{key}: unknown keys {', '.join(sorted(map(str, unknown)))}")
+    fonts = spec.get("font", [])
+    fonts = [fonts] if isinstance(fonts, str) else fonts
+    if not isinstance(fonts, list) or not all(isinstance(f, str) and f.strip() for f in fonts):
+        raise GuidelinesError(f"{key}.font must be a font name or a list of names")
+    sizes = spec.get("size", [])
+    sizes = [sizes] if isinstance(sizes, (int, float)) and not isinstance(sizes, bool) else sizes
+    if not isinstance(sizes, list) or not all(
+            isinstance(z, (int, float)) and not isinstance(z, bool) and z > 0 for z in sizes):
+        raise GuidelinesError(f"{key}.size must be a positive number (pt) or a list of them")
+    return FontRule(tuple(f.strip() for f in fonts), tuple(float(z) for z in sizes))
 
 
 def _title_region(raw: dict[str, Any]) -> str | None:

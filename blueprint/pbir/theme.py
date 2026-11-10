@@ -92,9 +92,6 @@ def build(rules: Guidelines) -> tuple[dict[str, Any], list[str]]:
             entry["fontSize"] = int(rule.sizes[0]) if rule.sizes[0].is_integer() else rule.sizes[0]
             if len(rule.sizes) > 1:
                 notes.append(f"typography.{role}: theme uses the first allowed size, {rule.sizes[0]:g}pt")
-        if rule.bold is not None:
-            notes.append(f"typography.{role}.bold: not expressible in a theme (unverified); "
-                         "visuals are still checked")
         if entry:
             classes[cls] = entry
     if pal.text:
@@ -132,9 +129,6 @@ def _card_label(rule, notes: list[str]) -> dict[str, Any] | None:
             entry["fontFamily"] = CARD_LABEL_STACK.format(font)
             if len(rule.fonts) > 1:
                 notes.append(f"typography.card_label: theme uses the first allowed font, {font!r}")
-    if rule.bold is not None:
-        notes.append("typography.card_label.bold: not expressible in a theme (unverified); "
-                     "visuals are still checked")
     return entry if len(entry) > 1 else None
 
 

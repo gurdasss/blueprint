@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
+import yaml
 
 from blueprint import guidelines, manifest
 from blueprint.cli import main
@@ -383,9 +384,12 @@ def test_15_bp_theme_reproduces_the_accepted_theme(replays, tmp_path):
     last = _last(replays, 15)
     proj = shutil.copytree(FIXTURE, tmp_path / "proj")
     guide = tmp_path / "g.yaml"
-    # the probe's own guidelines, plus the label entry it added by hand (now written by bp theme)
-    guide.write_text((last.root / "probe-guidelines.yaml").read_text()
-                     + "  card_label: { font: Arial, size: 14 }\n")
+    # the probe's own guidelines (callout/card_label are extension roles in the current schema),
+    # plus the label entry the probe added by hand, which bp theme now writes
+    probe = yaml.safe_load((last.root / "probe-guidelines.yaml").read_text())
+    roles = dict(probe.pop("typography"))
+    roles["card_label"] = {"font": "Arial", "size": 14}
+    guide.write_text(yaml.safe_dump({**probe, "extensions": {"typography": roles}}))
     assert main(["theme", "--report", str(proj), "--guidelines", str(guide)]) == 0
     assert (proj / "Fixture.Report" / THEME).read_bytes() == (last.report / THEME).read_bytes()
 

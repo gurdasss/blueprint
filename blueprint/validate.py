@@ -35,7 +35,7 @@ def _fmt(v: float) -> str:
 
 class _Collector:
     def __init__(self, rules: Guidelines, result: CheckResult) -> None:
-        # palette's severity comes from palette.enforce (README), not check.severity.
+        # palette's severity comes from palette.enforce (README), not extensions.severity.
         self.severity = {**rules.check.severity, "palette": rules.palette.severity}
         self.result = result
 
@@ -110,7 +110,7 @@ def _check_page(page: Page, rules: Guidelines, c: _Collector) -> None:
 
 def _check_geometry(page: Page, rules: Guidelines, c: _Collector) -> None:
     assert page.width is not None and page.height is not None
-    w, h, g = page.width, page.height, rules.grid.size
+    w, h, g = page.width, page.height, rules.spacing.grid
     candidates: list[Visual] = []
     grouped = 0
     for v in page.visuals:
@@ -136,7 +136,7 @@ def _check_geometry(page: Page, rules: Guidelines, c: _Collector) -> None:
             edges = ", ".join(f"{k}={_fmt(val)}" for k, val in off.items())
             c.add("grid", f"off the {g}px grid ({edges}); {_fmt_hint(r, rules, w, h)}", page, v)
 
-        m = rules.canvas.margin
+        m = rules.spacing.margin
         if m and v.visual_type not in rules.check.decorative_types:
             near = [f"{name} {_fmt(d)}" for name, d in (
                 ("left", r.x), ("top", r.y), ("right", w - r.right), ("bottom", h - r.bottom))
@@ -145,14 +145,14 @@ def _check_geometry(page: Page, rules: Guidelines, c: _Collector) -> None:
                 c.add("margin", f"closer than {m}px to the page edge ({', '.join(near)})", page, v)
 
     decorative = set(rules.check.decorative_types)
-    if rules.canvas.gutter and c.on("gutter"):
+    if rules.spacing.gutter and c.on("gutter"):
         spaced = [v for v in candidates if v.visual_type not in decorative]
         for i, a in enumerate(spaced):
             for b in spaced[i + 1:]:
                 gap = gutter_gap(a.rect, b.rect)
-                if gap is not None and gap < rules.canvas.gutter - grid.EPS:
+                if gap is not None and gap < rules.spacing.gutter - grid.EPS:
                     c.add("gutter", f"{_fmt(gap)}px from {b.name} ({b.visual_type}); "
-                                    f"canvas.gutter is {rules.canvas.gutter}px", page, a)
+                                    f"spacing.gutter is {rules.spacing.gutter}px", page, a)
 
     if c.on("overlap"):
         for i, a in enumerate(candidates):
@@ -166,9 +166,9 @@ def _check_geometry(page: Page, rules: Guidelines, c: _Collector) -> None:
 
 
 def _fmt_hint(r: Rect, rules: Guidelines, w: float, h: float) -> str:
-    snapped = grid.snap_rect(r, rules.grid.size, w, h)
+    snapped = grid.snap_rect(r, rules.spacing.grid, w, h)
     ratio = grid.resize_ratio(r, snapped)
-    if rules.grid.max_resize is not None and ratio > rules.grid.max_resize:
+    if rules.max_resize is not None and ratio > rules.max_resize:
         return f"bp fmt skips it (would resize {ratio:.0%}); fix by hand or mark it blueprint.ignore"
     return "bp fmt fixes this"
 
@@ -313,15 +313,13 @@ def _num(v: float) -> str:
     return str(int(v)) if float(v).is_integer() else f"{v:g}"
 
 
-def _font_problems(font: FontUse | TextClass, rule, *, bold: bool | None = None) -> list[str]:
+def _font_problems(font: FontUse | TextClass, rule) -> list[str]:
     family = font.family if isinstance(font, FontUse) else font.font
     out = []
     if family is not None and rule.fonts and family not in rule.fonts:
         out.append(f"font {family!r} (allowed: {', '.join(rule.fonts)})")
     if font.size is not None and rule.sizes and font.size not in rule.sizes:
         out.append(f"size {_num(font.size)}pt (allowed: {', '.join(_num(z) for z in rule.sizes)})")
-    if bold is not None and rule.bold is not None and bold != rule.bold:
-        out.append(f"bold {'on' if bold else 'off'} (guidelines: {'on' if rule.bold else 'off'})")
     return out
 
 
@@ -355,7 +353,7 @@ def _check_typography(report: Report, rules: Guidelines, c: _Collector) -> None:
                 if font.family in UNRESOLVED_FAMILIES:
                     unresolved.add(font.family)
                     font = FontUse(font.role, None, font.size, font.bold, font.raw_family)
-                problems += [f"{role} {p}" for p in _font_problems(font, rule, bold=font.bold)]
+                problems += [f"{role} {p}" for p in _font_problems(font, rule)]
             if problems:
                 c.add("typography", "; ".join(dict.fromkeys(problems)), page, v)
     if unresolved:

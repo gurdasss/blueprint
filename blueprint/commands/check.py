@@ -24,7 +24,7 @@ from blueprint.validate import CheckResult, Finding, check_report
 
 def run_check(args: argparse.Namespace) -> tuple[Report, Guidelines, CheckResult]:
     report = read_report(args.report)
-    overrides = {"grid": {"size": args.grid}} if args.grid is not None else None
+    overrides = {"spacing": {"grid": args.grid}} if args.grid is not None else None
     rules = guidelines.load(args.guidelines, report.root, overrides)
     result = check_report(report, rules)
     level = rules.check.severity["format"]

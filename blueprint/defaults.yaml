@@ -39,13 +39,23 @@ layouts:
   search_path: []      # directories of <name>.yaml layouts; relative to the file declaring them
   default: null        # layout used when a page spec doesn't name one
 
-# typography: per text role, the allowed font face(s) and size(s) in pt. Roles:
+# typography: per text role, the allowed font face(s) and size(s) in pt. Core roles:
 # page_title (the textboxes bp apply creates for `type: header`),
-# visual_title (chart/card/table titles),
-# body (everything else: labels, textboxes, data labels).
+# visual_title (a visual's own title),
+# body (every other textbox).
 # A font weight is part of the face name, exactly as in Desktop's font list
-# (e.g. "Segoe UI Semibold"). Nothing is checked by default.
+# (e.g. "Segoe UI Semibold"); `bold` and `weight` are rejected. Nothing is checked by default.
 #   typography:
 #     page_title:    {font: Segoe UI Semibold, size: 18}
 #     visual_title:  {font: Segoe UI, size: 12}
 #     body:          {font: [Segoe UI, Segoe UI Light], size: [10, 12]}
+
+# extensions: opt-in settings outside the core (template/extensions.md). What the core reads:
+#   extensions:
+#     severity: {grid: warning}        # override a rule's baked-in severity (error|warning|off)
+#     decorative_types: [image, shape] # types that may contain visuals; exempt from margin/gutter
+#     max_resize: 0.25                 # bp fmt skips a visual it would resize by more; null: no limit
+#     typography:                      # further text roles, checked like the core ones
+#       subtitle:   {font: Segoe UI, size: 12}
+#       callout:    {font: Segoe UI Light, size: 32}   # a card's value
+#       card_label: {font: Segoe UI, size: 12}         # the new card's Category label

@@ -89,7 +89,7 @@ def test_action_script_checks_every_report_and_exits_with_the_worst(card_chart_f
 @pytest.mark.skipif(not BP.exists(), reason="needs the bp entry point (pip install -e .)")
 def test_action_script_strict_and_empty_input(card_chart_fixture, tmp_path):
     lax = tmp_path / "lax.yaml"
-    lax.write_text("check:\n  severity: {grid: warning, typography: warning}\n"
+    lax.write_text("extensions:\n  severity: {grid: warning, typography: warning}\n"
                    "palette:\n  enforce: warn\n")
     shutil.copytree(card_chart_fixture.parent, tmp_path / "proj")
     assert _ci(tmp_path, "proj", GUIDELINES=str(lax))[0] == 0

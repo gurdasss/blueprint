@@ -73,7 +73,7 @@ def test_unusable_layouts_are_flagged(tmp_path: Path):
                                     "  - {role: main, x: 624, y: 16, w: 600, h: 600}\n")
     (lay / "broken.yaml").write_text("name: broken\n")
     g = tmp_path / "g.yaml"
-    g.write_text("canvas: {gutter: 16}\nlayouts: {search_path: [lay]}\n")
+    g.write_text("spacing: {gutter: 16}\nlayouts: {search_path: [lay]}\n")
     d = describe(guidelines.load(g), None)["layouts"]
     assert d["tight"]["usable"] is False
     assert d["tight"]["problems"] == ["regions main#1 and main#2 are 8px apart, less than the 16px gutter"]

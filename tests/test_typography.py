@@ -103,18 +103,19 @@ def _g(tmp_path: Path, body: str) -> guidelines.Guidelines:
 
 
 def test_typography_config_forms(tmp_path: Path):
-    g = _g(tmp_path, "typography:\n  title: {font: Segoe UI Semibold, size: 14}\n"
-                     "  textbox: {font: [Segoe UI, Arial], size: [10, 12.5], bold: false}\n")
-    assert g.typography["title"] == guidelines.FontRule(("Segoe UI Semibold",), (14.0,), None)
-    assert g.typography["textbox"] == guidelines.FontRule(("Segoe UI", "Arial"), (10.0, 12.5), False)
+    g = _g(tmp_path, "typography:\n  visual_title: {font: Segoe UI Semibold, size: 14}\n"
+                     "  body: {font: [Segoe UI, Arial], size: [10, 12.5]}\n")
+    assert g.typography["title"] == guidelines.FontRule(("Segoe UI Semibold",), (14.0,))
+    assert g.typography["textbox"] == guidelines.FontRule(("Segoe UI", "Arial"), (10.0, 12.5))
 
 
 @pytest.mark.parametrize(("body", "match"), [
-    ("typography: {title: {font: Segoe UI, weight: semibold}}", "no separate weight"),
+    ("typography: {visual_title: {font: Segoe UI, weight: semibold}}", "no separate weight"),
+    ("typography: {visual_title: {font: Segoe UI, bold: true}}", "weight in the font face name"),
     ("typography: {heading: {font: Arial}}", "unknown role"),
-    ("typography: {title: {size: big}}", "size must be a positive number"),
-    ("typography: {title: {font: 3}}", "font must be a font name"),
-    ("typography: {title: {colour: red}}", "unknown keys colour"),
+    ("typography: {visual_title: {size: big}}", "size must be a positive number"),
+    ("typography: {visual_title: {font: 3}}", "font must be a font name"),
+    ("typography: {visual_title: {colour: red}}", "unknown keys colour"),
 ])
 def test_typography_config_rejected(tmp_path: Path, body: str, match: str):
     with pytest.raises(guidelines.GuidelinesError, match=match):
@@ -124,8 +125,8 @@ def test_typography_config_rejected(tmp_path: Path, body: str, match: str):
 # --- rule ----------------------------------------------------------------------------------
 
 RULES = """typography:
-  title: {font: Segoe UI Semibold, size: [12, 14]}
-  textbox: {font: [Segoe UI, Segoe UI Light], bold: false}
+  visual_title: {font: Segoe UI Semibold, size: [12, 14]}
+  body: {font: [Segoe UI, Segoe UI Light]}
 """
 
 
@@ -149,19 +150,19 @@ def test_violations_are_reported_per_visual(tmp_path: Path):
     found, _ = _typo(tmp_path, vs)
     assert found == [
         ("a", "title font 'Arial' (allowed: Segoe UI Semibold); title size 18pt (allowed: 12, 14)"),
-        ("t", "textbox font 'Arial' (allowed: Segoe UI, Segoe UI Light); textbox bold on (guidelines: off)"),
+        ("t", "textbox font 'Arial' (allowed: Segoe UI, Segoe UI Light)"),
     ]
 
 
 def test_new_card_callout_and_title_checked(tmp_path: Path):
-    body = RULES + "  callout: {font: Segoe UI Semibold, size: 21, bold: false}\n"
+    body = RULES + "extensions:\n  typography:\n    callout: {font: Segoe UI Semibold, size: 21}\n"
     found, _ = _typo(tmp_path, [new_card("c", fontFamily="'Arial'", fontSize="28D", bold="true")], body)
     assert found == [("c", ("title size 16pt (allowed: 12, 14); callout font 'Arial' (allowed: Segoe UI "
-                            "Semibold); callout size 28pt (allowed: 21); callout bold on (guidelines: off)"))]
+                            "Semibold); callout size 28pt (allowed: 21)"))]
 
 
 def test_new_card_label_checked(tmp_path: Path):
-    body = "typography:\n  card_label: {font: Segoe UI, size: 12}\n"
+    body = "extensions:\n  typography:\n    card_label: {font: Segoe UI, size: 12}\n"
     found, _ = _typo(tmp_path, [new_card("c", fontSize="28D")], body)
     assert found == [("c", "card_label size 14pt (allowed: 12)")]
     legacy = visual("old", vtype="card")  # the legacy card's `label` isn't the category label
@@ -174,7 +175,7 @@ def test_card_label_theme_default_is_visual_style_over_text_class(tmp_path: Path
     theme = {"textClasses": {"label": {"fontFace": "Segoe UI", "fontSize": 10.5}},
              "visualStyles": {"cardVisual": {"*": {"label": [{"$id": "default", "fontSize": 12,
                                                               "textClass": "label"}]}}}}
-    body = "typography:\n  card_label: {font: Arial, size: 14}\n"
+    body = "extensions:\n  typography:\n    card_label: {font: Arial, size: 14}\n"
     found, _ = _typo(tmp_path, [], body, theme=theme)
     assert found == [(None, "theme 'T' card_label text: font 'Segoe UI' (allowed: Arial); size 12pt (allowed: 14)")]
 
@@ -200,7 +201,7 @@ def test_ignored_visual_and_unconfigured_role(tmp_path: Path):
 
 
 def test_severity_from_check_severity(tmp_path: Path):
-    body = RULES + "check: {severity: {typography: warning}}\n"
+    body = RULES + "extensions: {severity: {typography: warning}}\n"
     rd = make_report(tmp_path / "r", {"p": [titled("a", fontFamily="'Arial'")]})
     [f] = [f for f in check_report(read_report(rd), _g(tmp_path, body)).findings if f.rule == "typography"]
     assert f.severity == "warning"

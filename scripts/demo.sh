@@ -45,9 +45,10 @@ EOF
 
 step "3. report-level guidelines: the new card's fonts (probes 07, 15)"
 cat > "$R/Fixture.Report/.blueprint.yaml" <<'EOF'
-typography:
-  callout:    { font: Segoe UI Light, size: 32 }
-  card_label: { font: Arial, size: 14 }
+extensions:
+  typography:
+    callout:    { font: Segoe UI Light, size: 32 }
+    card_label: { font: Arial, size: 14 }
 EOF
 
 step "4. before (errors expected)"

@@ -89,8 +89,8 @@ def _guidelines(rules: Guidelines) -> dict[str, Any]:
     return {
         "name": rules.name, "version": rules.version, "sources": list(rules.sources),
         "canvas": {"width": rules.canvas.width, "height": rules.canvas.height,
-                   "margin": rules.canvas.margin, "gutter": rules.canvas.gutter},
-        "grid": rules.grid.size,
+                   "margin": rules.spacing.margin, "gutter": rules.spacing.gutter},
+        "grid": rules.spacing.grid,
         "max_visuals": rules.page.max_visuals,
         "density_policy": rules.page.density_policy,
         "require_title": rules.page.require_title,
@@ -122,7 +122,8 @@ def _layouts(rules: Guidelines) -> dict[str, Any]:
         except layouts.LayoutError as exc:
             out[name] = {**entry, "usable": False, "problems": [str(exc)]}
             continue
-        problems = layouts.conflicts(layout, rules.grid.size, rules.canvas.margin, rules.canvas.gutter)
+        problems = layouts.conflicts(layout, rules.spacing.grid, rules.spacing.margin,
+                                     rules.spacing.gutter)
         roles: dict[str, int] = {}
         for r in layout.regions:
             roles[r.role] = roles.get(r.role, 0) + 1

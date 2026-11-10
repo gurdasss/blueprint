@@ -171,7 +171,8 @@ def _gap_warnings(page_spec: spec.PageSpec, layout: layouts.Layout,
         try:
             other = layouts.load(name, rules.layouts.search_path)
             if ((other.width, other.height) != (layout.width, layout.height)
-                    or layouts.conflicts(other, rules.grid.size, rules.canvas.margin, rules.canvas.gutter)):
+                    or layouts.conflicts(other, rules.spacing.grid, rules.spacing.margin,
+                                         rules.spacing.gutter)):
                 continue
             if not layouts.unused(other, layouts.place(page_spec, other)):
                 fits.append(name)
@@ -191,7 +192,7 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
     if not layout_name:
         raise ApplyError(f"{page_spec.source}: no layout (set `layout:` or layouts.default in guidelines)")
     layout = layouts.load(layout_name, rules.layouts.search_path)
-    clash = layouts.conflicts(layout, rules.grid.size, rules.canvas.margin, rules.canvas.gutter)
+    clash = layouts.conflicts(layout, rules.spacing.grid, rules.spacing.margin, rules.spacing.gutter)
     if clash:
         raise ApplyError(f"layout {layout.name!r} doesn't fit the guidelines: bp apply and bp fmt "
                          "would keep moving its visuals back and forth, or bp check would flag "
@@ -207,8 +208,7 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
     built_with = f"{rules.name}@{rules.version}"
     rule = rules.typography.get("header")
     header_style = render.text_style(rule.fonts[0] if rule and rule.fonts else None,
-                                     rule.sizes[0] if rule and rule.sizes else None,
-                                     rule.bold if rule else None)
+                                     rule.sizes[0] if rule and rule.sizes else None)
 
     page = _find_page(report, page_spec, getattr(args, "take_over", False))
     if page is None:

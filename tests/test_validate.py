@@ -41,21 +41,21 @@ def test_bounds(tmp_path: Path):
 
 
 def test_grid_counts_page_edge_as_grid_line(tmp_path: Path):
-    assert findings(tmp_path, [visual("a", 0, 0, 1280, 720)], "grid: {size: 7}", "grid") == []
+    assert findings(tmp_path, [visual("a", 0, 0, 1280, 720)], "spacing: {grid: 7}", "grid") == []
     [f] = findings(tmp_path, [visual("a", 3, 8, 64, 64)], rule="grid")
     assert "left=3" in f.message and "right=67" in f.message and "bp fmt fixes this" in f.message
 
 
 def test_grid_hint_when_fmt_would_skip(tmp_path: Path):
-    [f] = findings(tmp_path, [visual("a", 1151.39, 694.51, 126.16, 24.5)], "grid: {size: 32}", "grid")
+    [f] = findings(tmp_path, [visual("a", 1151.39, 694.51, 126.16, 24.5)], "spacing: {grid: 32}", "grid")
     assert "bp fmt skips it (would resize 96%)" in f.message
 
 
 def test_gutter_between_side_by_side_and_stacked_visuals(tmp_path: Path):
-    body = "canvas: {gutter: 16}"
+    body = "spacing: {gutter: 16}"
     side = [visual("a", 16, 16, 400, 200), visual("b", 424, 96, 400, 200)]  # 8px apart, rows overlap
     [f] = findings(tmp_path, side, body, "gutter")
-    assert (f.visual, f.severity, f.message) == ("a", "warning", "8px from b (card); canvas.gutter is 16px")
+    assert (f.visual, f.severity, f.message) == ("a", "warning", "8px from b (card); spacing.gutter is 16px")
     stacked = [visual("a", 16, 16, 400, 200), visual("b", 200, 216, 400, 200)]  # touching
     [f] = findings(tmp_path, stacked, body, "gutter")
     assert f.message.startswith("0px from b")
@@ -64,7 +64,7 @@ def test_gutter_between_side_by_side_and_stacked_visuals(tmp_path: Path):
 
 
 def test_gutter_ignores_diagonal_overlapping_and_decorative(tmp_path: Path):
-    body = "canvas: {gutter: 16}"
+    body = "spacing: {gutter: 16}"
     diagonal = [visual("a", 16, 16, 400, 200), visual("b", 424, 224, 400, 200)]
     assert findings(tmp_path, diagonal, body, "gutter") == []
     overlapping = [visual("a", 16, 16, 400, 200), visual("b", 400, 16, 400, 200)]
@@ -73,11 +73,11 @@ def test_gutter_ignores_diagonal_overlapping_and_decorative(tmp_path: Path):
     assert findings(tmp_path, panel, body, "gutter") == []
     close = [visual("a", 16, 16, 400, 200), visual("b", 424, 16, 400, 200)]
     assert findings(tmp_path, close, "", "gutter") == []  # gutter 0 (default): not checked
-    assert findings(tmp_path, close, body + "\ncheck: {severity: {gutter: 'off'}}", "gutter") == []
+    assert findings(tmp_path, close, body + "\nextensions: {severity: {gutter: 'off'}}", "gutter") == []
 
 
 def test_margin_and_decorative_exemption(tmp_path: Path):
-    body = "canvas: {margin: 16}"
+    body = "spacing: {margin: 16}"
     [f] = findings(tmp_path, [visual("a", 8, 16, 64, 64)], body, "margin")
     assert f.message == "closer than 16px to the page edge (left 8)"
     assert findings(tmp_path, [visual("bg", 0, 0, 1280, 720, vtype="image")], body, "margin") == []
@@ -126,9 +126,9 @@ def test_density_policies(tmp_path: Path, policy: str, expected: int):
 
 def test_severity_levels(tmp_path: Path):
     vs = [visual("a", 3, 3, 64, 64)]
-    assert findings(tmp_path, vs, "check: {severity: {grid: off}}", "grid") == []  # YAML 1.1: off -> False
-    assert findings(tmp_path, vs, "check: {severity: {grid: 'off'}}", "grid") == []
-    [f] = findings(tmp_path, vs, "check: {severity: {grid: warning}}", "grid")
+    assert findings(tmp_path, vs, "extensions: {severity: {grid: off}}", "grid") == []  # YAML 1.1: off -> False
+    assert findings(tmp_path, vs, "extensions: {severity: {grid: 'off'}}", "grid") == []
+    [f] = findings(tmp_path, vs, "extensions: {severity: {grid: warning}}", "grid")
     assert f.severity == "warning"
 
 
@@ -201,7 +201,7 @@ def test_unchecked_guidelines_are_listed(tmp_path: Path, capsys, monkeypatch):
 
 def test_example_guidelines_load():
     g = guidelines.load(Path(__file__).resolve().parent.parent / "guidelines" / "example.yaml")
-    assert (g.canvas.margin, g.page.max_visuals, g.page.density_policy) == (16, 6, "data")
+    assert (g.spacing.margin, g.page.max_visuals, g.page.density_policy) == (16, 6, "data")
 
 
 def test_fmt_then_check_leaves_only_fmt_skipped_grid_findings(real_report: Path, tmp_path: Path, capsys):

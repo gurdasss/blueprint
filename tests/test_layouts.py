@@ -57,7 +57,7 @@ def test_shipped_layouts_fit_the_example_guidelines(name):
     g = guidelines.load(ROOT / "guidelines" / "example.yaml")
     layout = layouts.load(name, g.layouts.search_path)
     assert (layout.width, layout.height) == (g.canvas.width, g.canvas.height)
-    assert layouts.conflicts(layout, g.grid.size, g.canvas.margin, g.canvas.gutter) == []
+    assert layouts.conflicts(layout, g.spacing.grid, g.spacing.margin, g.spacing.gutter) == []
     assert sum(r.role == "header" for r in layout.regions) == 1
 
 
@@ -152,7 +152,7 @@ def test_apply_refuses_a_layout_that_would_fight_fmt(tmp_path: Path, capsys):
         "name: offgrid\ncanvas: {width: 1280, height: 720}\n"
         "regions:\n  - {role: header, x: 10, y: 10, w: 1250, h: 61}\n")
     g = tmp_path / "g.yaml"
-    g.write_text(f"grid: {{size: 8}}\ncanvas: {{margin: 16}}\nlayouts: {{search_path: ['{tmp_path}']}}\n")
+    g.write_text(f"spacing: {{grid: 8, margin: 16}}\nlayouts: {{search_path: ['{tmp_path}']}}\n")
     s = tmp_path / "s.yaml"
     s.write_text("page: P\nlayout: offgrid\nvisuals:\n  - {type: header, title: Hi}\n")
     assert main(["apply", str(s), "--report", str(tmp_path / "proj"), "--guidelines", str(g)]) == 2

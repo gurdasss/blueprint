@@ -39,7 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("check", help="validate against guidelines (read-only; exit 1 on errors)")
     p.add_argument("--report", type=Path, required=True, help=REPORT_HELP)
     p.add_argument("--guidelines", type=Path, help="guidelines file (default: $BLUEPRINT_GUIDELINES)")
-    p.add_argument("--grid", type=int, help="override grid.size")
+    p.add_argument("--grid", type=int, help="override spacing.grid")
     out = p.add_mutually_exclusive_group()
     out.add_argument("--json", action="store_true", help="machine-readable output")
     out.add_argument("--github", action="store_true",
@@ -87,7 +87,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("fmt", help="snap visuals to the grid (idempotent)")
     p.add_argument("--report", type=Path, required=True, help=REPORT_HELP)
     p.add_argument("--guidelines", type=Path, help="guidelines file (default: $BLUEPRINT_GUIDELINES)")
-    p.add_argument("--grid", type=int, help="override grid.size")
+    p.add_argument("--grid", type=int, help="override spacing.grid")
     p.add_argument("--dry-run", action="store_true", help="print the planned writes; change nothing")
     p.add_argument("--force-schema", action="store_true",
                    help="write even when a file's schema major version is unknown")

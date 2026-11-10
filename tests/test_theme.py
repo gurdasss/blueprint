@@ -41,22 +41,24 @@ def test_example_guidelines_theme():
                         "title": {"fontFace": "Segoe UI Semibold", "fontSize": 18, "color": "#333333"},
                         "header": {"color": "#333333"}, "label": {"color": "#333333"}},
         # probe 06: the base theme's visualStyles title size outranks textClasses, so set it too
-        "visualStyles": {"*": {"*": {"title": [{"fontSize": 18}], "subTitle": [{"fontSize": 12}]}}},
+        "visualStyles": {"*": {"*": {"title": [{"fontSize": 18}]}}},
     }
-    assert notes == ["typography.subtitle: the theme can't set its font (unverified); visuals are still checked"]
+    # page_title is written onto header textboxes by bp apply; body (textboxes) has no theme class
+    assert notes == [("typography.textbox: the theme can't set its font or size (unverified); "
+                      "visuals are still checked")]
 
 
 def test_typography_only_and_first_choice_notes(tmp_path: Path):
-    doc, notes = theme.build(_rules(tmp_path, "name: T\ntypography:\n  callout: {font: [DIN, Arial], size: [28, 32], bold: true}\n"))
+    doc, notes = theme.build(_rules(
+        tmp_path, "name: T\nextensions:\n  typography:\n    callout: {font: [DIN, Arial], size: [28, 32]}\n"))
     assert doc == {"name": "T", "textClasses": {"callout": {"fontFace": "DIN", "fontSize": 28}}}  # no card
     assert any("first allowed font, 'DIN'" in n for n in notes)
     assert any("first allowed size, 28pt" in n for n in notes)
-    assert any("bold: not expressible" in n for n in notes)
 
 
 def test_nothing_to_theme_is_an_error(tmp_path: Path):
     with pytest.raises(theme.ThemeError, match="nothing to put in a theme"):
-        theme.build(_rules(tmp_path, "grid: {size: 8}\n"))
+        theme.build(_rules(tmp_path, "spacing: {grid: 8}\n"))
 
 
 # --- report.json ------------------------------------------------------------------------
@@ -147,7 +149,7 @@ def test_base_visual_styles_title_size_outranks_text_classes(tmp_path: Path):
               folder="BaseThemes")
     add_theme(rd, "custom", "C", {"textClasses": {"title": {"fontSize": 18, "fontFace": "Segoe UI Semibold"}}},
               package="RegisteredResources", folder="t")
-    rules = _rules(tmp_path, "typography: {title: {font: Segoe UI Semibold, size: 18}}\n")
+    rules = _rules(tmp_path, "typography: {visual_title: {font: Segoe UI Semibold, size: 18}}\n")
     found = [f.message for f in check_report(read_report(rd), rules).findings if f.rule == "typography"]
     assert found == ["theme 'C' title text: size 15pt (allowed: 18)"]  # the false pass, now caught
 
@@ -167,8 +169,9 @@ def test_fixture_base_theme_visual_text(blank_fixture: Path):
 
 
 def test_card_label_is_written_as_the_cardvisual_label_style(tmp_path: Path):
-    doc, notes = theme.build(_rules(tmp_path, "name: T\ntypography:\n  title: {size: 18}\n"
-                                              "  card_label: {font: Arial, size: 14}\n"))
+    doc, notes = theme.build(_rules(tmp_path, "name: T\ntypography:\n  visual_title: {size: 18}\n"
+                                              "extensions:\n  typography:\n"
+                                              "    card_label: {font: Arial, size: 14}\n"))
     # exactly the entry Desktop showed as Arial 14 in probe 15, after the "*" styles
     assert doc["visualStyles"] == {
         "*": {"*": {"title": [{"fontSize": 18}]}},
@@ -180,17 +183,18 @@ def test_card_label_is_written_as_the_cardvisual_label_style(tmp_path: Path):
 
 
 def test_card_label_notes(tmp_path: Path):
-    doc, notes = theme.build(_rules(tmp_path, "name: T\ntypography:\n"
-                                              "  card_label: {font: [Segoe UI, Arial], size: [12, 14], bold: true}\n"))
+    doc, notes = theme.build(_rules(
+        tmp_path, "name: T\nextensions:\n  typography:\n"
+                  "    card_label: {font: [Segoe UI, Arial], size: [12, 14]}\n"))
     assert doc["visualStyles"]["cardVisual"]["*"]["label"] == [
         {"$id": "default", "fontSize": 12, "fontFamily": "'Segoe UI', helvetica, arial, sans-serif"}]
     assert notes == ["typography.card_label: theme uses the first allowed size, 12pt",
-                     "typography.card_label: theme uses the first allowed font, 'Segoe UI'",
-                     ("typography.card_label.bold: not expressible in a theme (unverified); "
-                      "visuals are still checked")]
-    _, notes = theme.build(_rules(tmp_path, "name: T\ntypography:\n  callout: {size: 30}\n"
-                                            "  card_label: {bold: false}\n"))
-    assert notes == [("typography.card_label.bold: not expressible in a theme (unverified); "
+                     "typography.card_label: theme uses the first allowed font, 'Segoe UI'"]
+    doc, notes = theme.build(_rules(
+        tmp_path, "name: T\ntypography: {visual_title: {size: 18}}\n"
+                  "extensions:\n  typography:\n    card_label: {font: \"Se'goe, UI\"}\n"))
+    assert "cardVisual" not in doc["visualStyles"]  # a font that can't be a CSS stack sets nothing
+    assert notes == [("typography.card_label: font \"Se'goe, UI\" can't be written as a font stack; "
                       "visuals are still checked")]
 
 
@@ -198,7 +202,7 @@ def test_theme_then_check_passes_the_card_label(tmp_path: Path, card_chart_fixtu
     report = tmp_path / "proj"
     shutil.copytree(card_chart_fixture.parent, report)
     guide = tmp_path / "g.yaml"
-    guide.write_text("name: T\ntypography:\n  card_label: {font: Arial, size: 14}\n")
+    guide.write_text("name: T\nextensions:\n  typography:\n    card_label: {font: Arial, size: 14}\n")
     rules = guidelines.load(guide)
     before = check_report(read_report(report), rules).findings
     assert [f.message for f in before if f.rule == "typography"] == [

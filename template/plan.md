@@ -170,24 +170,53 @@ changes are small.
 Each step is small, isolated, and independently testable. The system works
 after every step — no step leaves things half-broken.
 
-### Step 1: Guidelines schema rewrite
+### Step 1 + 3 (done): guidelines schema rewrite, wired into every consumer
 
-**What:** Rewrite `guidelines.py`, `defaults.yaml`, `guidelines/example.yaml`.
+**What:** `guidelines.py`, `defaults.yaml`, `guidelines/example.yaml`, and every consumer
+of a guideline field path, in one step.
+
+**Why merged:** the plan assumed step 1 could land alone because "the `Guidelines` object
+is the same interface". It isn't — the *field paths are* the interface. `validate.py` and
+the commands read `rules.grid.size` / `rules.canvas.margin` / `rules.canvas.gutter`
+directly, so the schema and its consumers have to move together. A first attempt that
+kept backward-compatible shims (`_GridCompat`, `_CanvasCompat`) also broke layering:
+`defaults.yaml` sets `spacing.*`, so a higher layer's old `grid.size` (including
+`--grid`) could never win.
 
 **Changes:**
-- New `Spacing` dataclass replaces `Grid` fields and `Canvas.margin`/`Canvas.gutter`
-- `Canvas` simplified to just `width`/`height`
-- Typography roles: `page_title`, `visual_title`, `body` (map internally to existing checking roles)
-- `CheckRules` removed — severity defaults baked into code
-- `_build()` rewritten for new field paths
-- Keep: `load()`, `merge()`, `_read()`, `_anchor()`, `_palette()`, `_layouts()`, all helpers
+- `Spacing(grid, margin, gutter)` replaces `grid.size`, `canvas.margin`, `canvas.gutter`
+- `Canvas` is width/height only
+- Severity defaults (`DEFAULT_SEVERITY`), decorative types and `max_resize` (0.25) are
+  baked into code; `grid.snap` is gone (`bp fmt` always snaps)
+- `extensions:` is live for the four things the core dropped: `severity`,
+  `decorative_types`, `max_resize` and extra `typography` roles
+- Pre-template keys are **refused with their replacement named** (`guidelines.RETIRED`,
+  checked per layer so the offending file is named), never ignored — ignoring `grid.size`
+  would silently leave the grid at 8 ("refuse rather than surprise")
+- Consumers read `rules.spacing.*` / `rules.max_resize`; `--grid` overrides `spacing.grid`;
+  the `gutter` finding now says `spacing.gutter is Npx`
+- `bp describe --json` reports `spacing: {grid, margin, gutter}` and `canvas: {width, height}`
 
-**Tests:** Rewrite `test_guidelines.py`. All other tests still pass because
-the `Guidelines` object is the same interface — just different field paths.
+**Typography:** the three client roles map onto the internal checking roles at parse time,
+so `validate.py`, `pbir/theme.py` and `apply.py` keep working unchanged:
 
-**Risk:** Low. The `Guidelines` object is only consumed by `validate.py` and
-commands. Changing its internal structure doesn't break anything downstream
-until those consumers are updated (step 3).
+| Client role (`typography:`) | Internal role | What it covers |
+|---|---|---|
+| `page_title` | `header` | the textbox `bp apply` writes for `type: header` |
+| `visual_title` | `title` | a visual's own title |
+| `body` | `textbox` | every other textbox |
+
+`subtitle`, `callout` and `card_label` stay reachable under `extensions.typography.*`
+(same internal names). They are probe-verified behaviour (probes 07, 15), so they moved
+rather than being deleted. `bold` is gone everywhere: a weight is part of the face name.
+
+**Tests:** `test_guidelines.py` rewritten (new paths, retired-key errors, role mapping).
+Old YAML in the other tests rewritten. `test_apply_golden.py` and `test_probe_replay.py`
+pass **without** `BLUEPRINT_UPDATE_GOLDEN=1` — nothing in this step may change apply's
+output, and `example.yaml`'s `page_title` is the old `header` value. `scripts/demo.sh`
+runs clean and is still idempotent.
+
+**Result:** 582 passed, `ruff` clean.
 
 ### Step 2: Layout structural format
 
@@ -205,26 +234,6 @@ until those consumers are updated (step 3).
 
 **Risk:** Low. The `Layout` object is the same shape. Everything downstream
 of `parse()` is unchanged.
-
-### Step 3: Wire guidelines into consumers
-
-**What:** Update `validate.py` and all `commands/*.py` to use new
-guideline field paths.
-
-**Changes:**
-- `validate.py`: read `spacing.grid`/`spacing.margin`/`spacing.gutter` instead of
-  `grid.size`/`canvas.margin`/`canvas.gutter`. Remap typography roles.
-- `commands/check.py`: remove `check.severity` from guidelines, use code defaults.
-- `commands/fmt.py`: new field paths for grid/margin.
-- `commands/apply.py`: new field paths, pass layout rows through `compute_regions()`.
-- `commands/theme.py`: new typography role names.
-- `commands/describe.py`: include named formats in output.
-
-**Tests:** Update `test_validate.py` field paths. Update command tests.
-Run full test suite — everything should pass.
-
-**Risk:** Medium. This touches many files, but each change is a field path
-rename, not a logic change. The validation logic itself is unchanged.
 
 ### Step 4: Visual inheritance
 
@@ -312,15 +321,13 @@ test suite passes.
 ## Step dependency graph
 
 ```
-Step 1 (guidelines schema)
+Step 1 + 3 (guidelines schema, wired into consumers)  [done]
   │
   ├──▶ Step 2 (layout structural format)
   │       │
   │       └──▶ Step 7 (shipped layouts + examples)
-  │
-  ├──▶ Step 3 (wire guidelines into consumers)
-  │       │
-  │       └──▶ Step 8 (test sweep)
+  │                │
+  │                └──▶ Step 8 (test sweep)
   │
   ├──▶ Step 4 (visual inheritance)  [independent]
   │
@@ -329,8 +336,10 @@ Step 1 (guidelines schema)
             └──▶ Step 6 (wire into render)
 ```
 
-Steps 4 and 5 can happen in parallel with steps 2 and 3. Step 1 must be
-first because everything reads from `Guidelines`.
+Steps 4 and 5 can happen in parallel with step 2. Step 1 had to be first
+because everything reads from `Guidelines` — and step 3 turned out to be
+inseparable from it (the field paths *are* the interface), so the two
+landed together.
 
 ---
 
@@ -345,9 +354,9 @@ first because everything reads from `Guidelines`.
 - [x] Write `template/visuals.md` (visual type system — runtime, inheritance)
 - [x] Write `template/extensions.md` (extension points by layer)
 - [x] Compatibility analysis and incremental plan (this section)
-- [ ] Step 1: Guidelines schema rewrite
+- [x] Step 1: Guidelines schema rewrite (merged with step 3)
+- [x] Step 3: Wire guidelines into consumers (done with step 1)
 - [ ] Step 2: Layout structural format
-- [ ] Step 3: Wire guidelines into consumers
 - [ ] Step 4: Visual inheritance
 - [ ] Step 5: Spec enhancements
 - [ ] Step 6: Wire into render

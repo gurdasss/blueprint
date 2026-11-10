@@ -389,7 +389,7 @@ filled (same canvas, within the guidelines), e.g. `layout 'standard-4-up' leaves
 a gap on the page; layout(s) that fit with no gap: two-up`.
 
 `bp apply` refuses a layout that doesn't fit the guidelines it runs with: regions off the grid,
-inside `canvas.margin`, or closer together than `canvas.gutter`.
+inside `spacing.margin`, or closer together than `spacing.gutter`.
 
 ---
 
@@ -412,15 +412,14 @@ Resolution order, later overriding earlier:
 version: 1
 name: Example Corp Reporting Standard
 
-grid:
-  size: 8
-  snap: true
-
 canvas:
   width: 1280
   height: 720
+
+spacing:
+  grid: 8
   margin: 16
-  gutter: 16
+  gutter: 16      # minimum gap between neighbouring visuals
 
 palette:
   categorical: ["#4E79A7", "#F28E2B", "#E15759", "#76B7B2", "#59A14F"]
@@ -429,9 +428,9 @@ palette:
   enforce: strict        # strict | warn | off
 
 typography:
-  title:    { font: Segoe UI Semibold, size: 18 }   # weight is part of the face name
-  subtitle: { font: Segoe UI, size: 12 }
-  header:   { font: Segoe UI Semibold, size: 20 }   # bp apply writes this onto header textboxes
+  page_title:   { font: Segoe UI Semibold, size: 20 }  # bp apply writes this onto header textboxes
+  visual_title: { font: Segoe UI Semibold, size: 18 }  # weight is part of the face name
+  body:         { font: Segoe UI, size: 12 }           # textboxes
 
 page:
   require_title: true      # pages built from a spec need a `type: header` visual...
