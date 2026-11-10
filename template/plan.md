@@ -206,9 +206,11 @@ Rewrite:
 ## Status
 
 - [x] Read the codebase and map current vs. proposed
-- [ ] Finalise guidelines core keys (this document)
-- [ ] Write `template/guidelines.template.yaml` (the reference file)
-- [ ] Write `template/guidelines.core-spec.md` (the key-by-key spec)
-- [ ] Phase 2: layout template
-- [ ] Phase 3: page spec template
+- [x] Finalise guidelines core keys (this document)
+- [x] Write `template/guidelines.template.yaml` (the reference file)
+- [x] Phase 2: `template/layout.template.yaml`
+- [x] Phase 3: `template/page.template.yaml`
+- [x] Write `template/interactions.md` (how the three files depend on each other)
+- [ ] Write `template/guidelines.core-spec.md` (key-by-key spec for implementers)
+- [ ] Review and lock down all three templates
 - [ ] Begin code refactor

@@ -1,0 +1,70 @@
+# ─────────────────────────────────────────────────────────────────────
+# Blueprint Layout — Core Template
+# ─────────────────────────────────────────────────────────────────────
+# A layout is a named arrangement of regions on a canvas. Each region
+# is a rectangle that a visual fills. `bp apply` places visuals into
+# regions by matching their role.
+#
+# A layout file lives in a directory on the guidelines' search_path.
+# The file name (without .yaml) is the layout name a page spec uses.
+#
+# Rules enforced by `bp apply`:
+#   - Every region must sit on the guidelines grid.
+#   - Every region must be inside the guidelines margin.
+#   - Every pair of regions must be at least the guidelines gutter apart.
+#   - Violating any of these refuses the layout, not the spec.
+# ─────────────────────────────────────────────────────────────────────
+
+
+# ── Identity ─────────────────────────────────────────────────────────
+# The name must match the file name. This is what a page spec writes
+# in its `layout:` field.
+
+name: standard-dashboard
+
+
+# ── Canvas ───────────────────────────────────────────────────────────
+# Must match the guidelines canvas dimensions exactly. A layout built
+# for 1280×720 refuses to run under guidelines that say 1920×1080.
+
+canvas:
+  width: 1280
+  height: 720
+
+
+# ── Regions ──────────────────────────────────────────────────────────
+# An ordered list of named rectangles. Visuals fill regions of their
+# role in declaration order: the first `main` visual gets the first
+# `main` region, the second gets the second, and so on.
+#
+# Each region has:
+#   role   What kind of visual fills it. Core roles:
+#            header   — the page title textbox
+#            kpi-row  — KPI cards and small summary visuals
+#            main     — charts, tables, matrices — everything else
+#   x, y   Top-left corner in pixels (must be on the grid)
+#   w, h   Width and height in pixels (edges must be on the grid)
+#
+# Running out of regions is an error. Unfilled regions are gaps
+# (a warning, never a reflow).
+
+regions:
+  - { role: header,  x: 16,  y: 16,  w: 1248, h: 64 }
+  - { role: kpi-row, x: 16,  y: 96,  w: 616,  h: 160 }
+  - { role: kpi-row, x: 648, y: 96,  w: 616,  h: 160 }
+  - { role: main,    x: 16,  y: 272, w: 616,  h: 432 }
+  - { role: main,    x: 648, y: 272, w: 616,  h: 432 }
+
+
+# ── Design notes (not parsed) ───────────────────────────────────────
+# This layout assumes:
+#   grid: 8, margin: 16, gutter: 16
+#
+# The KPI row is 160px high. At 120px Desktop clips a KPI visual's
+# goal line and a titled card's label.
+#
+# Column math:
+#   usable width = 1280 - 2×16 = 1248
+#   2 columns + 1 gutter: (1248 - 16) / 2 = 616 each
+#   kpi-row x₂ = 16 + 616 + 16 = 648  ✓ (on grid)
+#   main x₂    = 648                    ✓ (same)

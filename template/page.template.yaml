@@ -1,0 +1,83 @@
+# ─────────────────────────────────────────────────────────────────────
+# Blueprint Page Spec — Core Template
+# ─────────────────────────────────────────────────────────────────────
+# A page spec is the input a human or LLM agent writes. It describes
+# intent — which visuals go on a page and what data they show — not
+# pixel coordinates.
+#
+# Usage:
+#   bp apply this-file.yaml --report <path> --guidelines <path>
+#
+# Discover what you can write:
+#   bp describe --report <path> --guidelines <path> --json
+# ─────────────────────────────────────────────────────────────────────
+
+
+# ── Page identity ────────────────────────────────────────────────────
+# `page:` is the display name shown in Power BI Desktop's page tab.
+# The spec's identity (for re-apply matching) is the file name, or
+# an explicit `id:` if you need to rename the file without creating
+# a new page.
+
+page: Sales Overview
+layout: standard-dashboard
+
+
+# ── Visuals ──────────────────────────────────────────────────────────
+# An ordered list. Each visual fills the next free region of its role.
+# Every visual has:
+#
+#   type     A Blueprint visual type (see `bp describe` for the list).
+#   title    The visual's display title.
+#   slots    Data bindings — which fields from the semantic model go
+#            into which slot. Slot names and what they accept depend
+#            on the visual type.
+#
+# Optional:
+#   region   Override the visual type's default region role.
+#            Example: a `card` normally goes to `main`, but
+#            `region: kpi-row` places it in the KPI row.
+#
+# Field syntax:
+#   "[Measure Name]"           — a measure (square brackets, no table)
+#   "Table[Column]"            — a column
+#   "Table[Hierarchy]"         — a model hierarchy (binds all levels)
+#   ["A[Col1]", "A[Col2]"]    — an ordered list (drill-down path)
+
+visuals:
+
+  # ── Header (required when guidelines say require_title: true) ──
+  - type: header
+    title: Sales Overview
+
+  # ── KPI in the KPI row (its default region) ────────────────────
+  - type: kpi
+    title: Revenue vs Target
+    slots:
+      value: "[Total Revenue]"
+      trend: "Calendar[Month]"
+      target: "[Revenue Target]"
+
+  # ── Card overridden into the KPI row ───────────────────────────
+  - type: card
+    title: Total Orders
+    region: kpi-row
+    slots:
+      value: "[Order Count]"
+
+  # ── Column chart in a main region ──────────────────────────────
+  - type: column
+    title: Revenue by Region
+    slots:
+      category: "Geography[Region]"
+      value: "[Total Revenue]"
+
+  # ── Table in a main region ─────────────────────────────────────
+  - type: table
+    title: Order Detail
+    slots:
+      columns:
+        - "Geography[Region]"
+        - "Product[Category]"
+        - "[Total Revenue]"
+        - "[Order Count]"
