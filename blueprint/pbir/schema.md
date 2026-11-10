@@ -560,6 +560,19 @@ content, so Blueprint's theme file matches Desktop's format exactly.
   well's menu set every level `active` (expand) and **did not switch to the plain column**.
   Probe 14 settled how Blueprint binds a date: `Table[Column]` as a plain `Column`, which Desktop draws
   and keeps as written.
+- **Open: the rest of the aggregation codes, and writing one.** Only 0 (Sum), 1 (Average) and 5
+  (Count) have been seen, and only 0 appears in the real samples. Distinct count, min and max are
+  unknown, and the UI's "Count" being 5 shows the enum doesn't follow the menu order, so no code
+  is guessed. Nothing has verified that Desktop accepts an `Aggregation` **Blueprint** wrote, or
+  which `queryRef`/`nativeQueryRef` it wants: probe 13 showed Desktop keeps a field's stale
+  `queryRef` after an in-place change, so that diff doesn't answer it either.
+  `scripts/probe_aggregate_format.py` (probe 29) settles both, aggregating fresh fields.
+- **Open: a per-visual data format.** The vendored schema (visualConfiguration 2.8.0) carries a
+  per-projection `"format"`, described as "format string scoped to the visual". Unverified:
+  whether Desktop writes it there rather than in `visual.objects`, whether the Format pane's
+  display units and decimal places land there, and what the string is for the common cases. A
+  measure's TMDL `formatString` is a model fact and a different thing. Probe 29 covers this too,
+  with a card formatted in the Format pane next to a measure formatted on the ribbon.
 - **Aggregation codes:** "Average of Amount" is `Function: 1` and "Count of Region" (a text column) is
   `Function: 5`. Desktop kept the field's old `queryRef` (`Sum(Sales.Amount)` on the Average,
   `Sales.Region` on the Count), so a `queryRef` says nothing reliable about the aggregation.

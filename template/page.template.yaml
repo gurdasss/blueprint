@@ -51,36 +51,29 @@ visuals:
       trend: "Calendar[Month]"
       target: "[Revenue Target]"
 
-  # ── Card — long form slot (field + format) ─────────────────────
-  # When a slot needs micro decisions, use the long form:
-  #   { field: <field>, format: <named format> }
+  # ── Card ───────────────────────────────────────────────────────
   - type: card
-    title: Unique Investors
+    title: Total Revenue
     region: kpi-row
     slots:
-      value:
-        field: "Investors[ID] | distinctcount"
-        format: whole_number                     # → 1,234
+      value: "[Total Revenue]"
 
-  # ── Column chart with options and formatted value ──────────────
+  # ── Column chart with options ──────────────────────────────────
   - type: column
     title: Revenue by Region
     options: { labels: "on" }
     slots:
       category: "Geography[Region]"
-      value:
-        field: "[Total Revenue]"
-        format: currency                         # → $1,234.56
+      value: "[Total Revenue]"
 
-  # ── Table — mixed short and long form ──────────────────────────
+  # ── Table — an ordered list is the column order, left to right ─
   - type: table
     title: Order Detail
     slots:
       columns:
         - "Geography[Region]"
         - "Product[Category]"
-        - field: "[Total Revenue]"
-          format: currency
+        - "[Total Revenue]"
         - "[Order Count]"
 
 
@@ -88,28 +81,14 @@ visuals:
 # Slot syntax reference
 # ─────────────────────────────────────────────────────────────────────
 #
-# ── Short form (just the field — the common case) ──
+# ── A slot holds a field ──
 #
-#   value: "[Total Revenue]"
-#   value: "Table[Column]"
-#   value: "Table[Column] | distinctcount"
+#   value: "[Total Revenue]"          a measure
+#   value: "Table[Column]"            a column
+#   value: "Table[Hierarchy]"         a model hierarchy (binds all levels)
 #
-# ── Long form (field + optional micro decisions) ──
-#
-#   value:
-#     field: "[Total Revenue]"
-#     format: currency
-#
-# The short form and long form are interchangeable. Use the short form
-# when the field is all you need. Use the long form when you also want
-# to set a data format.
-#
-#
-# ── Field syntax ──
-#
-#   "[Measure Name]"                  a measure
-#   "Table[Column]"                   a column
-#   "Table[Hierarchy]"                a model hierarchy (binds all levels)
+#   One way to write one thing: a field is a string. Anything a slot
+#   needs beyond the field will be a mapping key (see "Not built yet").
 #
 #
 # ── Drill-down paths (ordered lists) ──
@@ -123,29 +102,41 @@ visuals:
 #     - "Geography[State]"
 #     - "Geography[City]"
 #
-#
-# ── Aggregated columns (visual-level aggregation) ──
-#
-#   "Table[Column] | sum"             Sum
-#   "Table[Column] | average"         Average
-#   "Table[Column] | distinctcount"   Distinct count
-#   "Table[Column] | count"           Count (non-null values)
-#   "Table[Column] | min"             Minimum
-#   "Table[Column] | max"             Maximum
-#
-#   Use a measure when the aggregation is reusable business logic.
-#   Use `| aggregate` for a one-off visual-level summary.
+#   A list in a `value` slot means one series per measure instead
+#   (probe 20). `bp describe` marks which slots take a list.
 #
 #
-# ── Named data formats (optional, per slot) ──
+# ── Not built yet: per-slot decisions ──
 #
-#   general        Power BI's default (no specific formatting)
-#   whole_number   1,234
-#   decimal        1,234.56
-#   currency       $1,234.56
-#   percentage     45.20%
+#   Nothing below is accepted by `bp apply` today. It is recorded here
+#   so the shape is settled when the evidence is:
 #
-#   Omit format to use Power BI's default for the field's data type.
-#   Fine-grained overrides (decimal places, thousand separator) are
-#   available through extensions.
+#     value:
+#       field: "Sales[Amount]"        # a mapping = field + decisions
+#       aggregate: sum                # visual-level aggregation
+#       format: "#,0.00"              # format string scoped to the visual
+#
+#   The mapping form is the only planned way to say more about a field.
+#   An earlier draft of this template also showed a pipe syntax
+#   ("Sales[Amount] | distinctcount"); that is dropped. It is a second
+#   language inside a string, invisible to validation, and it says what
+#   `aggregate:` already says.
+#
+#   Why it waits: `apply` writes what a Desktop probe has verified, and
+#   neither shape is verified yet.
+#     - aggregate: Desktop's read shape is known (probes 10, 13:
+#       {"Aggregation": {"Expression": {"Column": …}, "Function": N}}),
+#       and codes 0 Sum, 1 Average, 5 Count are attested. The codes for
+#       distinct count, min and max are not, and Blueprint writing any
+#       of them is unverified. An aggregated column also puts a column
+#       in a measure-only slot, so a slot has to accept that kind.
+#     - format: the vendored Microsoft schema (visualConfiguration
+#       2.8.0) carries a per-projection "format" — "format string scoped
+#       to the visual" — so the unit is a Power BI format string, not a
+#       named enum. A table of friendly names (currency, percentage)
+#       would make Blueprint invent a currency symbol and decimal
+#       places; naming them belongs in an extension, over a core that
+#       takes the string the client wrote.
+#
+#   See template/plan.md step 5 and blueprint/pbir/schema.md.
 # ─────────────────────────────────────────────────────────────────────

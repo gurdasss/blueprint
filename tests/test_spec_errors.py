@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+import yaml
 
 from blueprint import spec
 from blueprint.spec import FieldRef, SpecError
@@ -120,3 +121,11 @@ def test_every_full_spec_in_the_readme_parses(tmp_path):
         g = tmp_path / f"g{i}.yaml"
         g.write_text(block, encoding="utf-8")
         guidelines.load(g)
+
+
+def test_the_shipped_page_template_parses():
+    """template/page.template.yaml is what a client copies: every slot form it shows in its
+    YAML body must be one the parser accepts (the guidelines and layout templates have the
+    same test). Syntax that isn't built yet belongs in a comment, marked as such."""
+    data = yaml.safe_load((ROOT / "template" / "page.template.yaml").read_text(encoding="utf-8"))
+    spec.parse(data, "page.template.yaml")

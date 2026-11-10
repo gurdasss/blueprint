@@ -328,40 +328,75 @@ is for types a client adds. A test pins that reasoning.
 
 **Result:** 598 passed, `ruff` clean, demo byte-identical.
 
-### Step 5: Spec enhancements (pipe syntax, long-form slots, named formats)
+### Step 5 (decided, blocked on a probe): one way to say more about a field
 
-**What:** Extend `spec.py` to parse the new syntax.
+**The decision.** A slot's field is a **string**; anything further is a **mapping key**:
+
+```yaml
+value: "[Total Revenue]"              # a field, the common case
+value:                                 # a field plus decisions (planned)
+  field: "Sales[Amount]"
+  aggregate: sum
+  format: "#,0.00"
+```
+
+**Pipe syntax is dropped.** `"Sales[Amount] | distinctcount"` was a second language inside a
+string: invisible to YAML, invisible to the parser's error locations, and it says exactly what
+`aggregate:` says. Three ways to write one binding is the opposite of one client-friendly unit.
+
+The short string stays as the shorthand for "just the field" — `"X"` means `{field: X}`. That is
+two surface forms with one meaning, which is worth it: every probe replay, demo spec, README
+example and shipped example already uses the string, and it is the form a client writes nine
+times out of ten.
+
+**Why no code yet.** `apply` only writes shapes a Desktop probe has verified, and neither key
+has one:
+
+| Key | Evidence today | Missing |
+|---|---|---|
+| `aggregate:` | Desktop's read shape is known (probe 10: `{"Aggregation": {"Expression": {"Column": …}, "Function": N}}`), codes 0 Sum, 1 Average, 5 Count attested (probes 10, 13); only code 0 appears in the real samples | the codes for distinct count, min and max — probe 13 showed the UI's "Count" on a text column is 5, so the enum can't be inferred — and whether Desktop accepts Blueprint writing any of them, with which `queryRef`/`nativeQueryRef` |
+| `format:` | the vendored Microsoft schema (visualConfiguration 2.8.0) has a per-projection `"format"`: "format string scoped to the visual" | whether Desktop writes it there at all, rather than in `visual.objects` or only as the measure's TMDL `formatString`, and what a format string is for the common cases |
+
+Building the parse layer alone would be worse than waiting: `apply` would accept a spec and
+silently ignore half of it.
+
+**`scripts/probe_aggregate_format.py` (probe 29) is written and ready to run.** It needs a
+Desktop session with the user's clicks, because the bridge can't do UI edits: each aggregation is
+chosen on a *fresh* field (probe 13 showed a changed one keeps its stale `queryRef`), and one
+card plus one measure separate a visual format from a model format.
+
+**Named formats are an extension, not core.** The template's `currency` / `percentage` /
+`whole_number` table looked client-friendly, but the unit PBIR stores is a format string, so a
+name has to become one — and `currency` means picking a symbol and a decimal count that the
+client never stated. The core takes the string the client wrote; friendly aliases map to strings
+in an extension. `template/page.template.yaml` lists the ready-to-copy strings instead, the same
+way the layout template lists the worked column arithmetic.
+
+**Done in this step:** the decision recorded; `template/page.template.yaml` corrected (it
+advertised pipe syntax, six aggregations and five named formats, all of which the parser
+refuses) and covered by a parses-cleanly test, like the other two templates.
+
+### Step 6: Wire aggregation and formats into render — after probe 29
+
+**What:** once probe 29 has settled the shapes, carry the long form through
+`spec.py` → `commands/apply.py` → `pbir/render.py`.
 
 **Changes:**
-- `parse_field()`: handle `"Table[Column] | distinctcount"` pipe syntax
-- `_slots()`: handle long-form `{field: ..., format: ...}` alongside short-form strings
-- `FieldRef`: add optional `aggregation` field
-- `VisualSpec`: add optional `formats` dict (slot name → named format)
-- Add `NAMED_FORMATS` constant: `{general, whole_number, decimal, currency, percentage}`
+- `spec.py`: accept the mapping form of a slot (`field`, `aggregate`, `format`), with the
+  short string still meaning `{field: X}`; `FieldRef` gains the optional keys
+- a slot that may hold an aggregated column has to **accept that kind** — an aggregated column
+  sits in a measure-only slot, and `schema.md` keeps `kpi.target` measure-only for that reason.
+  Per slot, with a probe citation; never by widening every `value` slot.
+- `render.py`: write `Aggregation`/`Function` for `aggregate:`, and the projection `format`
+  (or whatever probe 29 shows) for `format:`
+- `commands/describe.py`: list the aggregations and the format key a spec may use
+  (carried over from the old step 3)
 
-**Tests:** Add tests for pipe syntax, long-form slots, format validation.
-Existing spec tests stay — the short-form syntax is unchanged.
+**Tests:** golden output for each shape, and a probe-29 replay.
 
-**Risk:** Low. All changes are additive. Existing specs parse exactly as before.
-
-### Step 6: Wire formats and aggregation into render
-
-**What:** Make `commands/apply.py` pass aggregation and format data through
-to `pbir/render.py`.
-
-**Changes:**
-- `_resolve()` in apply.py: pass aggregation from `FieldRef` into `Binding`
-- `render.py`: write `QueryAggregateFunction` when aggregation is specified
-- `render.py`: write data format properties when named format is specified
-- `commands/describe.py`: list the named formats a spec may use
-  (carried over from the old step 3, which otherwise landed with step 1)
-- Need to determine exact PBIR shape for named formats (may need a probe)
-
-**Tests:** Add golden output tests for aggregation and format rendering.
-
-**Risk:** Medium. The PBIR format for named data formats needs verification
-against Desktop (a probe). Aggregation is already partially supported in
-the reader (`reader.AGGREGATE_FUNCTIONS`).
+**Risk:** Medium, and entirely in the shapes — which is what probe 29 removes. Only ship the
+aggregations whose `Function` code the probe shows; a code nobody has seen stays unsupported
+rather than guessed.
 
 ### Step 7 (mostly done): shipped layouts and example files
 
@@ -432,7 +467,7 @@ landed together.
 - [x] Step 3: Wire guidelines into consumers (done with step 1)
 - [x] Step 2: Layout structural format — dropped, pixels stay (see above)
 - [x] Step 4: Core seven visual types + `inherits:`
-- [ ] Step 5: Spec enhancements
-- [ ] Step 6: Wire into render
+- [~] Step 5: One way to say more about a field — decided; code waits on probe 29
+- [ ] Step 6: Wire into render (after probe 29)
 - [x] Step 7: Shipped layouts and examples (layouts already conform)
 - [ ] Step 8: Final test sweep
