@@ -11,7 +11,9 @@ A layout is ``<search path>/<name>.yaml``:
 Visuals fill regions **in declaration order**: each takes the next unused region whose role
 matches the visual's role: its spec's ``region:`` if it has one, else its type's region (from
 its slot contract). Running out of regions is an error, never a
-reflow. ``blueprint: ignore`` visuals take no region.
+reflow. ``blueprint: ignore`` visuals take no region. A region left with no visual leaves a gap
+on the page; ``bp apply`` warns and names layouts that fit (:func:`unused`), but never stretches
+other regions into it.
 """
 
 from __future__ import annotations
@@ -175,3 +177,9 @@ def place(spec: PageSpec, layout: Layout) -> list[Placement]:
     if problems:
         raise LayoutError(f"{spec.source}: " + "\n  ".join(problems))
     return placements
+
+
+def unused(layout: Layout, placements: list[Placement]) -> list[Region]:
+    """Regions no visual was placed in, in declaration order: each is a gap on the page."""
+    taken = {p.region.key for p in placements}
+    return [r for r in layout.regions if r.key not in taken]

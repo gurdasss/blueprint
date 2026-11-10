@@ -27,7 +27,7 @@ def test_types_layouts_and_limits_without_a_report(capsys):
         "trend": {"accepts": ["column"], "required": True, "list": False},
         "target": {"accepts": ["measure"], "required": False, "list": False}}}
     assert d["types"]["slicer"]["options"] == {"style": ["dropdown"]}
-    assert list(d["layouts"]) == ["dashboard-6", "grid-2x3", "kpi-row-plus-detail", "standard-4-up"]
+    assert list(d["layouts"]) == ["dashboard-6", "grid-2x3", "kpi-row-plus-detail", "one-up", "standard-4-up", "two-up"]
     std = d["layouts"]["standard-4-up"]
     assert (std["default"], std["usable"], std["roles"]) == (True, True, {"header": 1, "kpi-row": 1, "main": 2})
     assert std["regions"][2] == {"key": "main#1", "role": "main", "x": 16, "y": 272, "w": 616, "h": 432}

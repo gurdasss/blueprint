@@ -153,6 +153,33 @@ def _title_warnings(placements: list[layouts.Placement], rules: guidelines.Guide
     return out
 
 
+def _gap_warnings(page_spec: spec.PageSpec, layout: layouts.Layout,
+                  placements: list[layouts.Placement], rules: guidelines.Guidelines) -> list[str]:
+    """An empty region leaves a gap. Blueprint never reflows a layout, so it says so and names
+    the layouts on the search path that place this spec, on the same canvas and within the
+    guidelines, with every region filled."""
+    empty = layouts.unused(layout, placements)
+    if not empty:
+        return []
+    fits = []
+    for name in layouts.available(rules.layouts.search_path):
+        if name == layout.name:
+            continue
+        try:
+            other = layouts.load(name, rules.layouts.search_path)
+            if ((other.width, other.height) != (layout.width, layout.height)
+                    or layouts.conflicts(other, rules.grid.size, rules.canvas.margin, rules.canvas.gutter)):
+                continue
+            if not layouts.unused(other, layouts.place(page_spec, other)):
+                fits.append(name)
+        except layouts.LayoutError:
+            continue
+    hint = (f"layout(s) that fit with no gap: {', '.join(fits)}" if fits
+            else "no layout on the search path fits this spec with no gap")
+    return [(f"layout {layout.name!r} leaves {', '.join(r.key for r in empty)} empty, a gap on "
+            f"the page; {hint}")]
+
+
 def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
     page_spec = spec.load(spec_path)
     report = read_report(args.report)
@@ -173,6 +200,7 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
     plan = Plan(root=report.root)
     plan.warnings.extend(report.warnings)
     plan.warnings.extend(_title_warnings(placements, rules))
+    plan.warnings.extend(_gap_warnings(page_spec, layout, placements, rules))
     built_with = f"{rules.name}@{rules.version}"
     rule = rules.typography.get("header")
     header_style = render.text_style(rule.fonts[0] if rule and rule.fonts else None,

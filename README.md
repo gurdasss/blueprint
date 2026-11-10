@@ -377,6 +377,13 @@ Running out of regions is an error, not a reflow. Shipped with the example guide
 | `dashboard-6` | header, 3 KPI row, 3 main |
 | `kpi-row-plus-detail` | header, 4 KPI row, 1 full-width main |
 | `grid-2x3` | header, 6 main (2 rows of 3) |
+| `two-up` | header, 2 full-height main |
+| `one-up` | header, 1 full-width main |
+
+A region no visual fills is left empty: a gap on the page. That's not a reflow either: `bp apply`
+warns, naming the layouts on the search path that would place the same visuals with every region
+filled (same canvas, within the guidelines), e.g. `layout 'standard-4-up' leaves kpi-row#1 empty,
+a gap on the page; layout(s) that fit with no gap: two-up`.
 
 `bp apply` refuses a layout that doesn't fit the guidelines it runs with: regions off the grid,
 inside `canvas.margin`, or closer together than `canvas.gutter`.

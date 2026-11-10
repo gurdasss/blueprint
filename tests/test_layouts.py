@@ -62,7 +62,7 @@ def test_shipped_layouts_fit_the_example_guidelines(name):
 
 
 def test_shipped_layouts():
-    assert SHIPPED == ["dashboard-6", "grid-2x3", "kpi-row-plus-detail", "standard-4-up"]
+    assert SHIPPED == ["dashboard-6", "grid-2x3", "kpi-row-plus-detail", "one-up", "standard-4-up", "two-up"]
 
 
 def test_conflicts_include_the_gutter():
