@@ -88,9 +88,9 @@ def describe(rules: Guidelines, report: Report | None) -> dict[str, Any]:
 def _guidelines(rules: Guidelines) -> dict[str, Any]:
     return {
         "name": rules.name, "version": rules.version, "sources": list(rules.sources),
-        "canvas": {"width": rules.canvas.width, "height": rules.canvas.height,
-                   "margin": rules.spacing.margin, "gutter": rules.spacing.gutter},
-        "grid": rules.spacing.grid,
+        "canvas": {"width": rules.canvas.width, "height": rules.canvas.height},
+        "spacing": {"grid": rules.spacing.grid, "margin": rules.spacing.margin,
+                    "gutter": rules.spacing.gutter},
         "max_visuals": rules.page.max_visuals,
         "density_policy": rules.page.density_policy,
         "require_title": rules.page.require_title,
@@ -181,10 +181,10 @@ def _model(report: Report) -> dict[str, Any]:
 
 def to_text(data: dict[str, Any]) -> str:
     g = data["guidelines"]
-    c = g["canvas"]
+    c, sp = g["canvas"], g["spacing"]
     lines = [f"Guidelines: {g['name'] or '(unnamed)'} v{g['version']}  [{' < '.join(g['sources'])}]",
-             (f"  canvas {c['width'] or '*'}x{c['height'] or '*'}, grid {g['grid']}px, margin {c['margin']}px, "
-             f"gutter {c['gutter']}px, max_visuals {g['max_visuals'] or 'none'} "
+             (f"  canvas {c['width'] or '*'}x{c['height'] or '*'}, grid {sp['grid']}px, "
+             f"margin {sp['margin']}px, gutter {sp['gutter']}px, max_visuals {g['max_visuals'] or 'none'} "
              f"(policy {g['density_policy']})"),
              *(["  every page needs a `type: header` visual (page.require_title)"
                 + (f", in a {g['title_region']!r} region" if g["title_region"] else "")]

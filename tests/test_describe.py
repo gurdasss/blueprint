@@ -33,7 +33,8 @@ def test_types_layouts_and_limits_without_a_report(capsys):
     std = d["layouts"]["standard-4-up"]
     assert (std["default"], std["usable"], std["roles"]) == (True, True, {"header": 1, "kpi-row": 1, "main": 2})
     assert std["regions"][2] == {"key": "main#1", "role": "main", "x": 16, "y": 272, "w": 616, "h": 432}
-    assert d["guidelines"]["canvas"] == {"width": 1280, "height": 720, "margin": 16, "gutter": 16}
+    assert d["guidelines"]["canvas"] == {"width": 1280, "height": 720}
+    assert d["guidelines"]["spacing"] == {"grid": 8, "margin": 16, "gutter": 16}
     assert d["guidelines"]["max_visuals"] == 6
     assert "model" not in d and "pages" not in d
 

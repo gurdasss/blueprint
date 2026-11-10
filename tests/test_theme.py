@@ -44,7 +44,7 @@ def test_example_guidelines_theme():
         "visualStyles": {"*": {"*": {"title": [{"fontSize": 18}]}}},
     }
     # page_title is written onto header textboxes by bp apply; body (textboxes) has no theme class
-    assert notes == [("typography.textbox: the theme can't set its font or size (unverified); "
+    assert notes == [("typography.body: the theme can't set its font or size (unverified); "
                       "visuals are still checked")]
 
 
@@ -151,7 +151,7 @@ def test_base_visual_styles_title_size_outranks_text_classes(tmp_path: Path):
               package="RegisteredResources", folder="t")
     rules = _rules(tmp_path, "typography: {visual_title: {font: Segoe UI Semibold, size: 18}}\n")
     found = [f.message for f in check_report(read_report(rd), rules).findings if f.rule == "typography"]
-    assert found == ["theme 'C' title text: size 15pt (allowed: 18)"]  # the false pass, now caught
+    assert found == ["theme 'C' visual_title text: size 15pt (allowed: 18)"]  # the false pass, now caught
 
     # Writing the size at the visualStyles level too (what bp theme now does) fixes it.
     add_theme(rd, "custom", "C2", {"textClasses": {"title": {"fontSize": 18, "fontFace": "Segoe UI Semibold"}},
@@ -188,14 +188,14 @@ def test_card_label_notes(tmp_path: Path):
                   "    card_label: {font: [Segoe UI, Arial], size: [12, 14]}\n"))
     assert doc["visualStyles"]["cardVisual"]["*"]["label"] == [
         {"$id": "default", "fontSize": 12, "fontFamily": "'Segoe UI', helvetica, arial, sans-serif"}]
-    assert notes == ["typography.card_label: theme uses the first allowed size, 12pt",
-                     "typography.card_label: theme uses the first allowed font, 'Segoe UI'"]
+    assert notes == ["extensions.typography.card_label: theme uses the first allowed size, 12pt",
+                     "extensions.typography.card_label: theme uses the first allowed font, 'Segoe UI'"]
     doc, notes = theme.build(_rules(
         tmp_path, "name: T\ntypography: {visual_title: {size: 18}}\n"
                   "extensions:\n  typography:\n    card_label: {font: \"Se'goe, UI\"}\n"))
     assert "cardVisual" not in doc["visualStyles"]  # a font that can't be a CSS stack sets nothing
-    assert notes == [("typography.card_label: font \"Se'goe, UI\" can't be written as a font stack; "
-                      "visuals are still checked")]
+    assert notes == [("extensions.typography.card_label: font \"Se'goe, UI\" can't be written as a "
+                      "font stack; visuals are still checked")]
 
 
 def test_theme_then_check_passes_the_card_label(tmp_path: Path, card_chart_fixture: Path):
@@ -206,7 +206,8 @@ def test_theme_then_check_passes_the_card_label(tmp_path: Path, card_chart_fixtu
     rules = guidelines.load(guide)
     before = check_report(read_report(report), rules).findings
     assert [f.message for f in before if f.rule == "typography"] == [
-        "theme 'Fluent2-CY26SU10' card_label text: font 'Segoe UI' (allowed: Arial); size 12pt (allowed: 14)"]
+        ("theme 'Fluent2-CY26SU10' card_label text: font 'Segoe UI' (allowed: Arial); "
+         "size 12pt (allowed: 14)")]
     assert main(["theme", "--report", str(report), "--guidelines", str(guide)]) == 0
     after = check_report(read_report(report), rules).findings
     assert [f for f in after if f.rule == "typography"] == []

@@ -112,6 +112,12 @@ CORE_ROLES = {"page_title": "header", "visual_title": "title", "body": "textbox"
 # subtitle, the old card's value and the new card's value (callout) and its Category label.
 EXTENSION_ROLES = ("subtitle", "callout", "card_label")
 TYPOGRAPHY_ROLES = tuple(CORE_ROLES) + EXTENSION_ROLES
+# Internal role -> the client's name for it, for messages: a finding or note must name a key the
+# client can actually write (the internal names are refused by the loader).
+ROLE_LABEL = {**{internal: client for client, internal in CORE_ROLES.items()},
+              **{role: role for role in EXTENSION_ROLES}}
+ROLE_KEY = {**{internal: f"typography.{client}" for client, internal in CORE_ROLES.items()},
+            **{role: f"extensions.typography.{role}" for role in EXTENSION_ROLES}}
 
 
 @dataclass(frozen=True)
@@ -227,6 +233,10 @@ def _refuse_retired_keys(layer: dict[str, Any], source: str) -> None:
     section = layer.get("typography")
     if isinstance(section, dict):
         for role in section:
+            if role in CORE_ROLES.values():  # the old name of a core role
+                client = ROLE_LABEL[role]
+                raise GuidelinesError(
+                    f"{source}: typography.{role} was replaced by typography.{client}")
             if role in EXTENSION_ROLES:
                 raise GuidelinesError(
                     f"{source}: typography.{role} is an extension role; "

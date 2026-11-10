@@ -103,8 +103,8 @@ def test_check_applies_header_rule_to_blueprint_headers_only(report: Path, tmp_p
     found = [(f["visual"], f["message"]) for f in json.loads(capsys.readouterr().out)["findings"]
              if f["rule"] == "typography"]
     header = _header(report).name
-    assert (header, "header size 20pt (allowed: 32)") in found
-    assert not any(v == header and "textbox" in m for v, m in found)
+    assert (header, "page_title size 20pt (allowed: 32)") in found
+    assert not any(v == header and "body" in m for v, m in found)
 
 
 def test_theme_ignores_header_role():

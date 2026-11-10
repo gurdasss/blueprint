@@ -76,7 +76,11 @@ palette:
 #
 #   page_title     The big header text (`type: header` visuals).
 #   visual_title   Chart, card, table and matrix titles.
-#   body           Labels, textboxes, data labels — everything else.
+#   body           Any other textbox.
+#
+# Further roles (a card's value, the new card's label, subtitles) are
+# extension roles: see "Extensions" below. Labels and data labels are
+# not checked yet.
 #
 # Font names must match Power BI Desktop's font list exactly.
 # A weight is part of the face name (e.g. "Segoe UI Semibold"),
@@ -97,9 +101,20 @@ layouts:
   default: standard-4-up
 
 
-# ── Extensions (reserved) ────────────────────────────────────────────
-# Advanced features are added here. The core validator ignores this
-# section; extension validators read it.
+# ── Extensions ───────────────────────────────────────────────────────
+# Opt-in settings outside the core. Four sub-keys are implemented today:
+#
+# extensions:
+#   severity: {grid: warning}         # rule severity (error | warning | off)
+#   decorative_types: [image, shape]  # exempt from the margin and gutter rules
+#   max_resize: 0.25                  # bp fmt skips a bigger resize; null: no limit
+#   typography:                       # text roles beyond the core three
+#     subtitle:   { font: Segoe UI, size: 12 }
+#     callout:    { font: Segoe UI Light, size: 32 }
+#     card_label: { font: Segoe UI, size: 12 }
+#
+# Anything else here is passed through untouched, for extension
+# validators to read. Sketches of what comes next:
 #
 # extensions:
 #   four_sided_margin:

@@ -89,7 +89,11 @@ def test_wrong_types_are_errors_not_crashes(tmp_path: Path, body: str, match: st
     ("check: {decorative_types: [image]}\n", r"check\.decorative_types was replaced by"),
     ("grid: {}\n", r"the grid: section was replaced by spacing\.grid"),
     ("check: {}\n", r"the check: section moved to extensions"),
-    ("typography: {title: {size: 12}}\n", r"typography\.title: unknown role"),
+    ("typography: {title: {size: 12}}\n",
+     r"typography\.title was replaced by typography\.visual_title"),
+    ("typography: {header: {size: 20}}\n",
+     r"typography\.header was replaced by typography\.page_title"),
+    ("typography: {heading: {size: 20}}\n", r"typography\.heading: unknown role"),
     ("typography: {callout: {size: 28}}\n",
      r"typography\.callout is an extension role; move it to extensions\.typography\.callout"),
 ])
@@ -108,6 +112,18 @@ def test_retired_key_names_the_file_that_carries_it(tmp_path: Path):
     (report / ".blueprint.yaml").write_text("canvas: {margin: 16}\n")
     with pytest.raises(guidelines.GuidelinesError, match=r"\.blueprint\.yaml: canvas\.margin"):
         guidelines.load(org, report)
+
+
+def test_the_shipped_template_and_example_load():
+    """template/guidelines.template.yaml is what a client starts from: it must be accepted as
+    written, and so must the example this repo ships."""
+    root = Path(__file__).resolve().parent.parent
+    template = guidelines.load(root / "template" / "guidelines.template.yaml")
+    assert (template.spacing, template.page.density_policy) == (
+        guidelines.Spacing(grid=8, margin=16, gutter=16), "data")
+    assert sorted(template.typography) == ["header", "textbox", "title"]
+    example = guidelines.load(root / "guidelines" / "example.yaml")
+    assert (example.spacing.margin, example.page.max_visuals) == (16, 6)
 
 
 # --- typography: three core roles, mapped to the internal checking roles ------------------

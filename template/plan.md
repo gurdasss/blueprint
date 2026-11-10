@@ -196,6 +196,8 @@ kept backward-compatible shims (`_GridCompat`, `_CanvasCompat`) also broke layer
 - Consumers read `rules.spacing.*` / `rules.max_resize`; `--grid` overrides `spacing.grid`;
   the `gutter` finding now says `spacing.gutter is Npx`
 - `bp describe --json` reports `spacing: {grid, margin, gutter}` and `canvas: {width, height}`
+- Findings and theme notes name the client's key (`visual_title size 18pt…`,
+  `extensions.typography.card_label: …`), never the internal role
 
 **Typography:** the three client roles map onto the internal checking roles at parse time,
 so `validate.py`, `pbir/theme.py` and `apply.py` keep working unchanged:
@@ -209,6 +211,10 @@ so `validate.py`, `pbir/theme.py` and `apply.py` keep working unchanged:
 `subtitle`, `callout` and `card_label` stay reachable under `extensions.typography.*`
 (same internal names). They are probe-verified behaviour (probes 07, 15), so they moved
 rather than being deleted. `bold` is gone everywhere: a weight is part of the face name.
+
+**Carried forward:** two items of the old step 3 depend on later steps and are *not*
+done — `apply.py` passing layout rows through `compute_regions()` (moved to step 2) and
+`describe.py` listing named formats (moved to step 6).
 
 **Tests:** `test_guidelines.py` rewritten (new paths, retired-key errors, role mapping).
 Old YAML in the other tests rewritten. `test_apply_golden.py` and `test_probe_replay.py`
@@ -228,6 +234,8 @@ runs clean and is still idempotent.
 - New `compute_regions(rows, canvas, spacing)` → list of `Region` with pixel coords
 - `Layout` dataclass output is identical — downstream code sees the same thing
 - Rewrite `guidelines/layouts/*.yaml` to structural format
+- `commands/apply.py`: pass the parsed rows through `compute_regions()`
+  (carried over from the old step 3, which otherwise landed with step 1)
 
 **Tests:** Rewrite layout parsing tests. Placement tests (`place()`, `unused()`,
 `conflicts()`) stay — they work with `Region` objects, not the raw YAML.
@@ -276,6 +284,8 @@ to `pbir/render.py`.
 - `_resolve()` in apply.py: pass aggregation from `FieldRef` into `Binding`
 - `render.py`: write `QueryAggregateFunction` when aggregation is specified
 - `render.py`: write data format properties when named format is specified
+- `commands/describe.py`: list the named formats a spec may use
+  (carried over from the old step 3, which otherwise landed with step 1)
 - Need to determine exact PBIR shape for named formats (may need a probe)
 
 **Tests:** Add golden output tests for aggregation and format rendering.

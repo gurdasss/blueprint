@@ -28,7 +28,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from blueprint.guidelines import Guidelines
+from blueprint.guidelines import ROLE_KEY, Guidelines
 
 FILE_NAME = "blueprint-theme.json"
 PACKAGE = "RegisteredResources"
@@ -80,18 +80,18 @@ def build(rules: Guidelines) -> tuple[dict[str, Any], list[str]]:
         if cls is None:
             if card is None or rule.fonts:
                 what = "font" if card is not None else "font or size"
-                notes.append(f"typography.{role}: the theme can't set its {what} (unverified); "
+                notes.append(f"{ROLE_KEY[role]}: the theme can't set its {what} (unverified); "
                              "visuals are still checked")
             continue
         entry: dict[str, Any] = {}
         if rule.fonts:
             entry["fontFace"] = rule.fonts[0]
             if len(rule.fonts) > 1:
-                notes.append(f"typography.{role}: theme uses the first allowed font, {rule.fonts[0]!r}")
+                notes.append(f"{ROLE_KEY[role]}: theme uses the first allowed font, {rule.fonts[0]!r}")
         if rule.sizes:
             entry["fontSize"] = int(rule.sizes[0]) if rule.sizes[0].is_integer() else rule.sizes[0]
             if len(rule.sizes) > 1:
-                notes.append(f"typography.{role}: theme uses the first allowed size, {rule.sizes[0]:g}pt")
+                notes.append(f"{ROLE_KEY[role]}: theme uses the first allowed size, {rule.sizes[0]:g}pt")
         if entry:
             classes[cls] = entry
     if pal.text:
@@ -119,16 +119,16 @@ def _card_label(rule, notes: list[str]) -> dict[str, Any] | None:
         size = rule.sizes[0]
         entry["fontSize"] = int(size) if size.is_integer() else size
         if len(rule.sizes) > 1:
-            notes.append(f"typography.card_label: theme uses the first allowed size, {size:g}pt")
+            notes.append(f"{ROLE_KEY['card_label']}: theme uses the first allowed size, {size:g}pt")
     if rule.fonts:
         font = rule.fonts[0]
         if "'" in font or "," in font:
-            notes.append(f"typography.card_label: font {font!r} can't be written as a font stack; "
+            notes.append(f"{ROLE_KEY['card_label']}: font {font!r} can't be written as a font stack; "
                          "visuals are still checked")
         else:
             entry["fontFamily"] = CARD_LABEL_STACK.format(font)
             if len(rule.fonts) > 1:
-                notes.append(f"typography.card_label: theme uses the first allowed font, {font!r}")
+                notes.append(f"{ROLE_KEY['card_label']}: theme uses the first allowed font, {font!r}")
     return entry if len(entry) > 1 else None
 
 

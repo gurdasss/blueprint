@@ -31,11 +31,12 @@ ROOT = Path(__file__).resolve().parent.parent
 GUIDELINES = """\
 name: Probe 15
 version: 1
-typography:
-  callout: { font: Segoe UI Light, size: 32 }
+extensions:
+  typography:
+    callout: { font: Segoe UI Light, size: 32 }
 """
 
-# Written by hand: what bp theme would write for typography.card_label if Desktop honours it.
+# Written by hand: what bp theme would write for extensions.typography.card_label if Desktop honours it.
 # The base theme's entry is [{"$id": "default", "position": "aboveValue", "fontSize": 12,
 # "textClass": "label", "fontColor": …}]; this one sets only size and family, so the diff of what
 # Desktop shows tells merge from replace.

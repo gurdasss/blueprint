@@ -32,19 +32,32 @@ extensions:
 ```
 
 **How it works:**
-- Core validator skips the `extensions:` block entirely
+- The core reads only the sub-keys listed below; it passes the rest through
 - Each extension registers a validator that reads its own sub-key
 - Extensions can also read core keys (e.g. palette) but never write them
 - A guidelines file without `extensions:` is complete — nothing is missing
 
-**What extensions add here:**
+**Implemented today** (read by `blueprint/guidelines.py`, which is why these
+four live here rather than in the core file — they are knobs, not contracts):
+
+```yaml
+extensions:
+  severity: {grid: warning}         # override a rule's baked-in severity
+  decorative_types: [image, shape]  # may contain visuals; exempt from margin/gutter
+  max_resize: 0.25                  # bp fmt skips a bigger resize; null: no limit
+  typography:                       # text roles beyond the core three
+    subtitle:   {font: Segoe UI, size: 12}
+    callout:    {font: Segoe UI Light, size: 32}   # a card's value (probe 07)
+    card_label: {font: Segoe UI, size: 12}         # the new card's label (probe 15)
+```
+
+**What further extensions add here:**
 - Four-sided margins (`spacing.margin: { top: 16, bottom: 16, ... }`)
 - Two-axis gutters (`spacing.gutter: { horizontal: 16, vertical: 24 }`)
 - Canvas background colour
-- Validation severity overrides
 - Approved visual type / layout allowlists
 - Visual container styling (border, shadow, corner radius)
-- Additional typography roles (kpi_value, data_label, subtitle)
+- Further typography roles (kpi_value, data_label)
 
 ### 2. Visual definitions
 

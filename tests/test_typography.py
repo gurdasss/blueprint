@@ -149,16 +149,17 @@ def test_violations_are_reported_per_visual(tmp_path: Path):
           textbox("t", fontFamily="Arial", fontWeight="bold", fontSize="20pt")]
     found, _ = _typo(tmp_path, vs)
     assert found == [
-        ("a", "title font 'Arial' (allowed: Segoe UI Semibold); title size 18pt (allowed: 12, 14)"),
-        ("t", "textbox font 'Arial' (allowed: Segoe UI, Segoe UI Light)"),
+        ("a", ("visual_title font 'Arial' (allowed: Segoe UI Semibold); "
+               "visual_title size 18pt (allowed: 12, 14)")),
+        ("t", "body font 'Arial' (allowed: Segoe UI, Segoe UI Light)"),
     ]
 
 
 def test_new_card_callout_and_title_checked(tmp_path: Path):
     body = RULES + "extensions:\n  typography:\n    callout: {font: Segoe UI Semibold, size: 21}\n"
     found, _ = _typo(tmp_path, [new_card("c", fontFamily="'Arial'", fontSize="28D", bold="true")], body)
-    assert found == [("c", ("title size 16pt (allowed: 12, 14); callout font 'Arial' (allowed: Segoe UI "
-                            "Semibold); callout size 28pt (allowed: 21)"))]
+    assert found == [("c", ("visual_title size 16pt (allowed: 12, 14); callout font 'Arial' "
+                            "(allowed: Segoe UI Semibold); callout size 28pt (allowed: 21)"))]
 
 
 def test_new_card_label_checked(tmp_path: Path):
@@ -182,7 +183,7 @@ def test_card_label_theme_default_is_visual_style_over_text_class(tmp_path: Path
 
 def test_theme_text_class_checked(tmp_path: Path):
     found, _ = _typo(tmp_path, [], theme={"textClasses": {"title": {"fontFace": "DIN", "fontSize": 16}}})
-    assert found == [(None, ("theme 'T' title text: font 'DIN' (allowed: Segoe UI Semibold); "
+    assert found == [(None, ("theme 'T' visual_title text: font 'DIN' (allowed: Segoe UI Semibold); "
                              "size 16pt (allowed: 12, 14)"))]
 
 

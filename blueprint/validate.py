@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from blueprint import grid
-from blueprint.guidelines import Guidelines
+from blueprint.guidelines import ROLE_LABEL, Guidelines
 from blueprint.model import ColorUse, FontUse, Page, Rect, Report, TextClass, Theme, Visual
 from blueprint.policies import DENSITY
 
@@ -335,7 +335,8 @@ def _check_typography(report: Report, rules: Guidelines, c: _Collector) -> None:
             if font is not None:
                 problems = _font_problems(font, roles[role])
                 if problems:
-                    c.add("typography", f"theme {theme.name!r} {role} text: " + "; ".join(problems))
+                    c.add("typography",
+                          f"theme {theme.name!r} {ROLE_LABEL[role]} text: " + "; ".join(problems))
 
     unresolved: set[str] = set()
     for page in report.pages:
@@ -353,7 +354,7 @@ def _check_typography(report: Report, rules: Guidelines, c: _Collector) -> None:
                 if font.family in UNRESOLVED_FAMILIES:
                     unresolved.add(font.family)
                     font = FontUse(font.role, None, font.size, font.bold, font.raw_family)
-                problems += [f"{role} {p}" for p in _font_problems(font, rule)]
+                problems += [f"{ROLE_LABEL[role]} {p}" for p in _font_problems(font, rule)]
             if problems:
                 c.add("typography", "; ".join(dict.fromkeys(problems)), page, v)
     if unresolved:
