@@ -1,0 +1,120 @@
+# ─────────────────────────────────────────────────────────────────────
+# Blueprint Guidelines — Core Template
+# ─────────────────────────────────────────────────────────────────────
+# This is the minimum a client provides. Every key here is enforced by
+# `bp check`. Keys that are absent fall back to built-in defaults.
+# Advanced features (four-sided margins, brand colours, visual-container
+# styling, per-rule severity overrides) are added through extensions.
+#
+# Usage:
+#   bp check  --report <path> --guidelines this-file.yaml
+#   bp apply  spec.yaml --report <path> --guidelines this-file.yaml
+#   bp fmt    --report <path> --guidelines this-file.yaml
+# ─────────────────────────────────────────────────────────────────────
+
+version: 1
+name: "<Client> Reporting Standard"
+
+
+# ── Canvas ───────────────────────────────────────────────────────────
+# Fixed page dimensions in pixels. Every page in the report must match.
+# Power BI default is 1280×720; widescreen is 1920×1080.
+
+canvas:
+  width: 1280
+  height: 720
+
+
+# ── Spacing ──────────────────────────────────────────────────────────
+# Grid, margin and gutter — the three numbers that govern alignment.
+#
+#   grid    Pixel snap increment. Every visual edge lands on a multiple.
+#   margin  Minimum distance from any visual edge to the page edge.
+#   gutter  Minimum gap between neighbouring visuals.
+
+spacing:
+  grid: 8
+  margin: 16
+  gutter: 16
+
+
+# ── Page rules ───────────────────────────────────────────────────────
+# Constraints that apply to every page built from a spec.
+#
+#   max_visuals     Upper bound on visuals per page.
+#   density_policy  How visuals are counted: all | visible | data
+#   require_title   Every spec page must have a `type: header` visual.
+
+page:
+  max_visuals: 8
+  density_policy: data
+  require_title: true
+
+
+# ── Palette ──────────────────────────────────────────────────────────
+# Approved colours. `bp check` flags any colour outside this set.
+#
+#   categorical   Ordered series colours for charts.
+#   background    Page / visual background colour.
+#   text          Default text colour.
+#   enforce       strict (error) | warn (warning) | off (skip check)
+
+palette:
+  categorical:
+    - "#4E79A7"
+    - "#F28E2B"
+    - "#E15759"
+    - "#76B7B2"
+    - "#59A14F"
+  background: "#FFFFFF"
+  text: "#333333"
+  enforce: strict
+
+
+# ── Typography ───────────────────────────────────────────────────────
+# Approved font and size per text role. Three roles cover the core:
+#
+#   page_title     The big header text (`type: header` visuals).
+#   visual_title   Chart, card, table and matrix titles.
+#   body           Labels, textboxes, data labels — everything else.
+#
+# Font names must match Power BI Desktop's font list exactly.
+# A weight is part of the face name (e.g. "Segoe UI Semibold"),
+# not a separate property.
+
+typography:
+  page_title:   { font: Segoe UI Semibold, size: 18 }
+  visual_title: { font: Segoe UI, size: 12 }
+  body:         { font: Segoe UI, size: 10 }
+
+
+# ── Layouts ──────────────────────────────────────────────────────────
+# Where to find layout files and which one a spec uses by default.
+# Paths are relative to this file.
+
+layouts:
+  search_path: ["layouts"]
+  default: standard-4-up
+
+
+# ── Extensions (reserved) ────────────────────────────────────────────
+# Advanced features are added here. The core validator ignores this
+# section; extension validators read it.
+#
+# extensions:
+#   four_sided_margin:
+#     top: 16
+#     right: 24
+#     bottom: 16
+#     left: 24
+#   brand_colors:
+#     primary: "#0F2027"
+#     secondary: "#203A43"
+#   approved_visual_types: [card, column, bar, line, pie, table, matrix]
+#   visual_containers:
+#     background_color: "#FFFFFF"
+#     border: { enabled: true, color: "#E1DFDD", width: 1 }
+#     corner_radius: 4
+#   validation_severity:
+#     grid_alignment: error
+#     page_margin: warning
