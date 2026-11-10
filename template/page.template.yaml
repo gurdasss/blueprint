@@ -35,6 +35,9 @@ layout: standard-dashboard
 #   region   Override the visual type's default region role.
 #   options  Formatting choices the visual type declares (e.g. labels,
 #            legend position). See `bp describe` for available options.
+#   sort     { by: <field>, direction: ascending | descending }
+#            The field must be one this visual binds. Left out, the
+#            visual keeps Desktop's own default sort.
 
 visuals:
 
@@ -62,6 +65,7 @@ visuals:
   - type: column
     title: Revenue by Region
     options: { labels: "on" }
+    sort: { by: "[Total Revenue]", direction: descending }
     slots:
       category: "Geography[Region]"
       value: "[Total Revenue]"
@@ -104,6 +108,16 @@ visuals:
 #
 #   A list in a `value` slot means one series per measure instead
 #   (probe 20). `bp describe` marks which slots take a list.
+#
+#
+# ── Sorting a visual ──
+#
+#   sort: { by: "[Total Revenue]", direction: descending }
+#   sort: { by: "Geography[Region]", direction: ascending }
+#
+#   One sort per visual, on a field the visual shows — that is what
+#   Desktop stores (probe 31). Leave `sort` out and Desktop's own
+#   default stands; a sort you set in Desktop is left alone too.
 #
 #
 # ── Saying more about a field: the long form ──

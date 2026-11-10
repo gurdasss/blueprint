@@ -560,6 +560,27 @@ content, so Blueprint's theme file matches Desktop's format exactly.
   well's menu set every level `active` (expand) and **did not switch to the plain column**.
   Probe 14 settled how Blueprint binds a date: `Table[Column]` as a plain `Column`, which Desktop draws
   and keeps as written.
+**Verified 2026-11-10, probe 31** (`scripts/probe_bar_line_sort.py`; evidence
+`docs/probes/31-bar-line-sort.diff`, fixture 02 plus probe 20's `Target Amount`).
+
+- **`labels` and `legend` work on the clustered bar and the line.** Probe 23 verified
+  `objects.labels[0].properties.show = true` and `objects.legend[0].properties.position` on the
+  column and stacked charts only. Written here onto a `clusteredBarChart` (legend `'Right'`) and a
+  `lineChart` (legend `'Top'`) as candidates, Desktop drew both — data labels and the legend where
+  asked — and its save changed nothing but `pages.json` `activePageName`. So the shapes are the
+  same across the core chart types.
+- **An explicit sort writes no `isDefaultSort`.** `query.sortDefinition` is
+  `{"sort": [{"field": <field>, "direction": "Ascending"|"Descending"}]}`, and the
+  `"isDefaultSort": true` seen until now marks only the sort **Desktop** adds by itself. The
+  user's own "Sort axis" choice (step 02, a measure descending; step 03, a table column
+  ascending) wrote the key without it.
+- **Sorting back to Desktop's own default does not restore it** (step 04: back to Country
+  ascending changed only `field` and `direction`). So the flag says who chose the sort, not what
+  the sort is — in the same saved report, the two visuals the user sorted have no `isDefaultSort`
+  while the untouched card and chart still carry `isDefaultSort: true`.
+- A sort Blueprint writes from a spec is therefore an explicit one: the key without
+  `isDefaultSort`.
+
 **Verified 2026-11-10, probe 29** (`scripts/probe_aggregate_format.py`; evidence
 `docs/probes/29-aggregate-format.diff`, fixture 02, all content invented). Each aggregation was
 chosen on a **fresh** field, because an aggregation changed in place keeps the field's old

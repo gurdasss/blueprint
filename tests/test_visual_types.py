@@ -8,6 +8,7 @@ import shutil
 from pathlib import Path
 
 import pytest
+import yaml
 
 from blueprint import guidelines
 from blueprint.cli import main
@@ -333,14 +334,25 @@ def test_an_archived_contract_can_be_a_parent(tmp_path: Path):
     assert list(c.slots) == list(contracts((ARCHIVE,))["donut"].slots)
 
 
-def test_bar_does_not_carry_columns_unverified_options():
-    """Why the shipped contracts still state their own slots instead of using inherits:.
-    probe 23 verified data labels and legend position on the column and stacked charts, not on
-    the clustered bar, so bar inheriting column's options would ship a guess. Only a probe can
-    extend a type's options."""
+def test_bar_inherits_column_now_that_a_probe_covers_its_options():
+    """Why this took a probe rather than an edit: bar's slots were always column's, but `options`
+    are not slots. Probe 23 verified data labels and legend position on the column and stacked
+    charts, never on the clustered bar, so inheriting them would have shipped a guess. Probe 31
+    wrote them onto a bar, Desktop drew and kept them, and only then did the two become the same
+    contract apart from the PBIR type."""
     core = contracts()
-    assert core["bar"].slots == core["column"].slots  # same slots...
-    assert core["bar"].options == {} and core["column"].options                 # ...not the same options
+    bar, column = core["bar"], core["column"]
+    assert (bar.slots, bar.options, bar.region) == (column.slots, column.options, column.region)
+    assert (bar.visual_type, column.visual_type) == ("clusteredBarChart", "clusteredColumnChart")
+    raw = yaml.safe_load((ROOT / "blueprint" / "visuals" / "bar.yaml").read_text())
+    assert raw["inherits"] == "column" and "slots" not in raw and "options" not in raw
+
+
+def test_line_states_its_own_slots_because_it_differs():
+    """line adds a legend slot and excludes a measure list beside it (probes 27, 28), so it says
+    so itself rather than inheriting and restating most of what it overrides."""
+    line = contracts()["line"]
+    assert "legend" in line.slots and line.slots["value"].list_excludes == ("legend",)
 
 
 # --- the opt-in has to reach every command that touches the manifest -----------------------

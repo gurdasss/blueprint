@@ -1,10 +1,9 @@
 # Slot contract for spec type `bar`. Verified in probe 12: `clusteredBarChart`, stored like the
 # column chart: the categories (drawn on the Y-axis) in role `Category`, where an ordered list is a
 # drill-down, and the measure (drawn on the X-axis) in role `Y`. Probe 18: a hierarchy built in the
-# model binds its levels there as a drill-down.
+# model binds its levels there as a drill-down. Probe 31: Desktop drew and kept the column chart's
+# `labels` and `legend` options on a clustered bar, so the two types carry exactly the same slots
+# and options and this file states only what differs: the PBIR type.
 type: bar
 visual_type: clusteredBarChart
-region: main
-slots:
-  category: { role: Category, accepts: [column, hierarchy], required: true, ordered: true }
-  value:    { role: Y, accepts: measure, required: true, ordered: true }   # a list: one series each (probe 20)
+inherits: column

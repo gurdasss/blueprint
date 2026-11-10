@@ -224,11 +224,21 @@ def title_objects(title: str) -> dict:
     return {"title": [{"properties": {"show": _literal("true"), "text": _literal(_quote(title))}}]}
 
 
+def sort_definition(field: Binding, direction: str) -> dict:
+    """``query.sortDefinition`` for a sort the spec asked for.
+
+    Probe 31: a sort the user chose carries no ``isDefaultSort``; that flag marks only the sort
+    Desktop adds by itself, and it doesn't come back when the sort is set to what Desktop would
+    have chosen. A sort Blueprint writes is an explicit one, so the flag stays off."""
+    return {"sort": [{"field": field.field(), "direction": direction}]}
+
+
 def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec_id: str,
            region: str, *,
            bindings: dict[str, list[Binding]] | None = None, title: str | None = None,
            text: str | None = None, text_style: dict | None = None,
-           options: list[tuple[str, str, str]] | None = None, bindings_mark: str | None = None) -> dict:
+           options: list[tuple[str, str, str]] | None = None, bindings_mark: str | None = None,
+           sort: tuple[Binding, str] | None = None) -> dict:
     """A visual container. ``bindings``: query role -> ordered fields. ``text``: textbox content.
     ``options``: (object, property, literal) formatting choices from the contract."""
     body: dict[str, Any] = {"visualType": visual_type}
@@ -236,6 +246,8 @@ def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec
         # Desktop writes roles in alphabetical order (probe 10: Goal, Indicator, TrendLine).
         body["query"] = {"queryState": {role: {"projections": _projections(role, fields, visual_type)}
                                         for role, fields in sorted(bindings.items())}}
+        if sort is not None:
+            body["query"]["sortDefinition"] = sort_definition(*sort)
     if text is not None:
         body["objects"] = textbox_objects(text, text_style)
     if options:
@@ -297,6 +309,26 @@ def with_bindings(visual_doc: dict, visual_type: str, bindings: dict[str, list[B
         else:
             out = {k: v for k, v in out.items() if k != "filterConfig"}
     return out
+
+
+def with_sort(visual_doc: dict, sort: tuple[Binding, str] | None) -> dict:
+    """``visual_doc`` with the spec's sort written into ``visual.query.sortDefinition``.
+
+    ``None`` leaves whatever is there: a spec that says nothing about sorting leaves Desktop's
+    own default sort, or the user's, alone."""
+    if sort is None:
+        return visual_doc
+    body = dict(visual_doc.get("visual") or {})
+    query = dict(body.get("query") or {})
+    query["sortDefinition"] = sort_definition(*sort)
+    body["query"] = query
+    return {**visual_doc, "visual": body}
+
+
+def current_sort(visual_doc: dict) -> dict | None:
+    """The visual's ``sortDefinition``, or None."""
+    sort = ((visual_doc.get("visual") or {}).get("query") or {}).get("sortDefinition")
+    return sort if isinstance(sort, dict) else None
 
 
 def with_option(visual_doc: dict, obj: str, prop: str, literal: str) -> dict:

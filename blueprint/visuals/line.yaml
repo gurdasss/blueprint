@@ -14,3 +14,8 @@ slots:
   category: { role: Category, accepts: [column, hierarchy], required: true, ordered: true }
   value:    { role: Y, accepts: measure, required: true, ordered: true, list_excludes: [legend] }
   legend:   { role: Series, accepts: column }
+options:
+  # Probe 23 verified these shapes on the column and stacked charts; probe 31 wrote the same ones
+  # here and Desktop drew them and kept them through a save. Left out: Desktop's default.
+  labels: { object: labels, property: show, values: { "on": "true" } }
+  legend: { object: legend, property: position, values: { top: "'Top'", bottom: "'Bottom'", left: "'Left'", right: "'Right'" } }

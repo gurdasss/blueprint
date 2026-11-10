@@ -450,6 +450,32 @@ landed together.
 
 ---
 
+### Basic richness for the core seven (probe 31)
+
+The core was minimal in the wrong places: `column` carried `labels` and `legend` while the
+equally-core `bar` and `line` carried none, and the **archived** stacked charts were richer than
+either. That was an accident of probe history — probe 23 happened to cover column and the stacked
+charts — not a decision.
+
+Probe 31 fixed both halves of that:
+
+- **Options parity.** Probe 23's shapes, written onto a clustered bar and a line as candidates,
+  drew in Desktop and survived its save untouched. `bar` and `line` now ship `labels` and
+  `legend`, so the three core chart types behave the same. A side effect: `bar` became identical
+  to `column` apart from the PBIR type, so it is the shipped set's one `inherits:` user — the
+  feature built in step 4 finally earns its place, and only once a probe allowed it.
+- **Sort.** `sort: {by, direction}` per visual, writing `query.sortDefinition` **without**
+  `isDefaultSort`. The probe showed that flag marks only the sort Desktop adds by itself, and
+  that sorting back to Desktop's own choice does not bring it back — so a sort Blueprint writes
+  is an explicit one. `by` must be a field the visual binds, or Desktop ignores it. A spec with
+  no `sort` leaves whatever is there, which also fixes a quiet bug: a sort set in Desktop used to
+  be discarded whenever a rebind changed the fields.
+
+Deliberately left out of this version, as not "basic": table totals, a legend binding on
+column/bar, axis titles, conditional formatting.
+
+---
+
 ## Status
 
 - [x] Read the codebase and map current vs. proposed

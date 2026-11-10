@@ -37,6 +37,8 @@ SPEC_SYNTAX = {
                  "A slot entry may also be a mapping {field, aggregate, format} (see slot_keys)",
         "options": "optional mapping of option name -> value, from the type's options "
                    "(left out: Desktop's default)",
+        "sort": "optional {by: <field>, direction: ascending|descending}; the field must be one "
+                "this visual binds. Left out: Desktop's own default sort (probe 31)",
         "blueprint": "`ignore`: leave this visual alone (it takes no region)",
     },
     "fields": {

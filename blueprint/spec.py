@@ -42,7 +42,7 @@ ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
 _COLUMN = re.compile(r"^(?:'(?P<qt>(?:[^']|'')+)'|(?P<t>[A-Za-z_][\w ]*?))\[(?P<c>[^\]]+)\]$")
 _MEASURE = re.compile(r"^\[(?P<m>[^\]]+)\]$")
 _SPEC_KEYS = {"id", "page", "layout", "visuals"}
-_VISUAL_KEYS = {"type", "id", "title", "region", "slots", "options", "blueprint"}
+_VISUAL_KEYS = {"type", "id", "title", "region", "slots", "options", "sort", "blueprint"}
 _ROLE_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 
 
@@ -72,6 +72,20 @@ class FieldRef:
         return f"{self.aggregate} of {ref}" if self.aggregate else ref
 
 
+DIRECTIONS = {"ascending": "Ascending", "descending": "Descending"}
+
+
+@dataclass(frozen=True)
+class SortSpec:
+    """`sort: {by: <field>, direction: ascending|descending}` — the visual's own sort.
+
+    Desktop writes one `query.sortDefinition` per visual, so this is a visual key, not a slot
+    key. The field must be one the visual binds (probe 31).
+    """
+    by: FieldRef
+    direction: str  # a key of DIRECTIONS
+
+
 @dataclass(frozen=True)
 class VisualSpec:
     index: int  # position in the spec's visuals list
@@ -82,6 +96,7 @@ class VisualSpec:
     ignore: bool = False
     region: str | None = None  # region role chosen in the spec; None: the contract's role
     options: dict[str, str] = field(default_factory=dict)  # option name -> value (contract options)
+    sort: SortSpec | None = None  # the visual's sort; None: Desktop's own (probe 31)
 
 
 @dataclass(frozen=True)
@@ -237,7 +252,42 @@ def _visual(i: int, raw: Any, known: dict[str, Contract], counts: dict[str, int]
 
     slots = {} if ignore else _slots(at, raw.get("slots"), known[vtype], problems)
     options = {} if ignore else _options(at, raw.get("options"), known[vtype], problems)
-    return VisualSpec(i, vtype, vid, title, slots, ignore, region, options)
+    sort = None if ignore else _sort(at, raw.get("sort"), slots, problems)
+    return VisualSpec(i, vtype, vid, title, slots, ignore, region, options, sort)
+
+
+def _sort(at: str, raw: Any, slots: dict[str, tuple[FieldRef, ...]],
+          problems: list[str]) -> SortSpec | None:
+    """`sort: {by: <field>, direction: …}`. Desktop sorts on a field the visual binds, so `by`
+    must be one of them — otherwise the sort would be silently ignored (probe 31)."""
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        problems.append(f"{at}.sort: must be a mapping with by and direction")
+        return None
+    unknown = set(raw) - {"by", "direction"}
+    if unknown:
+        problems.append(f"{at}.sort: unknown keys {', '.join(sorted(map(str, unknown)))} "
+                        "(a sort takes by, direction)")
+        return None
+    by = parse_field(raw.get("by"))
+    if by is None:
+        problems.append(f"{at}.sort.by: {raw.get('by')!r} is not a field reference "
+                        "(use Table[Column] or [Measure])")
+        return None
+    direction = raw.get("direction")
+    if not isinstance(direction, str) or direction not in DIRECTIONS:
+        problems.append(f"{at}.sort.direction: {direction!r} isn't one of "
+                        f"{', '.join(sorted(DIRECTIONS))}")
+        return None
+    bound = [ref for refs in slots.values() for ref in refs]
+    if not any(ref.kind == by.kind and ref.name == by.name
+               and (by.table is None or ref.table == by.table) for ref in bound):
+        names = ", ".join(str(ref) for ref in bound) or "nothing"
+        problems.append(f"{at}.sort.by: {by} isn't bound by this visual (it binds {names}); "
+                        "Desktop sorts on a field the visual shows")
+        return None
+    return SortSpec(by, direction)
 
 
 def _options(at: str, raw: Any, contract: Contract, problems: list[str]) -> dict[str, str]:

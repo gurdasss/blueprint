@@ -42,15 +42,18 @@ class ApplyError(Exception):
     pass
 
 
-def _resolve(placements: list[layouts.Placement], report: Report,
-             visual_dirs: tuple[Path, ...] = ()) -> dict[str, dict[str, list[render.Binding]]]:
-    """Spec field references -> PBIR bindings by query role, checked against the semantic model."""
+def _resolve(placements: list[layouts.Placement], report: Report, visual_dirs: tuple[Path, ...] = (),
+             ) -> tuple[dict[str, dict[str, list[render.Binding]]],
+                        dict[str, tuple[render.Binding, str]]]:
+    """Spec field references -> PBIR bindings by query role, and each visual's sort, both checked
+    against the semantic model."""
     if not any(p.visual.slots for p in placements):
-        return {}
+        return {}, {}
     pbir = report.source.documents[Path("definition.pbir")].data
     model = semantic.load(semantic.model_dir_for(report.root, pbir))
     known = contracts(visual_dirs)
     out: dict[str, dict[str, list[render.Binding]]] = {}
+    sorts: dict[str, tuple[render.Binding, str]] = {}
     problems: list[str] = []
     for p in placements:
         v = p.visual
@@ -86,6 +89,17 @@ def _resolve(placements: list[layouts.Placement], report: Report,
                 else:
                     roles.setdefault(slot.role, []).append(
                         render.Binding(ref.kind, table, ref.name, format=ref.format))
+        if v.sort is not None:
+            ref = v.sort.by
+            try:
+                table = model.measure_table(ref.name) if ref.kind == "measure" else ref.table
+                if ref.kind != "measure":
+                    model.check_column(ref.table, ref.name)
+            except semantic.ModelError as exc:
+                problems.append(f"visuals[{v.index}].sort.by: {exc}")
+            else:
+                sorts[v.id] = (render.Binding(ref.kind, table, ref.name),
+                               spec.DIRECTIONS[v.sort.direction])
         for role, fields in roles.items():
             names = [f.projection()["nativeQueryRef"] for f in fields]
             clashes = sorted({n for n in names if names.count(n) > 1})
@@ -97,7 +111,7 @@ def _resolve(placements: list[layouts.Placement], report: Report,
         out[v.id] = roles
     if problems:
         raise ApplyError("field references don't match the semantic model:\n  " + "\n  ".join(problems))
-    return out
+    return out, sorts
 
 
 def _find_page(report: Report, page_spec: spec.PageSpec, take_over: bool) -> Page | None:
@@ -225,7 +239,7 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
                          "the page it builds. Fix the layout:\n  "
                          + "\n  ".join(clash))
     placements = layouts.place(page_spec, layout, rules.visuals)
-    bindings = _resolve(placements, report, rules.visuals)
+    bindings, sorts = _resolve(placements, report, rules.visuals)
     known = contracts(rules.visuals)
     plan = Plan(root=report.root)
     plan.warnings.extend(report.warnings)
@@ -309,6 +323,14 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
                 mark = render.bindings_fingerprint(_bound(want))
                 current.source.data = render.with_annotations(current.source.data,
                                                               render.bindings_annotation(mark))
+            # The sort the spec asks for is set in place. A spec that says nothing about sorting
+            # leaves whatever is there: Desktop's own default sort, or the user's (probe 31).
+            wanted_sort = sorts.get(vs.id)
+            if wanted_sort is not None:
+                want_def = render.sort_definition(*wanted_sort)
+                if render.current_sort(current.source.data) != want_def:
+                    current.source.data = render.with_sort(current.source.data, wanted_sort)
+                    current.notes.append(f"sort {wanted_sort[0].name} {wanted_sort[1].lower()}")
             # An option the spec sets is set in place; one the spec leaves out is Desktop's (or
             # the user's) to set, and left alone.
             for name, value in vs.options.items():
@@ -342,7 +364,8 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
                             text_style=header_style if is_header else None,
                             options=[(contract.options[n].object, contract.options[n].property,
                                       contract.options[n].values[val]) for n, val in vs.options.items()],
-                            bindings_mark=render.bindings_fingerprint(_bound(want)) if want else None)
+                            bindings_mark=render.bindings_fingerprint(_bound(want)) if want else None,
+                            sort=sorts.get(vs.id))
         writer.add_create(plan, PAGES / pid / "visuals" / vid / "visual.json", doc,
                           f"new {vs.type} {vs.id!r} in region {p.region.key} at "
                           f"{rect.x},{rect.y} {rect.width}x{rect.height}")
