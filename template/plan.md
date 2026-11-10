@@ -15,6 +15,14 @@ This branch (`claude/amazing-sagan-ejiuec`) refactors the main-branch code
 toward these templates. Reusable code from main is kept; the schema and
 validation layer are rewritten.
 
+**The rule for this version:** the core is deliberately dumb and follows the
+client's files to the letter, in one client-friendly unit per thing. It
+verifies what the client wrote and refuses what breaks the guidelines; it
+does not derive, infer or compute on the client's behalf. Anything that
+needs a second unit, or a judgement call the client didn't make, is an
+extension — that is what dropped step 2 (see below), and it is the test to
+apply to steps 4-6 as well.
+
 ---
 
 ## Scope: the three client inputs
@@ -252,8 +260,11 @@ it doesn't have to be re-derived.
 
 **What replaced it:** `template/layout.template.yaml` restored to the pixel
 format (canvas width/height back, explicit regions), with the column and row
-arithmetic worked out in the file — including the precondition
-`(canvas - 2 x margin) % grid == 0` and the solved column table (2 -> 616/16,
+arithmetic worked out in the file — including what a region flush to the
+margin needs (`margin % grid == 0`, and the usable span a grid multiple) —
+a condition on that convention, not on the guidelines, since a grid of 10
+with margin 16 is fine for regions starting at 20 — and the solved column
+table (2 -> 616/16,
 3 -> 400/24, 4 -> 288/32, 5 -> 224/32, 6 -> 168/48). A test parses the
 template and asserts `conflicts()` finds nothing against the template
 guidelines, so the two template files can't drift apart.

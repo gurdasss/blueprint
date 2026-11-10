@@ -98,7 +98,7 @@ typography:
 
 layouts:
   search_path: ["layouts"]
-  default: standard-4-up
+  default: standard-dashboard   # the name of a layout file on the search_path
 
 
 # ── Extensions ───────────────────────────────────────────────────────

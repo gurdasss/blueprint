@@ -198,8 +198,11 @@ and equal gaps, every number a multiple of the grid, each gap at least
 the gutter, filling the usable span exactly. That rule reproduces the
 shipped layouts' own numbers — 2 columns 616/16, 3 columns 400/24,
 4 columns 288/32 — so it could land without changing a byte of output.
-The precondition is `(canvas - 2 x margin) % grid == 0`, which belongs
-in the guidelines check, not in the layout engine.
+Its precondition — `margin % grid == 0` and `(canvas - 2 x margin) % grid
+== 0` — is a condition of *that engine*, because it computes regions flush
+to the margin. It must be checked where `rows:` is used, not on every
+guidelines load: the pixel core happily accepts a grid of 10 with a margin
+of 16, as long as the regions start at 20.
 
 **What else extensions add here:**
 - Weighted columns (`[2, 1]`) and responsive floors, once rows exist

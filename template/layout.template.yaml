@@ -31,8 +31,12 @@ name: standard-dashboard
 
 
 # ── Canvas ───────────────────────────────────────────────────────────
-# Must match the guidelines canvas dimensions exactly. A layout built
-# for 1280×720 refuses to run under guidelines that say 1920×1080.
+# The page size `bp apply` gives a page built from this layout. Keep it
+# equal to the guidelines canvas: nothing refuses a mismatch outright,
+# but `bp check` then reports every such page under the `page-size`
+# rule ("page is 1280x720, guidelines say 1920x1080"), and on a re-run
+# `apply` errors if the page it finds isn't the size of this canvas
+# (it never scales a layout).
 
 canvas:
   width: 1280
@@ -73,19 +77,29 @@ regions:
 # This layout assumes the template guidelines: canvas 1280x720,
 # grid: 8, margin: 16, gutter: 16.
 #
-# Step 0 — check the canvas is usable at all. Both must be whole
-# multiples of the grid, or no region can start at the margin and end
-# at canvas - margin on grid:
+# Step 0 — can a region sit flush against the margin? Grid lines are
+# multiples of the grid, and the page edges always count as grid lines,
+# so a region starting exactly at the margin needs:
 #
-#   (1280 - 2x16) % 8 == 0   ->  1248 usable width   ok
-#   ( 720 - 2x16) % 8 == 0   ->   688 usable height  ok
+#   margin % grid == 0                 ->  16 % 8 == 0         ok
+#   (1280 - 2x16) % 8 == 0             ->  1248 usable width   ok
+#   ( 720 - 2x16) % 8 == 0             ->   688 usable height  ok
 #
-#   (A grid of 10 would fail here: 1248 is not a multiple of 10.
-#    Change the margin or the grid, not the layout.)
+#   If that fails you have not run out of options - only flush-to-margin
+#   ones. With grid 10 and margin 16, x: 16 is off the grid, but a region
+#   at x: 20, w: 1240 passes every rule; the margin is effectively 20.
+#   Either keep the grid dividing the margin, or start at the first grid
+#   line outside it.
 #
-# Step 1 — columns. Equal columns with equal gaps, every number a
-# multiple of the grid, each gap at least the gutter, filling the
-# usable width exactly. For 1248 usable and a 16px gutter:
+# Step 1 — columns. Only three things are enforced: on the grid, inside
+# the margin, at least the gutter apart. Any numbers that satisfy them
+# are accepted - 6 columns of 192 with 16px gaps is as valid as the
+# table below, it just leaves the slack at the right edge.
+#
+# The convention the shipped layouts follow is tidier: equal columns,
+# equal gaps, every number a multiple of the grid, each gap at least the
+# gutter, filling the usable width exactly. For 1248 usable and a 16px
+# gutter that gives:
 #
 #   columns   width each   gap     check
 #   1         1248         -       1248
@@ -99,7 +113,9 @@ regions:
 #   2 columns -> 16, 648.   3 -> 16, 440, 864.   4 -> 16, 336, 656, 976.
 #
 #   Note the gap grows past the 16px gutter at three columns and more.
-#   That is fine: the gutter is a minimum, and staying on the grid wins.
+#   That is what exact fill costs: the gutter is a minimum, so a wider
+#   gap is always allowed. Prefer narrow gaps instead and the slack ends
+#   up at the right edge - also fine, just less even.
 #
 # Step 2 — rows. Same idea vertically, using the heights you need:
 #
