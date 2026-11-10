@@ -75,9 +75,9 @@ a column chart.
 
 ## Inheritance
 
-Many visuals share the same slot structure. Bar is identical to column
-except for the `visual_type` string. Instead of duplicating slots,
-a visual can inherit from another:
+Many visuals share the same slot structure. The bar chart's slots are the
+column chart's, with a different `visual_type` string. Instead of
+duplicating slots, a visual can inherit from another:
 
 ```yaml
 # blueprint/visuals/bar.yaml
@@ -90,6 +90,13 @@ Three lines. The loader copies column's slots and options into bar,
 then applies any overrides bar declares. The result in memory is a
 complete VisualDef — the engine never sees the inheritance, just the
 final merged object.
+
+**The shipped contracts don't use it, on purpose.** Each one cites the
+probe that verified its shape, and `options` are not slots: probe 23
+verified data labels and a legend position on the column and stacked
+charts, never on the clustered bar, so `bar: inherits: column` would
+ship an option nobody checked. Inheritance is for the types a client
+adds — exactly the case `extensions.custom_visuals.search_path` serves.
 
 ### What inherits copies
 

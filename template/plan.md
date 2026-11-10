@@ -274,21 +274,50 @@ region is under 160px. That number is measured (bridge screenshots: at 120px
 Desktop clips a KPI's goal line and a titled card's label) and currently
 lives only in a comment in six layout files.
 
-### Step 4: Visual inheritance
+### Step 4 (done): core seven visual types, and `inherits:`
 
-**What:** Add `inherits:` support to `slots.py`.
+**4a — the core ships seven types.** `header`, `card`, `kpi`, `column`, `line`,
+`bar`, `table`. The eight other probe-verified contracts (`pie`, `donut`,
+`slicer`, `matrix`, `area`, `stacked-column`, `stacked-column-100`,
+`stacked-bar`) moved to `blueprint/visuals/archive/`, which the loader doesn't
+glob. Archived, not deleted: each still cites its probe.
 
-**Changes:**
-- `_load()` resolves `inherits: <type>` by loading the parent first,
-  copying its slots/options/region, then applying the child's overrides
-- Add cycle detection (A inherits B inherits A)
-- `Contract` dataclass unchanged — the loader produces the same object
+A client opts them back in, per the seam `template/extensions.md` promised:
 
-**Tests:** Add tests for inheritance resolution, overrides, cycle detection.
-Existing visual definition tests stay.
+```yaml
+extensions:
+  custom_visuals:
+    search_path: ["../blueprint/visuals/archive"]   # relative to this file
+```
 
-**Risk:** Low. The `Contract` output is identical. Nothing downstream changes.
-Existing visual YAMLs don't use `inherits:` yet — they keep working as-is.
+or `--visuals DIR` for one run (`apply`, `describe`, `manifest` — guideline
+layer 4). `contracts(extra)` keys the path into its cache, loads core-first,
+and refuses a type — or a PBIR `visual_type` — claimed twice. Every production
+call site passes `rules.visuals`: a missing contract doesn't fail loudly in
+`manifest`, it quietly drops slot names.
+
+Evidence kept, not traded away: the probe replays, `test_visual_types`,
+`test_options` and the real-report test opt in, so Desktop's shapes for all
+15 types still replay. The demo opts in through its `.blueprint.yaml` and its
+output is byte-identical to a pre-change run. `tests/pinned-specs/` (new, like
+`pinned-layouts/`) holds probe 9's spec, which used `pie`.
+
+**4b — `inherits:`** resolves as `template/visuals.md` documents: the parent's
+`slots`, `options` and `region` are copied and the child overrides them key by
+key, so it can change one slot without restating the rest. `type` and
+`visual_type` are never inherited — a contract that didn't name its own PBIR
+type would silently claim its parent's. Refused: cycles (naming the chain),
+self-inheritance, an unknown parent (listing what is loaded), a core contract
+inheriting from outside the core (the core must load on its own), and two
+types claiming one `visual_type`.
+
+**The shipped contracts deliberately don't use it.** `bar`'s slots are
+`column`'s, but `options` aren't slots: probe 23 verified data labels and
+legend position on the column and stacked charts, never on the clustered bar,
+so `bar: inherits: column` would ship an option no probe checked. Inheritance
+is for types a client adds. A test pins that reasoning.
+
+**Result:** 598 passed, `ruff` clean, demo byte-identical.
 
 ### Step 5: Spec enhancements (pipe syntax, long-form slots, named formats)
 
@@ -393,7 +422,7 @@ landed together.
 - [x] Step 1: Guidelines schema rewrite (merged with step 3)
 - [x] Step 3: Wire guidelines into consumers (done with step 1)
 - [x] Step 2: Layout structural format — dropped, pixels stay (see above)
-- [ ] Step 4: Visual inheritance
+- [x] Step 4: Core seven visual types + `inherits:`
 - [ ] Step 5: Spec enhancements
 - [ ] Step 6: Wire into render
 - [x] Step 7: Shipped layouts and examples (layouts already conform)

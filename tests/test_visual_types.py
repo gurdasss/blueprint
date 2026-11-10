@@ -6,11 +6,13 @@ pie is archived out of the core seven, so these tests opt it back in the way a c
 import shutil
 from pathlib import Path
 
+import pytest
+
 from blueprint import guidelines
 from blueprint.cli import main
 from blueprint.pbir import jsonfmt
 from blueprint.pbir.reader import read_report
-from blueprint.slots import contracts
+from blueprint.slots import ContractError, contracts
 from blueprint.validate import check_report
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -230,3 +232,109 @@ def test_line_and_bar_match_probe_12(tmp_path: Path):
         "Category": {"projections": [col("Country", active=True), col("Region", active=True)]},
         "Y": {"projections": [MEASURE]}}
 
+
+
+# --- inherits: (template/visuals.md) -------------------------------------------------------
+
+def _dir(tmp_path: Path, **files: str) -> tuple[Path, ...]:
+    """A directory of contract YAMLs, as a client's extensions.custom_visuals.search_path."""
+    d = tmp_path / "my-visuals"
+    d.mkdir(exist_ok=True)
+    for name, text in files.items():
+        (d / f"{name}.yaml").write_text(text)
+    return (d,)
+
+
+def test_inherits_copies_slots_options_and_region(tmp_path: Path):
+    """The documented behaviour: slots, options and region come from the parent; the child
+    declares its own type and visual_type."""
+    extra = _dir(tmp_path, waterfall="type: waterfall\nvisual_type: waterfallChart\n"
+                                     "inherits: column\n")
+    c = contracts(extra)["waterfall"]
+    parent = contracts()["column"]
+    assert (c.type, c.visual_type) == ("waterfall", "waterfallChart")
+    assert (c.slots, c.options, c.region) == (parent.slots, parent.options, parent.region)
+
+
+def test_a_child_overrides_slot_by_slot_and_adds_its_own(tmp_path: Path):
+    extra = _dir(tmp_path, trend="""\
+type: trend
+visual_type: trendChart
+inherits: column
+region: kpi-row
+slots:
+  value: { role: Y, accepts: measure, required: true }   # no longer a list
+  legend: { role: Series, accepts: column }              # added
+options: {}
+""")
+    c = contracts(extra)["trend"]
+    assert c.region == "kpi-row"
+    assert list(c.slots) == ["category", "value", "legend"]          # parent's first, then new
+    assert c.slots["category"] == contracts()["column"].slots["category"]  # untouched
+    assert c.slots["value"].ordered is False                          # overridden
+    assert c.options == contracts()["column"].options                 # `options: {}` adds nothing
+
+
+def test_inherits_chains(tmp_path: Path):
+    extra = _dir(tmp_path,
+                 mid="type: mid\nvisual_type: midChart\ninherits: column\nregion: kpi-row\n",
+                 leaf="type: leaf\nvisual_type: leafChart\ninherits: mid\n")
+    c = contracts(extra)["leaf"]
+    assert (c.region, list(c.slots)) == ("kpi-row", ["category", "value"])
+
+
+def test_type_and_visual_type_are_never_inherited(tmp_path: Path):
+    extra = _dir(tmp_path, clone="type: clone\ninherits: column\n")
+    with pytest.raises(ContractError, match="visual_type is never inherited"):
+        contracts(extra)
+
+
+def test_a_cycle_is_refused(tmp_path: Path):
+    extra = _dir(tmp_path,
+                 a="type: a\nvisual_type: aChart\ninherits: b\n",
+                 b="type: b\nvisual_type: bChart\ninherits: a\n")
+    with pytest.raises(ContractError, match="inherits is a cycle"):
+        contracts(extra)
+
+
+def test_inheriting_itself_is_refused(tmp_path: Path):
+    extra = _dir(tmp_path, me="type: me\nvisual_type: meChart\ninherits: me\n")
+    with pytest.raises(ContractError, match="inherits is a cycle"):
+        contracts(extra)
+
+
+def test_an_unknown_parent_names_what_is_loaded(tmp_path: Path):
+    extra = _dir(tmp_path, odd="type: odd\nvisual_type: oddChart\ninherits: gauge\n")
+    with pytest.raises(ContractError, match="inherits unknown type 'gauge' .*loaded: bar"):
+        contracts(extra)
+
+
+def test_two_types_may_not_claim_one_pbir_visual(tmp_path: Path):
+    """The manifest and the probe replays key by visual_type, so a duplicate would shadow."""
+    extra = _dir(tmp_path, twin="type: twin\nvisual_type: clusteredColumnChart\n"
+                                "inherits: column\n")
+    with pytest.raises(ContractError, match="'clusteredColumnChart' is claimed by both"):
+        contracts(extra)
+
+
+def test_a_duplicate_type_name_is_refused(tmp_path: Path):
+    extra = _dir(tmp_path, column="type: column\nvisual_type: other\nregion: main\n")
+    with pytest.raises(ContractError, match="visual type 'column' is defined twice"):
+        contracts(extra)
+
+
+def test_an_archived_contract_can_be_a_parent(tmp_path: Path):
+    """A client's own type may inherit one of the archived contracts, with both on the path."""
+    extra = (*_dir(tmp_path, ring="type: ring\nvisual_type: ringChart\ninherits: donut\n"), ARCHIVE)
+    c = contracts(extra)["ring"]
+    assert list(c.slots) == list(contracts((ARCHIVE,))["donut"].slots)
+
+
+def test_bar_does_not_carry_columns_unverified_options():
+    """Why the shipped contracts still state their own slots instead of using inherits:.
+    probe 23 verified data labels and legend position on the column and stacked charts, not on
+    the clustered bar, so bar inheriting column's options would ship a guess. Only a probe can
+    extend a type's options."""
+    core = contracts()
+    assert core["bar"].slots == core["column"].slots  # same slots...
+    assert core["bar"].options == {} and core["column"].options                 # ...not the same options

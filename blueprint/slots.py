@@ -63,9 +63,53 @@ class Contract:
     options: dict[str, Option] = field(default_factory=dict)
 
 
-def _load(path: Path) -> Contract:
+def _read(path: Path) -> dict:
+    """The raw YAML of one contract file, before ``inherits:`` is resolved."""
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    where = path.name
+    if not isinstance(data, dict):
+        raise ContractError(f"{path.name}: top level must be a mapping")
+    return data
+
+
+def _resolve(name: str, raw: dict[str, tuple[Path, dict]], chain: tuple[str, ...] = ()) -> dict:
+    """``name``'s raw contract with its ``inherits:`` chain merged in (template/visuals.md).
+
+    The parent's ``slots``, ``options`` and ``region`` are copied; the child overrides them key
+    by key, so it can change one slot without restating the others. ``type`` and ``visual_type``
+    are never inherited: a contract that didn't name its own PBIR type would silently claim its
+    parent's, and only a probe can say what Desktop writes for a type.
+    """
+    path, data = raw[name]
+    parent = data.get("inherits")
+    if parent is None:
+        return data
+    if not isinstance(parent, str):
+        raise ContractError(f"{path.name}: inherits must be a visual type name")
+    if name in chain or parent == name:
+        cycle = " -> ".join((*chain, name, parent))
+        raise ContractError(f"{path.name}: inherits is a cycle ({cycle})")
+    if parent not in raw:
+        raise ContractError(f"{path.name}: inherits unknown type {parent!r} "
+                            f"(loaded: {', '.join(sorted(raw))})")
+    for required in ("type", "visual_type"):
+        if required not in data:
+            raise ContractError(f"{path.name}: {required} is never inherited; "
+                                f"declare it alongside inherits: {parent}")
+    if path.parent == VISUALS_DIR and raw[parent][0].parent != VISUALS_DIR:
+        raise ContractError(f"{path.name}: a core contract can't inherit {parent!r} from "
+                            f"{raw[parent][0].parent} (the core must load on its own)")
+    base = _resolve(parent, raw, (*chain, name))
+    merged = {**base, **data}
+    merged.pop("inherits", None)
+    for section in ("slots", "options"):
+        child = data.get(section) or {}
+        inherited = base.get(section) or {}
+        if inherited or child:
+            merged[section] = {**inherited, **child}
+    return merged
+
+
+def _contract(data: dict, where: str, stem: str) -> Contract:
     try:
         slots = {}
         for name, spec in (data.get("slots") or {}).items():
@@ -90,9 +134,14 @@ def _load(path: Path) -> Contract:
                                     "and names of this contract's slots")
     except (KeyError, TypeError, AttributeError) as exc:
         raise ContractError(f"{where}: malformed contract ({exc})") from exc
-    if contract.type != path.stem:
+    if contract.type != stem:
         raise ContractError(f"{where}: type {contract.type!r} must match the file name")
     return contract
+
+
+def _load(path: Path) -> Contract:
+    """One contract file on its own (no ``inherits:`` to resolve)."""
+    return _contract(_read(path), path.name, path.stem)
 
 
 @cache
@@ -103,13 +152,22 @@ def contracts(extra: tuple[Path, ...] = ()) -> dict[str, Contract]:
     defined twice is refused, naming both files: silently shadowing one would change what a
     spec means depending on the search path order.
     """
-    out: dict[str, Contract] = {}
-    source: dict[str, Path] = {}
+    raw: dict[str, tuple[Path, dict]] = {}
     for directory in (VISUALS_DIR, *extra):
         for path in sorted(Path(directory).glob("*.yaml")):
-            if path.stem in out:
+            if path.stem in raw:
                 raise ContractError(f"visual type {path.stem!r} is defined twice: "
-                                    f"{source[path.stem]} and {path}")
-            out[path.stem] = _load(path)
-            source[path.stem] = path
+                                    f"{raw[path.stem][0]} and {path}")
+            raw[path.stem] = (path, _read(path))
+    # every file is read before any inherits: is resolved, so a child may sit in any loaded
+    # directory and name a parent from another one (a core parent, for a contract outside the core)
+    out = {name: _contract(_resolve(name, raw), path.name, path.stem)
+           for name, (path, _) in raw.items()}
+    seen: dict[str, str] = {}
+    for name, contract in out.items():
+        if contract.visual_type in seen:
+            raise ContractError(f"visual type {contract.visual_type!r} is claimed by both "
+                                f"{seen[contract.visual_type]!r} and {name!r}: a spec's type must "
+                                "say which PBIR visual it builds")
+        seen[contract.visual_type] = name
     return out
