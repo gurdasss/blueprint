@@ -5,11 +5,12 @@
 # "active", drawn expanded, as on the column chart), and a second Legend column is refused by
 # Desktop ("too many columns in the Legend bucket"), so the Legend takes one column.
 # Probe 20: several measures on the Y-axis are projections of `Y` in well order, one line each.
-# Several measures, or a drill-down, together with a Legend weren't probed: refused.
+# Probe 28: a drill-down together with a Legend draws (a line per legend value); several measures
+# together with a Legend don't (Desktop: "too many columns in the Legend bucket"), so refused.
 type: line
 visual_type: lineChart
 region: main
 slots:
-  category: { role: Category, accepts: [column, hierarchy], required: true, ordered: true, list_excludes: [legend] }
+  category: { role: Category, accepts: [column, hierarchy], required: true, ordered: true }
   value:    { role: Y, accepts: measure, required: true, ordered: true, list_excludes: [legend] }
   legend:   { role: Series, accepts: column }

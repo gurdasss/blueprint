@@ -252,6 +252,6 @@ def _slots(at: str, raw: Any, contract: Contract, problems: list[str]) -> dict[s
             for other in slot.list_excludes:
                 if other in raw:
                     problems.append(f"{at}.slots.{name}: takes one field when {other} is set "
-                                    f"(a {name} list together with a {other} on {contract.type} "
-                                    "isn't verified in Desktop)")
+                                    f"(Desktop doesn't draw a {name} list together with a {other} on "
+                                    f"{contract.type})")
     return out

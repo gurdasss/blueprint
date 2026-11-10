@@ -45,9 +45,9 @@ ROOT = Path(__file__).resolve().parent.parent
 PROBES = ROOT / "docs" / "probes"
 FIXTURE = ROOT / "fixtures" / "02-card-and-chart"
 GUIDE = ROOT / "guidelines" / "example.yaml"
-REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27]
+REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28]
 # Probes whose report Blueprint built and Desktop then opened and saved.
-ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24, 26, 27]
+ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24, 26, 27, 28]
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git to apply the evidence")
 
@@ -677,6 +677,50 @@ def test_27_two_legend_columns_are_refused(replays, tmp_path, capsys, vtype):
                     "legend: ['Sales[Country]', 'Sales[Region]']}}\n")
     assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 2
     assert "visuals[1].slots.legend: takes a single field, not a list" in capsys.readouterr().err
+
+
+# Probe 28: candidates Desktop drew, as spec visuals.
+_DRILL_LEGEND = ('slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]", '
+                 'legend: "Sales[Order Date]"}}')
+PROBE_28 = {
+    "dl-line": "{type: line, " + _DRILL_LEGEND,
+    "dl-area": "{type: area, " + _DRILL_LEGEND,
+    "dl-stacked": "{type: stacked-column, " + _DRILL_LEGEND,
+    "dl-stacked-100": "{type: stacked-column-100, " + _DRILL_LEGEND,
+    "dl-stacked-bar": "{type: stacked-bar, " + _DRILL_LEGEND,
+    "legend-bottom": '{type: column, options: {legend: bottom}, '
+                     'slots: {category: "Sales[Country]", value: ["[Total Amount]", "[Target Amount]"]}}',
+}
+
+
+@pytest.mark.parametrize("sid", list(PROBE_28))
+def test_28_specs_write_what_desktop_drew(replays, tmp_path, sid):
+    drawn = _by_spec_id(_last(replays, 28).report)[sid]["visual"]
+    proj = _copy(_last(replays, 28), tmp_path)
+    spec = tmp_path / "x.yaml"
+    spec.write_text(f"page: X\nlayout: one-up\nvisuals:\n  - {{type: header, title: X}}\n"
+                    f"  - {{id: x, {PROBE_28[sid][1:]}\n")
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+    [page] = [p for p in read_report(proj / "Fixture.Report").pages if p.display_name == "X"]
+    [ours] = [v.source.data["visual"] for v in page.visuals if v.spec_id == "x"]
+    assert ours["visualType"] == drawn["visualType"]
+    assert ours["query"] == drawn["query"]
+    assert ours.get("objects") == drawn.get("objects")
+
+
+@pytest.mark.parametrize("vtype", ["line", "area", "stacked-column", "stacked-column-100", "stacked-bar"])
+def test_28_several_measures_with_a_legend_are_refused(replays, tmp_path, capsys, vtype):
+    """Desktop drew "There's too many columns in the Legend bucket" for Y = two measures with
+    Series = Region on the stacked and area charts (and allows one Y value with a Legend on line)."""
+    proj = _copy(_last(replays, 28), tmp_path)
+    spec = tmp_path / "bad.yaml"
+    spec.write_text(f"page: Bad\nlayout: one-up\nvisuals:\n  - {{type: header, title: B}}\n"
+                    f"  - {{type: {vtype}, slots: {{category: 'Sales[Country]', legend: 'Sales[Region]', "
+                    "value: ['[Total Amount]', '[Target Amount]']}}\n")
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 2
+    err = capsys.readouterr().err
+    assert "visuals[1].slots.value: takes one field when legend is set" in err
+    assert "Desktop doesn't draw a value list together with a legend" in err
 
 
 def test_21_rebinding_after_desktops_save(replays, tmp_path, capsys):

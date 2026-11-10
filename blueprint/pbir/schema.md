@@ -667,10 +667,11 @@ Data pane (Create hierarchy on Country, renamed Geography, then Region added):
   | `objects.labels[0].properties.show = Literal "true"` | `clusteredColumnChart`, `columnChart`, `hundredPercentStackedColumnChart`, `barChart` | data labels on the bars |
   | `objects.legend[0].properties.position = Literal "'Right'"`, `"'Top'"`, `"'Left'"` | Right and Top on `clusteredColumnChart`, Top on `hundredPercentStackedColumnChart`, Left on `barChart` | the legend moved there |
 
-  - `'Bottom'` drew like every other chart because the theme's default is bottom: **open** whether
-    it's the right literal, so it isn't offered. The three positions are treated as verified on the
-    three chart types they were seen on (the property is the same object on each).
-  - Not probed, so refused: several measures together with a Legend on the stacked and area charts.
+  - `'Bottom'` drew like every other chart because the theme's default is bottom, so it was
+    settled by probe 28 (below). The positions are treated as verified on the chart types that
+    offer the option (the property is the same object on each).
+  - Several measures together with a Legend on the stacked and area charts: refused by Desktop
+    (probe 28).
 - **Desktop saves bp apply's chart variants and options unchanged (probe 24,**
   `scripts/probe_apply_variants.py`; evidence `docs/probes/24-apply-variants.diff`). Probes 22 and
   23 had no save diff (nothing dirty). Here `bp apply` built every shape they verified from the
@@ -702,7 +703,23 @@ Data pane (Create hierarchy on Country, renamed Geography, then Region added):
     erroring visuals included (`test_27_desktops_save_kept_every_file`).
   - So `line` and `area` take a list on `category` (a drill-down), rendered exactly as drawn
     (`test_27_drill_down_specs_write_what_desktop_drew`), and the Legend stays one column: a list is
-    refused before anything is written. A drill-down together with a Legend wasn't probed: refused.
+    refused before anything is written. A drill-down together with a Legend: drawn (probe 28).
+- **Legend combinations and the 'Bottom' position (probe 28,** `scripts/probe_legend_combos.py`;
+  evidence `docs/probes/28-legend-combos.diff`). Candidates on the demo's model with its refreshed
+  data cache, opened through the bridge, one capture per page; nothing dirty, so no save. The
+  guidelines theme (`bp theme`) had its default legend position set to Top.
+
+  | Candidate | `visualType` | How Desktop drew it |
+  |---|---|---|
+  | `Category` drill list (Country, Region, both `active`) + `Series` = Order Date | `lineChart`, `areaChart`, `columnChart`, `hundredPercentStackedColumnChart`, `barChart` | expanded Country > Region, one colour per order date |
+  | `Y` = two measures + `Series` = Region | `columnChart`, `hundredPercentStackedColumnChart`, `barChart`, `areaChart` | no chart, only "There's too many columns in the Legend bucket. Please remove some." |
+  | `objects.legend[0].properties.position = Literal "'Bottom'"`, theme default Top | `clusteredColumnChart` | legend below the chart (the same chart without it: on top) |
+
+  - So a drill-down may go with a Legend on line, area and the stacked charts, several measures
+    with a Legend stay refused (now Desktop's own error; on the line chart Desktop's UI allows one
+    `Y` value with a Legend, probe 20), and `legend: bottom` is offered with top, left and right.
+  - A theme's `visualStyles["*"]["*"].legend = [{"position": "Top"}]` set every chart's default
+    legend position (seen on the control chart); Blueprint doesn't write it.
 
 ## Schema versions
 

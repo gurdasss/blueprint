@@ -13,5 +13,6 @@ options:
   labels: { object: labels, property: show, values: { "on": "true" } }
   # Probe 23: objects.legend[0].properties.position moved the legend: 'Right' and 'Top' on a column
   # chart, 'Top' on a 100% stacked column, 'Left' on a stacked bar. 'Bottom' couldn't be told from
-  # the theme default (bottom), so it isn't offered. Left out: the theme's default.
-  legend: { object: legend, property: position, values: { top: "'Top'", left: "'Left'", right: "'Right'" } }
+  # the theme default (bottom) there; probe 28, with a theme defaulting to Top, showed 'Bottom'
+  # moves it below a clustered column chart. Left out: the theme's default.
+  legend: { object: legend, property: position, values: { top: "'Top'", bottom: "'Bottom'", left: "'Left'", right: "'Right'" } }

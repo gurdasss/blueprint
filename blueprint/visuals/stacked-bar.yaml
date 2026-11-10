@@ -1,8 +1,9 @@
 # Slot contract for spec type `stacked-bar` (stacked bar). Verified in probes 22 and 23 (pbir/schema.md
 # "Creating pages and visuals"): `barChart` with the clustered chart's roles, X axis `Category`
 # ("active": true; an ordered list is a drill-down, probe 23) and `Y` (a list: one series per
-# measure, probe 23), plus Legend `Series` (a column, no "active", probe 22). Several measures
-# together with a Legend weren't probed, so they're refused.
+# measure, probe 23), plus Legend `Series` (a column, no "active", probe 22). Probe 28: a drill-down
+# together with a Legend draws; several measures together with a Legend don't (Desktop: "too
+# many columns in the Legend bucket"), so they're refused.
 type: stacked-bar
 visual_type: barChart
 region: main
@@ -16,5 +17,6 @@ options:
   labels: { object: labels, property: show, values: { "on": "true" } }
   # Probe 23: objects.legend[0].properties.position moved the legend: 'Right' and 'Top' on a column
   # chart, 'Top' on a 100% stacked column, 'Left' on a stacked bar. 'Bottom' couldn't be told from
-  # the theme default (bottom), so it isn't offered. Left out: the theme's default.
-  legend: { object: legend, property: position, values: { top: "'Top'", left: "'Left'", right: "'Right'" } }
+  # the theme default (bottom) there; probe 28, with a theme defaulting to Top, showed 'Bottom'
+  # moves it below a clustered column chart. Left out: the theme's default.
+  legend: { object: legend, property: position, values: { top: "'Top'", bottom: "'Bottom'", left: "'Left'", right: "'Right'" } }

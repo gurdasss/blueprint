@@ -1,8 +1,9 @@
 # Slot contract for spec type `stacked-column` (stacked column). Verified in probes 22 and 23 (pbir/schema.md
 # "Creating pages and visuals"): `columnChart` with the clustered chart's roles, X axis `Category`
 # ("active": true; an ordered list is a drill-down, probe 23) and `Y` (a list: one series per
-# measure, probe 23), plus Legend `Series` (a column, no "active", probe 22). Several measures
-# together with a Legend weren't probed, so they're refused.
+# measure, probe 23), plus Legend `Series` (a column, no "active", probe 22). Probe 28: a drill-down
+# together with a Legend draws; several measures together with a Legend don't (Desktop: "too
+# many columns in the Legend bucket"), so they're refused.
 type: stacked-column
 visual_type: columnChart
 region: main

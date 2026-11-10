@@ -9,8 +9,10 @@ code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, eviden
 - `line` and `area` take a drill-down of plain columns on `category`
   (`category: ["Sales[Country]", "Sales[Region]"]`), verified in Desktop (probe 27).
 - Probe 27 also showed Desktop refuses a second Legend column on line and area charts ("too many
-  columns in the Legend bucket"), so the Legend stays one column. A drill-down together with a
-  Legend isn't verified and is refused.
+  columns in the Legend bucket"), so the Legend stays one column.
+- A drill-down together with a Legend is allowed on line, area and the stacked charts (probe 28).
+  Several measures together with a Legend stay refused: Desktop draws the same error.
+- Chart option `legend: bottom` (probe 28, against a theme defaulting to Top).
 
 ## v0.4.0 (2026-11-10)
 
