@@ -23,10 +23,12 @@ def test_types_layouts_and_limits_without_a_report(capsys):
     d = _describe(capsys)
     assert set(d["types"]) == set(contracts())
     assert d["types"]["kpi"] == {"visual_type": "kpi", "region": "kpi-row", "options": {}, "slots": {
-        "value": {"accepts": ["measure"], "required": True, "list": False},
-        "trend": {"accepts": ["column"], "required": True, "list": False},
-        "target": {"accepts": ["measure"], "required": False, "list": False}}}
+        "value": {"accepts": ["measure"], "required": True, "list": False, "list_excludes": []},
+        "trend": {"accepts": ["column"], "required": True, "list": False, "list_excludes": []},
+        "target": {"accepts": ["measure"], "required": False, "list": False, "list_excludes": []}}}
     assert d["types"]["slicer"]["options"] == {"style": ["dropdown"]}
+    # A combination apply refuses is visible up front (several measures with a Legend, probe 28)
+    assert d["types"]["line"]["slots"]["value"]["list_excludes"] == ["legend"]
     assert list(d["layouts"]) == ["dashboard-6", "grid-2x3", "kpi-row-plus-detail", "one-up", "standard-4-up", "two-up"]
     std = d["layouts"]["standard-4-up"]
     assert (std["default"], std["usable"], std["roles"]) == (True, True, {"header": 1, "kpi-row": 1, "main": 2})

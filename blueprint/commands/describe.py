@@ -105,7 +105,8 @@ def _types() -> dict[str, Any]:
         out[name] = {
             "visual_type": c.visual_type,
             "region": c.region,
-            "slots": {s.name: {"accepts": list(s.accepts), "required": s.required, "list": s.ordered}
+            "slots": {s.name: {"accepts": list(s.accepts), "required": s.required, "list": s.ordered,
+                               "list_excludes": list(s.list_excludes)}
                       for s in c.slots.values()},
             "options": {o.name: list(o.values) for o in c.options.values()},
         }
@@ -204,7 +205,9 @@ def to_text(data: dict[str, Any]) -> str:
     lines.append("Visual types (type -> default region; slots: accepted kinds, * required, [] list allowed)")
     for name, t in data["types"].items():
         slots = ", ".join(f"{n}{'*' if sl['required'] else ''}{'[]' if sl['list'] else ''}: "
-                          f"{'|'.join(sl['accepts'])}" for n, sl in t["slots"].items())
+                          f"{'|'.join(sl['accepts'])}"
+                          + (f" (a list only without {'/'.join(sl['list_excludes'])})" if sl["list_excludes"] else "")
+                          for n, sl in t["slots"].items())
         options = "; options " + ", ".join(f"{n}: {'|'.join(v)}" for n, v in t["options"].items()) \
             if t["options"] else ""
         width = max(map(len, data["types"]))
