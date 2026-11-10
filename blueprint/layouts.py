@@ -73,7 +73,7 @@ def available(search_path: tuple[Path, ...]) -> list[str]:
 def load(name: str, search_path: tuple[Path, ...]) -> Layout:
     path = find(name, search_path)
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data = yaml.safe_load(path.read_bytes())  # bytes: PyYAML detects UTF-8, BOM and UTF-16
     except (OSError, yaml.YAMLError) as exc:
         raise LayoutError(f"{path}: {exc}") from exc
     return parse(data, str(path), expected_name=name)

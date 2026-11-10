@@ -136,7 +136,7 @@ def merge(base: dict[str, Any], over: dict[str, Any]) -> dict[str, Any]:
 
 def _read(path: Path) -> dict[str, Any]:
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data = yaml.safe_load(path.read_bytes())  # bytes: PyYAML detects UTF-8, BOM and UTF-16
     except (OSError, yaml.YAMLError) as exc:
         raise GuidelinesError(f"{path}: {exc}") from exc
     if data is None:

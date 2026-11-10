@@ -103,7 +103,7 @@ def parse_field(text: Any) -> FieldRef | None:
 
 def load(path: Path) -> PageSpec:
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data = yaml.safe_load(path.read_bytes())  # bytes: PyYAML detects UTF-8, BOM and UTF-16
     except (OSError, yaml.YAMLError) as exc:
         raise SpecError(str(path), [str(exc)]) from exc
     return parse(data, str(path), default_id=default_id(path))

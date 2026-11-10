@@ -121,3 +121,41 @@ def test_unreadable_file_is_a_clear_error_or_skip(proj: Path, capsys):
         assert "can't read: Permission denied; skipped" in capsys.readouterr().out
     finally:
         os.chmod(proj / CARD, 0o644)
+
+
+# --- text encodings of the YAML Blueprint reads (specs, guidelines) -------------------------------
+# Windows PowerShell 5 writes UTF-16 with a BOM by default (`>`, Out-File), and Notepad can add a
+# UTF-8 BOM, so an agent on Windows produces both. They once crashed with a UnicodeDecodeError.
+
+SPEC_TEXT = ("page: Encoded\nlayout: two-up\nvisuals:\n  - {type: header, title: Encoded é}\n"
+             "  - {type: card, slots: {value: '[Total Amount]'}}\n"
+             "  - {type: column, slots: {category: 'Sales[Country]', value: '[Total Amount]'}}\n")
+
+
+@pytest.mark.parametrize("encoding", ["utf-8", "utf-8-sig", "utf-16", "utf-16-le-crlf"])
+def test_specs_and_guidelines_in_windows_encodings(card_chart_fixture, tmp_path, capsys, encoding):
+    proj = tmp_path / "proj"
+    shutil.copytree(card_chart_fixture.parent, proj)
+    codec, crlf = (encoding.removesuffix("-crlf"), encoding.endswith("-crlf"))
+
+    def encode(text: str) -> bytes:
+        text = text.replace("\n", "\r\n") if crlf else text
+        data = text.encode("utf-16-le" if codec == "utf-16-le" else codec)
+        return (b"\xff\xfe" + data) if codec == "utf-16-le" else data
+
+    spec = tmp_path / "encoded.yaml"
+    spec.write_bytes(encode(SPEC_TEXT))
+    guide = tmp_path / "g.yaml"
+    guide.write_bytes(encode(GUIDE.read_text(encoding="utf-8").replace(
+        'search_path: ["layouts"]', f"search_path: ['{GUIDE.parent / 'layouts'}']")))
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(guide)]) == 0
+    assert "new page 'Encoded'" in capsys.readouterr().out
+
+
+def test_undecodable_spec_is_a_clear_error(card_chart_fixture, tmp_path, capsys):
+    proj = tmp_path / "proj"
+    shutil.copytree(card_chart_fixture.parent, proj)
+    spec = tmp_path / "bad.yaml"
+    spec.write_bytes(b"page: X\xff\xfe\x80\n")
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 2
+    assert "bad.yaml" in capsys.readouterr().err
