@@ -45,9 +45,9 @@ ROOT = Path(__file__).resolve().parent.parent
 PROBES = ROOT / "docs" / "probes"
 FIXTURE = ROOT / "fixtures" / "02-card-and-chart"
 GUIDE = ROOT / "guidelines" / "example.yaml"
-REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26]
+REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27]
 # Probes whose report Blueprint built and Desktop then opened and saved.
-ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24, 26]
+ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24, 26, 27]
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git to apply the evidence")
 
@@ -630,6 +630,53 @@ def test_24_desktops_save_kept_every_blueprint_file(replays):
 
     assert report_files(saved) == report_files(built)
     assert len(_managed(saved)) == 14  # 12 charts and slicers, 2 headers
+
+
+# Probe 27: the candidates Desktop drew after Refresh now and a save, as spec visuals.
+PROBE_27 = {
+    "line-drill": '{type: line, slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}}',
+    "area-drill": '{type: area, slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}}',
+}
+
+
+@pytest.mark.parametrize("sid", list(PROBE_27))
+def test_27_drill_down_specs_write_what_desktop_drew(replays, tmp_path, sid):
+    saved = _last(replays, 27)
+    drawn = _by_spec_id(saved.report)[sid]["visual"]
+    proj = _copy(saved, tmp_path)
+    spec = tmp_path / "x.yaml"
+    spec.write_text(f"page: X\nlayout: one-up\nvisuals:\n  - {{type: header, title: X}}\n"
+                    f"  - {{id: x, {PROBE_27[sid][1:]}\n")
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+    [page] = [p for p in read_report(proj / "Fixture.Report").pages if p.display_name == "X"]
+    [ours] = [v.source.data["visual"] for v in page.visuals if v.spec_id == "x"]
+    assert ours["visualType"] == drawn["visualType"]
+    assert ours["query"] == drawn["query"]
+
+
+def test_27_desktops_save_kept_every_file(replays):
+    """After Refresh now and Ctrl+S (the data cache was rewritten), no report file changed: the
+    candidates that errored (two Legend columns) were kept as written too."""
+    built, saved = replays[27][-2], replays[27][-1]
+    assert saved.name.startswith("01 refresh now and save")
+
+    def report_files(step: Step) -> dict[str, bytes]:
+        return {p.relative_to(step.report).as_posix(): p.read_bytes()
+                for p in step.report.rglob("*") if p.is_file()}
+
+    assert report_files(saved) == report_files(built)
+
+
+@pytest.mark.parametrize("vtype", ["line", "area"])
+def test_27_two_legend_columns_are_refused(replays, tmp_path, capsys, vtype):
+    """Desktop drew "There's too many columns in the Legend bucket" for Series = Country, Region."""
+    proj = _copy(_last(replays, 27), tmp_path)
+    spec = tmp_path / "bad.yaml"
+    spec.write_text(f"page: Bad\nlayout: one-up\nvisuals:\n  - {{type: header, title: B}}\n"
+                    f"  - {{type: {vtype}, slots: {{category: 'Sales[Order Date]', value: '[Total Amount]', "
+                    "legend: ['Sales[Country]', 'Sales[Region]']}}\n")
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 2
+    assert "visuals[1].slots.legend: takes a single field, not a list" in capsys.readouterr().err
 
 
 def test_21_rebinding_after_desktops_save(replays, tmp_path, capsys):

@@ -460,8 +460,8 @@ README Q1–Q3 and Q5–Q11. Every file Desktop wrote validates and round-trips 
     - Drilling back up set Region's `active` to `false` (drill state, probe 11). Both charts also got
       the automatic `filterConfig` filters, which is filter-pane state (probe 05). The plain open and save
       changed nothing this time.
-    - **Open:** a drill-down on the line chart's X-axis (only one column probed), and more than one
-      Legend column.
+    - A drill-down of plain columns on the line chart's X-axis, and a second Legend column: settled
+      by probe 27 (below).
   - **Desktop accepts Blueprint's pie, table and KPI as written (probe 09,** `scripts/probe_apply_types.py`;
     evidence `docs/probes/09-apply-types.diff`). `bp apply examples/sales-mix.yaml` on fixture 02,
     then open and save: **no visual or page file changed**. Only `activePageName` and
@@ -597,8 +597,8 @@ Data pane (Create hierarchy on Country, renamed Geography, then Region added):
   evidence `docs/probes/18-bar-pie-hierarchy.diff`). With Geography dragged onto a clustered bar
   chart's Y-axis, a pie's Legend and a line chart's X-axis, each got `Category` = the two
   `HierarchyLevel` projections (Country `active`, Region not) plus `Y` = the measure, the same as the
-  column chart in probe 16. All three drilled from Country to Region. On the line chart this verifies a
-  drill-down only *through a hierarchy*: a list of plain columns on its X-axis is still open.
+  column chart in probe 16. All three drilled from Country to Region. On the line chart this verified a
+  drill-down *through a hierarchy*; a list of plain columns came with probe 27.
 - **Desktop accepts Blueprint's bar, pie and line charts on a hierarchy (probe 19,**
   `scripts/probe_apply_hierarchy_charts.py`; evidence `docs/probes/19-apply-hierarchy-charts.diff`).
   All three were drawn with their titles, showed UK and FR, and drilled to regions and back. On save
@@ -688,6 +688,21 @@ Data pane (Create hierarchy on Country, renamed Geography, then Region added):
   sort if it named a gone field, and stale `expansionStates`; formatting, title and position were
   kept. Opened through the bridge: every visual drew with its new fields (one page capture), with
   Desktop's automatic subtitles following the new bindings. Nothing dirty, so no save.
+- **A drill-down of plain columns on line and area charts; one Legend column only (probe 27,**
+  `scripts/probe_line_drill_legend.py`; evidence `docs/probes/27-line-drill-legend.diff`). Candidates
+  on fixture 02 plus probe 14's Order Date, opened through the bridge; the user clicked Refresh now
+  and saved, and one page capture followed.
+
+  | Candidate | `visualType` | How Desktop drew it |
+  |---|---|---|
+  | `Category` drill list (Country, Region, both `active`), the column chart's shape | `lineChart`, `areaChart` | expanded: East, West under FR; North, South under UK |
+  | `Series` = Country, Region (two Legend columns, no `active`) | `lineChart`, `areaChart` | no chart, only the error "There's too many columns in the Legend bucket. Please remove some." |
+
+  - The save landed (the data cache was rewritten) and **changed no report or model file**, the
+    erroring visuals included (`test_27_desktops_save_kept_every_file`).
+  - So `line` and `area` take a list on `category` (a drill-down), rendered exactly as drawn
+    (`test_27_drill_down_specs_write_what_desktop_drew`), and the Legend stays one column: a list is
+    refused before anything is written. A drill-down together with a Legend wasn't probed: refused.
 
 ## Schema versions
 

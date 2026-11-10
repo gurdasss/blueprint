@@ -4,6 +4,14 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
+## Unreleased
+
+- `line` and `area` take a drill-down of plain columns on `category`
+  (`category: ["Sales[Country]", "Sales[Region]"]`), verified in Desktop (probe 27).
+- Probe 27 also showed Desktop refuses a second Legend column on line and area charts ("too many
+  columns in the Legend bucket"), so the Legend stays one column. A drill-down together with a
+  Legend isn't verified and is refused.
+
 ## v0.4.0 (2026-11-10)
 
 The first release, covering roadmap v0.1–v0.4: read, align, validate, generate and bind.

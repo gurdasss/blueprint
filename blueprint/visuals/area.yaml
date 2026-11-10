@@ -1,11 +1,13 @@
 # Slot contract for spec type `area`. Verified in probes 22 and 23 (pbir/schema.md "Creating pages
 # and visuals"): `areaChart` with the line chart's roles, X axis `Category` ("active": true), Y axis
-# `Y` (a list: one series per measure, probe 23) and Legend `Series` (no "active", probe 22). Only
-# one X-axis column was probed; several measures with a Legend weren't, so they're refused.
+# `Y` (a list: one series per measure, probe 23) and Legend `Series` (no "active", probe 22).
+# Probe 27: an ordered list of columns on the X axis is a drill-down (drawn expanded), and Desktop
+# refuses a second Legend column, so the Legend takes one. Several measures, or a drill-down,
+# together with a Legend weren't probed, so they're refused.
 type: area
 visual_type: areaChart
 region: main
 slots:
-  category: { role: Category, accepts: column, required: true }
+  category: { role: Category, accepts: column, required: true, ordered: true, list_excludes: [legend] }
   value:    { role: Y, accepts: measure, required: true, ordered: true, list_excludes: [legend] }
   legend:   { role: Series, accepts: column }

@@ -1,13 +1,15 @@
 # Slot contract for spec type `line`. Verified in probe 12 (pbir/schema.md "Creating pages and
 # visuals"): `lineChart`, X-axis in role `Category`, Y-axis in role `Y`, Legend in role `Series`.
-# Only one X-axis column and one Legend column were probed, so each takes one. Probe 18: the X-axis
-# also takes a hierarchy built in the model (one field, binding its levels as a drill-down).
+# Probe 18: the X-axis also takes a hierarchy built in the model (one field, binding its levels as
+# a drill-down). Probe 27: an ordered list of columns on the X-axis is a drill-down too (both
+# "active", drawn expanded, as on the column chart), and a second Legend column is refused by
+# Desktop ("too many columns in the Legend bucket"), so the Legend takes one column.
 # Probe 20: several measures on the Y-axis are projections of `Y` in well order, one line each.
-# Several measures together with a Legend wasn't probed (Desktop allows one Y value then): refused.
+# Several measures, or a drill-down, together with a Legend weren't probed: refused.
 type: line
 visual_type: lineChart
 region: main
 slots:
-  category: { role: Category, accepts: [column, hierarchy], required: true }
+  category: { role: Category, accepts: [column, hierarchy], required: true, ordered: true, list_excludes: [legend] }
   value:    { role: Y, accepts: measure, required: true, ordered: true, list_excludes: [legend] }
   legend:   { role: Series, accepts: column }
