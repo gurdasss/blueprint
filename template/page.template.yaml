@@ -43,7 +43,7 @@ visuals:
   - type: header
     title: Sales Overview
 
-  # ── KPI in the KPI row (its default region) ────────────────────
+  # ── KPI — short form slots (just the field) ────────────────────
   - type: kpi
     title: Revenue vs Target
     slots:
@@ -51,18 +51,18 @@ visuals:
       trend: "Calendar[Month]"
       target: "[Revenue Target]"
 
-  # ── Card with formatting ───────────────────────────────────────
-  # A slot value can be a string (just the field) or a mapping
-  # (field + optional micro decisions like format).
+  # ── Card — long form slot (field + format) ─────────────────────
+  # When a slot needs micro decisions, use the long form:
+  #   { field: <field>, format: <named format> }
   - type: card
     title: Unique Investors
     region: kpi-row
     slots:
       value:
         field: "Investors[ID] | distinctcount"
-        format: "#,##0"                          # → 1,234
+        format: whole_number                     # → 1,234
 
-  # ── Column chart with formatted axis ───────────────────────────
+  # ── Column chart with options and formatted value ──────────────
   - type: column
     title: Revenue by Region
     options: { labels: "on" }
@@ -70,9 +70,9 @@ visuals:
       category: "Geography[Region]"
       value:
         field: "[Total Revenue]"
-        format: "$#,##0,.0K"                     # → $1.2K on axis
+        format: currency                         # → $1,234.56
 
-  # ── Table ──────────────────────────────────────────────────────
+  # ── Table — mixed short and long form ──────────────────────────
   - type: table
     title: Order Detail
     slots:
@@ -80,7 +80,7 @@ visuals:
         - "Geography[Region]"
         - "Product[Category]"
         - field: "[Total Revenue]"
-          format: "$#,##0"                       # → $1,234,567
+          format: currency
         - "[Order Count]"
 
 
@@ -98,11 +98,11 @@ visuals:
 #
 #   value:
 #     field: "[Total Revenue]"
-#     format: "$#,##0"
+#     format: currency
 #
 # The short form and long form are interchangeable. Use the short form
-# when you just need the field. Use the long form when you need to set
-# format or other per-slot options.
+# when the field is all you need. Use the long form when you also want
+# to set a data format.
 #
 #
 # ── Field syntax ──
@@ -130,18 +130,18 @@ visuals:
 #   "Table[Column] | max"             Maximum
 #
 #   Use a measure when the aggregation is reusable business logic.
-#   Use `| aggregate` when it's a one-off visual-level summary.
+#   Use `| aggregate` for a one-off visual-level summary.
 #
 #
-# ── Format strings ──
+# ── Named data formats (optional, per slot) ──
 #
-#   Power BI format strings (same syntax as DAX FORMAT function):
-#     "#,##0"          → 1,234
-#     "#,##0.00"       → 1,234.56
-#     "$#,##0"         → $1,234
-#     "$#,##0,.0K"     → $1.2K
-#     "0.0%"           → 45.2%
-#     "0"              → 1234 (plain integer)
+#   general        Power BI's default (no specific formatting)
+#   whole_number   1,234
+#   decimal        1,234.56
+#   currency       $1,234.56
+#   percentage     45.20%
 #
 #   Omit format to use Power BI's default for the field's data type.
+#   Fine-grained overrides (decimal places, thousand separator) are
+#   available through extensions.
 # ─────────────────────────────────────────────────────────────────────
