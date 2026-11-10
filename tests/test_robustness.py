@@ -159,3 +159,15 @@ def test_undecodable_spec_is_a_clear_error(card_chart_fixture, tmp_path, capsys)
     spec.write_bytes(b"page: X\xff\xfe\x80\n")
     assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 2
     assert "bad.yaml" in capsys.readouterr().err
+
+
+def test_spec_keys_that_are_numbers_or_null(card_chart_fixture, tmp_path, capsys):
+    """YAML mapping keys can be numbers or null; listing unknown keys once crashed sorting them."""
+    proj = tmp_path / "proj"
+    shutil.copytree(card_chart_fixture.parent, proj)
+    spec = tmp_path / "keys.yaml"
+    spec.write_text("page: K\nlayout: two-up\n1: x\nnull: y\nvisuals:\n"
+                    "  - {type: header, title: K, 2: a, null: b, zz: c}\n", encoding="utf-8")
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 2
+    err = capsys.readouterr().err
+    assert "1: unknown key" in err and "None: unknown key" in err and "visuals[0].zz: unknown key" in err

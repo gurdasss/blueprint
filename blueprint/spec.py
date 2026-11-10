@@ -113,7 +113,7 @@ def parse(data: Any, source: str = "<spec>", default_id: str = "spec") -> PageSp
     problems: list[str] = []
     if not isinstance(data, dict):
         raise SpecError(source, ["top level must be a mapping with page, layout and visuals"])
-    for key in sorted(set(data) - _SPEC_KEYS):
+    for key in sorted(set(data) - _SPEC_KEYS, key=str):  # YAML keys may be numbers or null
         problems.append(f"{key}: unknown key (expected: {', '.join(sorted(_SPEC_KEYS))})")
 
     page = data.get("page")
@@ -154,7 +154,7 @@ def _visual(i: int, raw: Any, known: dict[str, Contract], counts: dict[str, int]
     if not isinstance(raw, dict):
         problems.append(f"{at}: must be a mapping with at least `type`")
         return None
-    for key in sorted(set(raw) - _VISUAL_KEYS):
+    for key in sorted(set(raw) - _VISUAL_KEYS, key=str):  # YAML keys may be numbers or null
         problems.append(f"{at}.{key}: unknown key (expected: {', '.join(sorted(_VISUAL_KEYS))})")
     vtype = raw.get("type")
     if not isinstance(vtype, str) or vtype not in known:
