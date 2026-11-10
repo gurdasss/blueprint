@@ -23,7 +23,9 @@ Hierarchies built in the model (probe 16) are table members too, with their leve
 
 from __future__ import annotations
 
+import difflib
 import re
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -38,6 +40,15 @@ class ModelError(Exception):
     pass
 
 
+def _did_you_mean(name: str, candidates: Iterable[str], show: Callable[[str], str] = str) -> str:
+    """A hint for a name that isn't in the model: the same name in another case (Power BI
+    names are case-insensitive, so agents often get the case wrong), else close spellings."""
+    pool = sorted(set(candidates))
+    same = [c for c in pool if c.lower() == name.lower()]
+    close = same or difflib.get_close_matches(name, pool, n=3, cutoff=0.75)
+    return f" (did you mean {' or '.join(show(c) for c in close)}?)" if close else ""
+
+
 @dataclass
 class SemanticModel:
     tables: dict[str, set[str]] = field(default_factory=dict)  # table -> columns
@@ -49,7 +60,8 @@ class SemanticModel:
     def measure_table(self, name: str) -> str:
         homes = self.measures.get(name, [])
         if not homes:
-            raise ModelError(f"no measure [{name}] in the semantic model")
+            raise ModelError(f"no measure [{name}] in the semantic model"
+                             + _did_you_mean(name, self.measures, lambda c: f"[{c}]"))
         if len(homes) > 1:
             raise ModelError(f"measure [{name}] exists in several tables ({', '.join(homes)}); "
                              "Blueprint can't tell which one you mean")
@@ -58,16 +70,23 @@ class SemanticModel:
     def check_column(self, table: str, column: str) -> None:
         if table not in self.tables:
             raise ModelError(f"no table {table!r} in the semantic model "
-                             f"(tables: {', '.join(sorted(self.tables)) or 'none'})")
+                             f"(tables: {', '.join(sorted(self.tables)) or 'none'})"
+                             + _did_you_mean(table, self.tables, repr))
         if column not in self.tables[table]:
-            raise ModelError(f"table {table!r} has no column {column!r}")
+            hint = _did_you_mean(column, self.tables[table], lambda c: f"{table}[{c}]")
+            if not hint and column in self.measures:
+                hint = f" ({column!r} is a measure: write it as [{column}])"
+            raise ModelError(f"table {table!r} has no column {column!r}{hint}")
 
     def check_hierarchy_level(self, table: str, hierarchy: str, level: str) -> None:
         if table not in self.tables:
-            raise ModelError(f"no table {table!r} in the semantic model")
+            raise ModelError(f"no table {table!r} in the semantic model"
+                             + _did_you_mean(table, self.tables, repr))
         levels = self.hierarchies.get((table, hierarchy))
         if levels is None:
-            raise ModelError(f"table {table!r} has no hierarchy {hierarchy!r}")
+            raise ModelError(f"table {table!r} has no hierarchy {hierarchy!r}"
+                             + _did_you_mean(hierarchy, [h for t, h in self.hierarchies if t == table],
+                                             lambda c: f"{table}[{c}]"))
         if level not in levels:
             raise ModelError(f"hierarchy {hierarchy!r} has no level {level!r} (levels: {', '.join(levels)})")
 

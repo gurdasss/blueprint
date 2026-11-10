@@ -120,3 +120,28 @@ def test_describe_lists_a_hidden_tables_visible_measures(tmp_path):
     assert m["tables"] == {"Facts": {"columns": [], "measures": ["[Total]"], "hierarchies": {},
                                      "hidden": ["Facts[Amount]", "[Helper]"]}}
     assert m["hidden_tables"] == ["LocalDateTable_1"]
+
+
+@pytest.mark.parametrize(("call", "hint"), [
+    (lambda m: m.measure_table("total amount"), "(did you mean [Total Amount]?)"),  # Power BI ignores case
+    (lambda m: m.measure_table("Totl Amount"), "(did you mean [Total Amount]?)"),
+    (lambda m: m.check_column("sales", "Country"), "(did you mean 'Sales'?)"),
+    (lambda m: m.check_column("Sales", "country"), "(did you mean Sales[Country]?)"),
+    (lambda m: m.check_column("Sales", "Contry"), "(did you mean Sales[Country]?)"),
+    (lambda m: m.check_column("Sales", "Total Amount"), "('Total Amount' is a measure: write it as [Total Amount])"),
+    (lambda m: m.check_hierarchy_level("Sales", "Geografy", "Country"), "(did you mean Sales[Geography]?)"),
+])
+def test_unknown_names_suggest_the_close_ones(call, hint):
+    """Agents write field names from memory; a miss names the likely field so the next try works."""
+    model = semantic.SemanticModel(tables={"Sales": {"Country", "Region", "Amount"}},
+                                   measures={"Total Amount": ["Sales"]},
+                                   hierarchies={("Sales", "Geography"): ("Country", "Region")})
+    with pytest.raises(semantic.ModelError) as exc:
+        call(model)
+    assert str(exc.value).endswith(hint)
+
+
+def test_no_hint_when_nothing_is_close():
+    model = semantic.SemanticModel(tables={"Sales": {"Country"}}, measures={"Total Amount": ["Sales"]})
+    with pytest.raises(semantic.ModelError, match=r"^no measure \[Xyz\] in the semantic model$"):
+        model.measure_table("Xyz")
