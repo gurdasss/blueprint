@@ -23,9 +23,6 @@ then writes them to disk. Nothing persists in memory after the run.
    *.yaml               │  Load all YAMLs                 │
    ──────────────────▶  │  Resolve inherits: references   │
                         │  Result: dict[str, VisualDef]   │
-   guidelines           │                                 │
-   visuals.search_path  │  Also load from search_path     │
-   ──────────────────▶  │  directories (client additions) │
                         └────────────┬────────────────────┘
                                      │
                                      ▼
@@ -153,27 +150,22 @@ slots:
     accepts: measure
 ```
 
-**Then point your guidelines at the folder:**
+The visual is available on the next `bp apply` run. No code changes.
 
-```yaml
-# in guidelines.yaml
-visuals:
-  search_path: ["my-visuals"]
-```
-
-Next `bp apply` run, the new type is available in page specs.
-No code changes. No Blueprint updates.
+Custom visuals are an advanced, unlikely need — most clients never
+define one. If the need arises, it belongs in `extensions:`, not in
+the core guidelines.
 
 ### Load order
 
-```
-1. blueprint/visuals/*          ← built-in defaults (ships with Blueprint)
-2. search_path directories      ← client additions/overrides (later wins)
-```
+Blueprint owns the visual repository. It loads `blueprint/visuals/`
+at startup, always, automatically. No path in guidelines. No client
+decision needed.
 
-A client file with the same `type:` as a built-in replaces it.
-That's how a client customizes defaults (e.g. changing a visual's
-default region).
+```
+1. blueprint/visuals/*          ← built-in (ships with Blueprint)
+2. extensions (future)          ← custom visuals, if ever needed
+```
 
 ---
 
@@ -231,7 +223,6 @@ These 7 types cover every standard report pattern:
 | matrix | Inherits from table |
 | slicer | Unique slot structure |
 
-These already have definitions in `blueprint/visuals/`. A client can
-use them today by adding them to their `visuals.search_path`. They're
-deferred from core only because a client doesn't need them to build
-a functional report.
+These already have definitions in `blueprint/visuals/` and are loaded
+automatically. They're deferred from core only because a client doesn't
+need them to build a functional report — not because they're unavailable.
