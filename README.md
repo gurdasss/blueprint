@@ -219,7 +219,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: gurdasss/blueprint@v0.5.0        # a release tag (or commit SHA) pins Blueprint
+      - uses: gurdasss/blueprint@v0.5.1        # a release tag (or commit SHA) pins Blueprint
         with:
           reports: |                           # one per line: .Report folder, .pbip, its folder, or a glob
             reports/Sales.Report
@@ -466,7 +466,7 @@ every change, and `bp manifest` rebuilds it from the report at any time.
 
 ```json
 {
-  "blueprint_version": "0.5.0",
+  "blueprint_version": "0.5.1",
   "guidelines": { "name": "Example Corp Reporting Standard", "version": 1 },
   "pbir_schema": { "page": ["2.1.0"], "visualContainer": ["2.13.0"] },
   "generated_at": "2026-11-09T04:00:00Z",

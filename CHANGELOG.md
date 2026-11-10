@@ -4,7 +4,7 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
-## Unreleased
+## v0.5.1 (2026-11-10)
 
 Fixes from an audit (fresh installs, a real report, fuzzing, Windows-style input, Desktop checks):
 
