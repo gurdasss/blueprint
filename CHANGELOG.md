@@ -4,6 +4,24 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
+## Unreleased
+
+Fixes from an audit (fresh installs, a real report, fuzzing, Windows-style input, Desktop checks):
+
+- Specs, guidelines and layouts in UTF-16 (Windows PowerShell 5's default) or with a BOM load;
+  undecodable bytes are a clear error. They crashed with a traceback.
+- Fuzzing found tracebacks on spec keys that are numbers or null, and on wrong-typed guidelines
+  values; both are clear errors now (0 crashes in 6000 specs, 4800 guidelines, 1500 layouts).
+- A field the model doesn't have gets a suggestion: the same name in the model's case, or close
+  spellings (`no measure [total amount] … (did you mean [Total Amount]?)`).
+- `bp describe` shows which slot lists exclude another slot (several measures with a Legend).
+- `bp theme --replace-theme` works on a report with no base theme (Microsoft's Retail sample).
+- The CI action: a notice when GitHub won't annotate every finding (10 errors and 10 warnings per
+  step), and `reports` lines may be globs.
+- The README's spec example used a `kpi-row` visual type that never existed; README specs and
+  guidelines are now tested. The quick start's spec and `describe`'s example no longer leave a
+  gap. Clearer messages for a spec marking several pages and for an empty layouts search path.
+
 ## v0.5.0 (2026-11-10)
 
 - `line` and `area` take a drill-down of plain columns on `category`
