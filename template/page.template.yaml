@@ -112,7 +112,11 @@ visuals:
 #   "Table[Hierarchy]"                a model hierarchy (binds all levels)
 #
 #
-# ── Ordered lists (drill-down paths) ──
+# ── Drill-down paths (ordered lists) ──
+#
+#   An ordered list in a slot creates a drill-down hierarchy in the
+#   visual. The user clicks through levels in Power BI Desktop.
+#   This is core functionality — every analytical page uses it.
 #
 #   category:
 #     - "Geography[Country]"

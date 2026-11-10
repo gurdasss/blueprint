@@ -104,6 +104,16 @@ layouts:
 | `typography` (3 roles) | The three roles that cover every visible text element a client cares about in the first pass: page title, visual title, body text. |
 | `layouts` | Where to find layout files and which is the default. |
 
+### Core features beyond guidelines
+
+| Feature | How it works |
+|---------|-------------|
+| Drill-down paths | Ordered list in a slot: `category: ["Country", "State", "City"]` |
+| Named data formats | `format: currency` / `whole_number` / `decimal` / `percentage` |
+| Inline aggregation | Pipe syntax: `"Table[Column] \| distinctcount"` |
+| Visual inheritance | `inherits: column` in visual YAML — reuse slots |
+| Model hierarchies | `"Table[Hierarchy]"` binds all levels automatically |
+
 ### What's deferred to extensions
 
 | Concern | Why not core |
@@ -211,6 +221,8 @@ Rewrite:
 - [x] Phase 2: `template/layout.template.yaml`
 - [x] Phase 3: `template/page.template.yaml`
 - [x] Write `template/interactions.md` (how the three files depend on each other)
+- [x] Write `template/visuals.md` (visual type system — runtime, inheritance)
+- [x] Write `template/extensions.md` (extension points by layer)
 - [ ] Write `template/guidelines.core-spec.md` (key-by-key spec for implementers)
 - [ ] Review and lock down all three templates
 - [ ] Begin code refactor
