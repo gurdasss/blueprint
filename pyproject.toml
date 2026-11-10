@@ -30,7 +30,7 @@ version = { attr = "blueprint.__version__" }
 include = ["blueprint*"]
 
 [tool.setuptools.package-data]
-blueprint = ["*.yaml", "pbir/schemas/**/*.json"]
+blueprint = ["*.yaml", "visuals/*.yaml", "pbir/schemas/**/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
