@@ -38,7 +38,7 @@ extensions:
 - A guidelines file without `extensions:` is complete — nothing is missing
 
 **Implemented today** (read by `blueprint/guidelines.py`, which is why these
-four live here rather than in the core file — they are knobs, not contracts):
+five live here rather than in the core file — they are knobs, not contracts):
 
 ```yaml
 extensions:
@@ -49,6 +49,8 @@ extensions:
     subtitle:   {font: Segoe UI, size: 12}
     callout:    {font: Segoe UI Light, size: 32}   # a card's value (probe 07)
     card_label: {font: Segoe UI, size: 12}         # the new card's label (probe 15)
+  custom_visuals:                     # visual types beyond the core seven
+    search_path: ["my-visuals", "../blueprint/visuals/archive"]
 ```
 
 **What further extensions add here:**
@@ -61,8 +63,11 @@ extensions:
 
 ### 2. Visual definitions
 
-The core loads `blueprint/visuals/*.yaml` automatically. Extensions
-add visuals by declaring them in `extensions:`:
+**Implemented.** The core loads the seven contracts in `blueprint/visuals/`
+automatically — `header`, `card`, `kpi`, `column`, `line`, `bar`, `table`.
+Extensions add more by declaring a directory, which is also how the eight
+archived contracts (`blueprint/visuals/archive/`: `pie`, `donut`, `slicer`,
+`matrix`, `area` and the stacked charts) come back:
 
 ```yaml
 # in guidelines.yaml
@@ -72,11 +77,13 @@ extensions:
 ```
 
 **How it works:**
-- Core loader reads `blueprint/visuals/` at startup (always)
-- If the custom_visuals extension is active, it also reads from
-  the declared search paths
-- A custom YAML file with the same `type:` as a built-in replaces it
-- `inherits:` works the same way — custom visuals can extend built-ins
+- The loader always reads the core `blueprint/visuals/`, then each
+  declared directory in order
+- A type defined twice is **refused**, naming both files, and so is a
+  second contract claiming one PBIR `visual_type`: a shadowed contract
+  would change what a spec means depending on the search path order
+- `inherits:` works across directories — a custom visual can extend a
+  core one (but not the reverse: the core must load on its own)
 
 **What extensions add here:**
 - New visual types (waterfall, gauge, treemap, etc.)

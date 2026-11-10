@@ -15,7 +15,8 @@ from blueprint.plan import Plan
 def build_plan(args: argparse.Namespace) -> Plan:
     report = read_report(args.report)
     overrides = {"spacing": {"grid": args.grid}} if args.grid is not None else None
-    rules = guidelines.load(args.guidelines, report.root, overrides)
+    rules = guidelines.load(args.guidelines, report.root, overrides,
+                            visuals=getattr(args, "visuals", None) or ())
     result = grid.snap_report(report, rules.spacing.grid, rules.max_resize)
     plan = writer.plan_writes(report, force_schema=args.force_schema)
     plan.warnings = report.warnings + result.warnings + plan.warnings
@@ -31,7 +32,8 @@ def run(args: argparse.Namespace) -> int:
     if plan.writes and (plan.root / manifest.FILE).exists():
         # Keep an existing manifest describing the report (positions changed).
         report = read_report(args.report)
-        follow = manifest_cmd.plan_for(report, guidelines.load(args.guidelines, report.root))
+        follow = manifest_cmd.plan_for(report, guidelines.load(
+            args.guidelines, report.root, visuals=getattr(args, "visuals", None) or ()))
         writer.apply(follow)
         plan.writes.extend(follow.writes)
     print(plan.render())

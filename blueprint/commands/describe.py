@@ -66,7 +66,7 @@ SPEC_SYNTAX = {
 def run(args: argparse.Namespace) -> int:
     report = read_report(args.report) if args.report else None
     rules = guidelines.load(args.guidelines, report.root if report else None,
-                            guidelines.visuals_override(getattr(args, "visuals", None)))
+                            visuals=getattr(args, "visuals", None) or ())
     data = describe(rules, report)
     print(json.dumps(data, indent=2, ensure_ascii=False) if args.json else to_text(data))
     return 0

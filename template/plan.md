@@ -311,6 +311,15 @@ self-inheritance, an unknown parent (listing what is loaded), a core contract
 inheriting from outside the core (the core must load on its own), and two
 types claiming one `visual_type`.
 
+**A defect worth remembering:** `--visuals` first went in as a plain override layer, and
+`merge()` replaces lists — so passing it to a report that already opted in through its
+guidelines silently dropped that opt-in. It also wasn't on `check` or `fmt`, both of which
+render the manifest, so a `bp fmt` after an archived-type `apply` rewrote those entries as
+`"type": "pieChart"` with raw query roles (`Category`/`Y`). Reproduced, then fixed:
+`guidelines.load(visuals=...)` **adds** the directories, and the flag is on every command
+that reads contracts. Two regression tests cover it. The lasting opt-in belongs in
+guidelines; the flag is for one run.
+
 **The shipped contracts deliberately don't use it.** `bar`'s slots are
 `column`'s, but `options` aren't slots: probe 23 verified data labels and
 legend position on the column and stacked charts, never on the clustered bar,

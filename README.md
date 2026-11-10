@@ -307,7 +307,13 @@ extensions:
     search_path: ["../blueprint/visuals/archive"]
 ```
 
-With that opt-in, archived types behave exactly as before, options included:
+`--visuals` is for trying a type in one run. A report that **keeps** archived visuals should
+opt in through its guidelines (or its own `.blueprint.yaml`), because the manifest is built
+from the contracts: a later `bp fmt` or `bp manifest` without the opt-in rewrites those
+entries with the PBIR type and raw query roles (`pieChart`, `Category`/`Y`) instead of the
+spec type and slot names.
+
+With the opt-in, archived types behave exactly as before, options included:
 
 ```yaml
   - type: slicer

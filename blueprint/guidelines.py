@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import os
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -185,18 +186,16 @@ def _read(path: Path) -> dict[str, Any]:
     return data
 
 
-def visuals_override(dirs: list[Path] | None) -> dict[str, Any] | None:
-    """A command-line ``--visuals DIR`` as the top guideline layer (layer 4)."""
-    if not dirs:
-        return None
-    return {"extensions": {"custom_visuals": {"search_path": [str(Path(d).resolve()) for d in dirs]}}}
-
-
 def load(
     guidelines: Path | None = None,
     report_dir: Path | None = None,
     overrides: dict[str, Any] | None = None,
+    visuals: Sequence[Path] = (),
 ) -> Guidelines:
+    """``visuals``: command-line ``--visuals DIR`` entries. They are **added** to whatever
+    ``extensions.custom_visuals.search_path`` already names, rather than layered over it:
+    ``merge()`` replaces a list, so a layer would otherwise drop the report's own opt-in and
+    turn its pages into "unknown type"."""
     layers: list[tuple[str, dict[str, Any]]] = [("defaults", _read(DEFAULTS))]
     if guidelines is None and os.environ.get(ENV_VAR):
         guidelines = Path(os.environ[ENV_VAR])
@@ -214,7 +213,8 @@ def load(
     raw: dict[str, Any] = {}
     for _, layer in layers:
         raw = merge(raw, layer)
-    return _build(raw, tuple(name for name, _ in layers))
+    return _build(raw, tuple(name for name, _ in layers),
+                  tuple(Path(d).resolve() for d in visuals))
 
 
 # Keys of the pre-template schema -> what replaces them. Refused per layer, so the file that
@@ -256,7 +256,8 @@ def _refuse_retired_keys(layer: dict[str, Any], source: str) -> None:
                     f"(core roles: {', '.join(CORE_ROLES)})")
 
 
-def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
+def _build(raw: dict[str, Any], sources: tuple[str, ...],
+           extra_visuals: tuple[Path, ...] = ()) -> Guidelines:
     ext = _get(raw, "extensions", {})
     if ext is None:
         ext = {}
@@ -284,7 +285,7 @@ def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
         typography=_typography(raw, ext),
         layouts=_layouts(raw),
         check=CheckRules(severity=_severity(ext), decorative_types=_decorative(ext)),
-        visuals=_visuals(ext),
+        visuals=_visuals(ext) + tuple(d for d in extra_visuals if d not in _visuals(ext)),
         max_resize=_max_resize(ext),
         sources=sources,
         raw=raw,

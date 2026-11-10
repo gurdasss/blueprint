@@ -188,7 +188,7 @@ def _gap_warnings(page_spec: spec.PageSpec, layout: layouts.Layout,
 def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
     report = read_report(args.report)
     rules = guidelines.load(args.guidelines, report.root,
-                            guidelines.visuals_override(getattr(args, "visuals", None)))
+                            visuals=getattr(args, "visuals", None) or ())
     page_spec = spec.load(spec_path, rules.visuals)
     layout_name = page_spec.layout or rules.layouts.default
     if not layout_name:
@@ -415,7 +415,7 @@ def run(args: argparse.Namespace) -> int:
     # The manifest describes the report after the writes, so it's rebuilt from disk.
     report = read_report(args.report)
     follow = manifest_cmd.plan_for(report, guidelines.load(
-        args.guidelines, report.root, guidelines.visuals_override(getattr(args, "visuals", None))))
+        args.guidelines, report.root, visuals=getattr(args, "visuals", None) or ()))
     writer.apply(follow)
     if multi:
         _print([*paths, Path("manifest")], [*plans, follow])

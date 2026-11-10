@@ -45,6 +45,8 @@ def build_parser() -> argparse.ArgumentParser:
     out.add_argument("--github", action="store_true",
                      help="also print GitHub Actions annotations, one per finding")
     p.add_argument("--strict", action="store_true", help="exit 1 on warnings too")
+    p.add_argument("--visuals", type=Path, action="append", metavar="DIR",
+                   help="try a directory of extra visual contracts for this run, e.g. blueprint/visuals/archive (repeatable; added to extensions.custom_visuals.search_path, which is where a lasting opt-in belongs)")
     p.set_defaults(func=check_cmd.run)
 
     p = sub.add_parser("describe", help="what a page spec can use: syntax, visual types, layouts, "
@@ -53,7 +55,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--guidelines", type=Path, help="guidelines file (default: $BLUEPRINT_GUIDELINES)")
     p.add_argument("--json", action="store_true", help="machine-readable output")
     p.add_argument("--visuals", type=Path, action="append", metavar="DIR",
-                   help="directory of extra visual contracts, e.g. blueprint/visuals/archive (repeatable; adds to extensions.custom_visuals.search_path)")
+                   help="try a directory of extra visual contracts for this run, e.g. blueprint/visuals/archive (repeatable; added to extensions.custom_visuals.search_path, which is where a lasting opt-in belongs)")
     p.set_defaults(func=describe_cmd.run)
 
     p = sub.add_parser("apply", help="create or update pages from page specs (one page per spec)")
@@ -69,7 +71,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--overwrite-edits", action="store_true",
                    help="rebind Blueprint visuals whose fields were changed in Desktop to what the spec says")
     p.add_argument("--visuals", type=Path, action="append", metavar="DIR",
-                   help="directory of extra visual contracts, e.g. blueprint/visuals/archive (repeatable; adds to extensions.custom_visuals.search_path)")
+                   help="try a directory of extra visual contracts for this run, e.g. blueprint/visuals/archive (repeatable; added to extensions.custom_visuals.search_path, which is where a lasting opt-in belongs)")
     p.set_defaults(func=apply_cmd.run)
 
     p = sub.add_parser("manifest", help="(re)generate the manifest from the report's current state")
@@ -77,7 +79,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--guidelines", type=Path, help="guidelines file (default: $BLUEPRINT_GUIDELINES)")
     p.add_argument("--dry-run", action="store_true", help="print the planned write; change nothing")
     p.add_argument("--visuals", type=Path, action="append", metavar="DIR",
-                   help="directory of extra visual contracts, e.g. blueprint/visuals/archive (repeatable; adds to extensions.custom_visuals.search_path)")
+                   help="try a directory of extra visual contracts for this run, e.g. blueprint/visuals/archive (repeatable; added to extensions.custom_visuals.search_path, which is where a lasting opt-in belongs)")
     p.set_defaults(func=manifest_cmd.run)
 
     p = sub.add_parser("theme", help="write a custom theme from the guidelines and use it")
@@ -97,6 +99,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--dry-run", action="store_true", help="print the planned writes; change nothing")
     p.add_argument("--force-schema", action="store_true",
                    help="write even when a file's schema major version is unknown")
+    p.add_argument("--visuals", type=Path, action="append", metavar="DIR",
+                   help="try a directory of extra visual contracts for this run, e.g. blueprint/visuals/archive (repeatable; added to extensions.custom_visuals.search_path, which is where a lasting opt-in belongs)")
     p.set_defaults(func=fmt_cmd.run)
     return parser
 

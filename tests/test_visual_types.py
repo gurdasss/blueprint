@@ -3,6 +3,7 @@
 pie is archived out of the core seven, so these tests opt it back in the way a client would.
 """
 
+import json
 import shutil
 from pathlib import Path
 
@@ -265,14 +266,16 @@ region: kpi-row
 slots:
   value: { role: Y, accepts: measure, required: true }   # no longer a list
   legend: { role: Series, accepts: column }              # added
-options: {}
+options: {}                                              # this type has none
 """)
     c = contracts(extra)["trend"]
     assert c.region == "kpi-row"
     assert list(c.slots) == ["category", "value", "legend"]          # parent's first, then new
     assert c.slots["category"] == contracts()["column"].slots["category"]  # untouched
     assert c.slots["value"].ordered is False                          # overridden
-    assert c.options == contracts()["column"].options                 # `options: {}` adds nothing
+    # a section the child writes as empty is empty: a client's file is followed to the letter,
+    # and an inherited option it can't drop would be a guess about its own visual
+    assert c.options == {} and contracts()["column"].options
 
 
 def test_inherits_chains(tmp_path: Path):
@@ -338,3 +341,63 @@ def test_bar_does_not_carry_columns_unverified_options():
     core = contracts()
     assert core["bar"].slots == core["column"].slots  # same slots...
     assert core["bar"].options == {} and core["column"].options                 # ...not the same options
+
+
+# --- the opt-in has to reach every command that touches the manifest -----------------------
+
+PIE_SPEC = """\
+page: Pie Page
+layout: standard-4-up
+visuals:
+  - {type: header, title: Pie Page}
+  - {type: pie, title: Share, slots: {category: "Sales[Region]", value: "[Total Amount]"}}
+"""
+
+
+def _pie_entry(report: Path) -> dict:
+    data = json.loads((report / ".blueprint.manifest.json").read_text(encoding="utf-8"))
+    return next(v for p in data["pages"] for v in p["visuals"]
+                if v.get("type") in ("pie", "pieChart"))
+
+
+def _report_with_a_pie(tmp_path: Path) -> Path:
+    shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
+    report = tmp_path / "proj" / "Fixture.Report"
+    spec = tmp_path / "pie.yaml"
+    spec.write_text(PIE_SPEC)
+    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE),
+                 *VISUALS]) == 0
+    assert _pie_entry(report)["type"] == "pie"
+    return report
+
+
+def test_fmt_keeps_the_manifests_spec_types_when_the_report_opts_in(tmp_path: Path):
+    """The manifest is built from contracts: without the archived pie loaded, `bp fmt` would
+    rewrite the entry as its PBIR type with raw query roles ("pieChart", Category/Y) and
+    `bp check` would then call the manifest stale."""
+    report = _report_with_a_pie(tmp_path)
+    (report / ".blueprint.yaml").write_text(
+        f'extensions:\n  custom_visuals:\n    search_path: ["{ARCHIVE}"]\n')
+    assert main(["fmt", "--report", str(report), "--guidelines", str(GUIDE)]) == 0
+    entry = _pie_entry(report)
+    assert (entry["type"], list(entry["slots"])) == ("pie", ["category", "value"])
+
+
+def test_fmt_with_the_flag_keeps_them_too(tmp_path: Path):
+    report = _report_with_a_pie(tmp_path)
+    assert main(["fmt", "--report", str(report), "--guidelines", str(GUIDE), *VISUALS]) == 0
+    entry = _pie_entry(report)
+    assert (entry["type"], list(entry["slots"])) == ("pie", ["category", "value"])
+
+
+def test_the_flag_adds_to_the_guidelines_opt_in_instead_of_replacing_it(tmp_path: Path):
+    """`merge()` replaces a list, so a plain override layer would drop the report's own
+    search_path and turn its pages into "unknown type"."""
+    mine = tmp_path / "mine"
+    mine.mkdir()
+    (mine / "ring.yaml").write_text("type: ring\nvisual_type: ringChart\ninherits: donut\n")
+    g = tmp_path / "g.yaml"
+    g.write_text(f'extensions:\n  custom_visuals:\n    search_path: ["{ARCHIVE}"]\n')
+    rules = guidelines.load(g, visuals=[mine])
+    assert set(rules.visuals) == {ARCHIVE, mine}
+    assert {"pie", "ring"} <= set(contracts(rules.visuals))  # both reachable

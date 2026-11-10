@@ -102,10 +102,13 @@ def _resolve(name: str, raw: dict[str, tuple[Path, dict]], chain: tuple[str, ...
     merged = {**base, **data}
     merged.pop("inherits", None)
     for section in ("slots", "options"):
-        child = data.get(section) or {}
-        inherited = base.get(section) or {}
-        if inherited or child:
-            merged[section] = {**inherited, **child}
+        if section not in data:  # not mentioned: the parent's, as they are
+            continue
+        child = data[section] or {}
+        if not child:  # mentioned and empty: the child says it has none
+            merged[section] = {}
+            continue
+        merged[section] = {**(base.get(section) or {}), **child}
     return merged
 
 

@@ -28,7 +28,7 @@ def plan_for(report: Report, rules: guidelines.Guidelines) -> Plan:
 def run(args: argparse.Namespace) -> int:
     report = read_report(args.report)
     rules = guidelines.load(args.guidelines, report.root,
-                            guidelines.visuals_override(getattr(args, "visuals", None)))
+                            visuals=getattr(args, "visuals", None) or ())
     plan = plan_for(report, rules)
     if not args.dry_run:
         writer.apply(plan)
