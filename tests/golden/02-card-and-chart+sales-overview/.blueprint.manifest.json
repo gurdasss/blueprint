@@ -108,9 +108,9 @@
           "region": "main#1",
           "position": {
             "x": 16,
-            "y": 232,
+            "y": 272,
             "w": 616,
-            "h": 472
+            "h": 432
           },
           "slots": {
             "value": "[Total Amount]"
@@ -126,9 +126,9 @@
           "region": "main#2",
           "position": {
             "x": 648,
-            "y": 232,
+            "y": 272,
             "w": 616,
-            "h": 472
+            "h": 432
           },
           "slots": {
             "category": [

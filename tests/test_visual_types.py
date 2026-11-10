@@ -56,7 +56,7 @@ def test_apply_writes_desktops_query_shapes(tmp_path: Path):
         assert doc["visual"]["query"]["queryState"] == DESKTOP[vtype], vtype
     # kpi fills the kpi-row region; pie and table take the two main regions in spec order.
     pos = {t: (d["position"]["x"], d["position"]["y"]) for t, d in made.items()}
-    assert pos == {"kpi": (16, 96), "pieChart": (16, 232), "tableEx": (648, 232)}
+    assert pos == {"kpi": (16, 96), "pieChart": (16, 272), "tableEx": (648, 272)}
 
     # bp check passes what apply built (the fixture's hand-made page and base theme have findings).
     names = {d["name"] for d in made.values()}

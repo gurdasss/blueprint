@@ -308,6 +308,17 @@ def test_blueprint_annotations_survive_every_desktop_save(replays, probe):
     assert built, f"probe {probe}: Blueprint built nothing"
 
 
+def _pinned_guide(tmp_path: Path) -> Path:
+    """GUIDE with tests/pinned-layouts ahead of the shipped layouts on the search path."""
+    text = GUIDE.read_text(encoding="utf-8")
+    shipped = 'search_path: ["layouts"]'
+    assert shipped in text
+    dirs = [Path(__file__).parent / "pinned-layouts", GUIDE.parent / "layouts"]
+    out = tmp_path / "pinned-guidelines.yaml"
+    out.write_text(text.replace(shipped, f"search_path: {[str(d) for d in dirs]}"), encoding="utf-8")
+    return out
+
+
 @pytest.mark.parametrize(("probe", "specs"), [
     (9, [ROOT / "examples" / "sales-mix.yaml"]),
     (14, ["specs/dates-and-bars.yaml", "specs/pies-and-lines.yaml"]),
@@ -319,16 +330,18 @@ def test_blueprint_annotations_survive_every_desktop_save(replays, probe):
 ])
 def test_reapply_after_desktop_saved_changes_nothing(replays, probe, specs, tmp_path, capsys):
     """Nothing but the manifest: Desktop's save can raise files' $schema versions, which the
-    manifest records (probe 17 raised every Blueprint visual from 2.13.0 to 2.14.0)."""
+    manifest records (probe 17 raised every Blueprint visual from 2.13.0 to 2.14.0). Layouts that
+    changed after a probe are pinned to what that probe built (tests/pinned-layouts)."""
     proj = _copy(_last(replays, probe), tmp_path)
+    guide = _pinned_guide(tmp_path)
     for spec in specs:
         path = spec if isinstance(spec, Path) else proj / spec
         capsys.readouterr()
-        assert main(["apply", str(path), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+        assert main(["apply", str(path), "--report", str(proj), "--guidelines", str(guide)]) == 0
         written = [ln[2:] for ln in capsys.readouterr().out.splitlines() if ln[:2] in ("A ", "M ")]
         assert set(written) <= {manifest.FILE}, f"{probe}: {spec} rewrote {written}"
     names = {name for _, name in _managed(_last(replays, probe))}
-    found = check_report(read_report(proj / "Fixture.Report"), guidelines.load(GUIDE)).findings
+    found = check_report(read_report(proj / "Fixture.Report"), guidelines.load(guide)).findings
     assert [f for f in found if f.visual in names] == []
 
 

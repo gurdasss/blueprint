@@ -1,0 +1,10 @@
+# standard-4-up as probes 9, 14, 17 and 19 built it (KPI row 120px). Desktop saved reports laid out
+# this way, so test_probe_replay re-applies their specs with this file first on the search path.
+# Named layout from the README, used by bp apply: a header, a KPI row and two main regions.
+name: standard-4-up
+canvas: { width: 1280, height: 720 }
+regions:
+  - { role: header,  x: 16,  y: 16,  w: 1248, h: 64 }
+  - { role: kpi-row, x: 16,  y: 96,  w: 1248, h: 120 }
+  - { role: main,    x: 16,  y: 232, w: 616,  h: 472 }
+  - { role: main,    x: 648, y: 232, w: 616,  h: 472 }

@@ -324,9 +324,9 @@ name: standard-4-up
 canvas: { width: 1280, height: 720 }
 regions:
   - { role: header,  x: 16,  y: 16,  w: 1248, h: 64 }
-  - { role: kpi-row, x: 16,  y: 96,  w: 1248, h: 120 }
-  - { role: main,    x: 16,  y: 232, w: 616,  h: 472 }
-  - { role: main,    x: 648, y: 232, w: 616,  h: 472 }
+  - { role: kpi-row, x: 16,  y: 96,  w: 1248, h: 160 }
+  - { role: main,    x: 16,  y: 272, w: 616,  h: 432 }
+  - { role: main,    x: 648, y: 272, w: 616,  h: 432 }
 ```
 
 Visuals fill regions in declaration order. Each visual takes the next free region of its
@@ -449,7 +449,7 @@ every change, and `bp manifest` rebuilds it from the report at any time.
           "managed": true,
           "spec_id": "column-1",
           "region": "main#2",
-          "position": { "x": 648, "y": 232, "w": 616, "h": 472 },
+          "position": { "x": 648, "y": 272, "w": 616, "h": 432 },
           "slots": {
             "category": ["Sales[Country]", "Sales[Region]"],
             "value": "[Total Amount]"
