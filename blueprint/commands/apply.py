@@ -92,7 +92,10 @@ def _find_page(report: Report, page_spec: spec.PageSpec, take_over: bool) -> Pag
     mine = [p for p in report.pages if p.spec == sid]
     if len(mine) > 1:
         raise ApplyError(f"several pages are marked as built by spec {sid!r}: "
-                         + ", ".join(f"{p.display_name!r} ({p.name})" for p in mine))
+                         + ", ".join(f"{p.display_name!r} ({p.name})" for p in mine)
+                         + ". Blueprint can't tell which one the spec owns (a page copied in Desktop "
+                         "may carry the mark). Keep one: delete the others, or remove the "
+                         "blueprint.spec annotation from their page.json")
     named = [p for p in report.pages if p.spec_page == name and p not in mine]
     if mine:
         if named:
