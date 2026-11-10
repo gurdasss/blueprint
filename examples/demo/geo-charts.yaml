@@ -1,6 +1,6 @@
 # the Geography hierarchy on bar and pie charts (probes 18, 19)
 page: Geography Charts Demo
-layout: standard-4-up
+layout: two-up
 visuals:
   - type: header
     title: Geography Charts

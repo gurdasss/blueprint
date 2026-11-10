@@ -1,6 +1,6 @@
 # the Geography hierarchy on a column chart and in a table (probes 16, 17)
 page: Geography Demo
-layout: standard-4-up
+layout: two-up
 visuals:
   - type: header
     title: Geography

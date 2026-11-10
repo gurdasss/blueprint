@@ -1,6 +1,6 @@
-# the Geography hierarchy on a line chart (probes 18, 19)
+# the Geography hierarchy on a line chart (probes 18, 19), alone on a one-up page
 page: Geography Line Demo
-layout: standard-4-up
+layout: one-up
 visuals:
   - type: header
     title: Geography Line

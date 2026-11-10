@@ -1,6 +1,6 @@
 # a date column on a line axis (probes 13, 14) and a table (probe 08)
 page: Dates and Tables Demo
-layout: standard-4-up
+layout: two-up
 visuals:
   - type: header
     title: Dates and Tables

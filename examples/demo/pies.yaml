@@ -1,6 +1,6 @@
 # pie drill-down and pie with details (probes 08, 11)
 page: Pies Demo
-layout: standard-4-up
+layout: two-up
 visuals:
   - type: header
     title: Pies

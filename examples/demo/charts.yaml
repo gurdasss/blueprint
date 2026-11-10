@@ -1,6 +1,6 @@
 # bar drill-down and line with a legend (probe 12)
 page: Charts Demo
-layout: standard-4-up
+layout: two-up
 visuals:
   - type: header
     title: Charts
