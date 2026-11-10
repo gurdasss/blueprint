@@ -55,3 +55,18 @@ def test_check_config_rejected(tmp_path: Path, body: str, match: str):
     f.write_text(body)
     with pytest.raises(guidelines.GuidelinesError, match=match):
         guidelines.load(f)
+
+
+@pytest.mark.parametrize(("body", "match"), [
+    ("page: {density_policy: {visible: true}}\n", "page.density_policy must be one of"),
+    ("check: {severity: {grid: [error]}}\n", r"check.severity.grid must be one of"),
+    ("palette: {enforce: {strict: true}}\n", "palette.enforce must be strict, warn or off"),
+    ("typography: {title: {font: Arial, 1: x, null: y}}\n", "typography.title: unknown keys 1, None"),
+])
+def test_wrong_types_are_errors_not_crashes(tmp_path: Path, body: str, match: str):
+    """Found by fuzzing guidelines files: a mapping where a name was expected, or keys that
+    aren't text, raised TypeError tracebacks instead of a GuidelinesError (exit 2)."""
+    f = tmp_path / "g.yaml"
+    f.write_text(body)
+    with pytest.raises(guidelines.GuidelinesError, match=match):
+        guidelines.load(f)

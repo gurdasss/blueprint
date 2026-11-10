@@ -177,7 +177,7 @@ def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
     for rule, level in severity.items():
         if rule not in RULES:
             raise GuidelinesError(f"check.severity: unknown rule {rule!r} (known: {', '.join(RULES)})")
-        if level not in SEVERITIES:
+        if not isinstance(level, str) or level not in SEVERITIES:
             raise GuidelinesError(f"check.severity.{rule} must be one of {', '.join(SEVERITIES)}")
     missing = [r for r in RULES if r not in severity]
     if missing:
@@ -188,7 +188,7 @@ def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
         raise GuidelinesError("check.decorative_types must be a list of visual type names")
 
     policy = _get(raw, "page.density_policy")
-    if policy not in DENSITY:
+    if not isinstance(policy, str) or policy not in DENSITY:
         raise GuidelinesError(
             f"page.density_policy must be one of {', '.join(sorted(DENSITY))}, got {policy!r}")
 
@@ -276,7 +276,7 @@ def _hex_list(raw: dict[str, Any], key: str) -> tuple[str, ...]:
 def _palette(raw: dict[str, Any]) -> Palette:
     enforce = _get(raw, "palette.enforce")
     enforce = "off" if enforce is False else enforce  # unquoted YAML `off` parses as false
-    if enforce not in ("strict", "warn", "off"):
+    if not isinstance(enforce, str) or enforce not in ("strict", "warn", "off"):
         raise GuidelinesError(f"palette.enforce must be strict, warn or off, got {enforce!r}")
     return Palette(
         categorical=_hex_list(raw, "palette.categorical"),
@@ -306,7 +306,7 @@ def _typography(raw: dict[str, Any]) -> dict[str, FontRule]:
                 "face. Use the exact name from Desktop's font list, e.g. font: Segoe UI Semibold")
         unknown = set(spec) - {"font", "size", "bold"}
         if unknown:
-            raise GuidelinesError(f"{key}: unknown keys {', '.join(sorted(unknown))}")
+            raise GuidelinesError(f"{key}: unknown keys {', '.join(sorted(map(str, unknown)))}")
         fonts = spec.get("font", [])
         fonts = [fonts] if isinstance(fonts, str) else fonts
         if not isinstance(fonts, list) or not all(isinstance(f, str) and f.strip() for f in fonts):
