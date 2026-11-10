@@ -203,3 +203,8 @@ def test_changing_a_visuals_region_moves_it_on_re_apply(tmp_path: Path, capsys):
     [page] = [p.name for p in report.pages if p.display_name == "Dash"]
     found = check_report(report, guidelines.load(ROOT / "guidelines" / "example.yaml")).findings
     assert [f for f in found if f.page == page] == []
+
+
+def test_an_empty_search_path_says_where_layouts_come_from():
+    with pytest.raises(layouts.LayoutError, match="layouts.search_path is empty.*guidelines/layouts/"):
+        layouts.find("two-up", ())

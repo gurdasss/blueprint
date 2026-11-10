@@ -60,8 +60,11 @@ def find(name: str, search_path: tuple[Path, ...]) -> Path:
         candidate = directory / f"{name}.yaml"
         if candidate.is_file():
             return candidate
-    where = ", ".join(str(d) for d in search_path) or "(empty layouts.search_path)"
-    raise LayoutError(f"layout {name!r} not found in {where}")
+    if not search_path:
+        raise LayoutError(f"layout {name!r} not found: layouts.search_path is empty. Layouts are files "
+                          "your guidelines point to (layouts: {search_path: [<folder>]}); the repository "
+                          "ships some in guidelines/layouts/, which guidelines/example.yaml uses")
+    raise LayoutError(f"layout {name!r} not found in {', '.join(str(d) for d in search_path)}")
 
 
 def available(search_path: tuple[Path, ...]) -> list[str]:

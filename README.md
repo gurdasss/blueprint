@@ -128,7 +128,7 @@ off permanently.
 Built and tested on **WSL2 (Ubuntu) + Python 3.12**.
 
 ```bash
-git clone https://github.com/<you>/blueprint.git
+git clone https://github.com/gurdasss/blueprint.git
 cd blueprint
 
 python3.12 -m venv .venv
