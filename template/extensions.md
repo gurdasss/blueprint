@@ -151,34 +151,59 @@ options:
 - Reference lines
 - Any Power BI visual property that maps to objects/properties
 
-### 5. Layout rows
+### 5. Layout regions — and relative positioning later
 
-Layout rows are dicts. Extensions add keys to them:
+A layout region is a dict, so extensions add keys to it:
 
 ```yaml
-# Core:
-rows:
-  - role: main
-    columns: 2
+# Core (today): the client states every pixel
+regions:
+  - { role: main, x: 16, y: 272, w: 616, h: 432 }
 
 # With extensions:
-rows:
-  - role: main
-    columns: 2
-    column_widths: [2, 1]          # ← extension: weighted columns
-    min_height: 200                # ← extension: responsive constraint
+  - { role: main, x: 16, y: 272, w: 616, h: 432,
+      min_height: 200,        # ← extension: a floor Desktop needs
+      background: "#FFFFFF" } # ← extension: container styling
 ```
 
-**How it works:**
-- Core engine reads `role`, `height`, `columns` — the keys it owns
-- Unknown keys are passed through
-- Extension engine reads its own keys and modifies the computed regions
-- Core regions are always computed first; extensions adjust them
+**Relative positioning is the big one, and it is deliberately not core.**
+A later version can accept a structural form where the client states
+shape and Blueprint computes the pixels:
 
-**What extensions add here:**
-- Weighted column widths (non-equal splits)
-- Responsive constraints (min/max height)
-- Conditional rows (show only if spec has certain visual types)
+```yaml
+# A later version, alongside regions: — never instead of it
+rows:
+  - { role: header,  height: 64 }
+  - { role: kpi-row, height: 160, columns: 2 }
+  - { role: main,    columns: 2 }      # height: what's left
+```
+
+**Why it waits:**
+- It introduces a second unit. A file with `height: 64` beside
+  `columns: 2` mixes pixels with shares of remaining space, and the two
+  axes stop meaning the same thing (vertically you can be absolute,
+  horizontally you cannot).
+- Equal division rarely lands on the grid. On 1248 usable width, three
+  columns want 405.33px and four want 300px — and 300 is not a multiple
+  of 8. Snapping afterwards is not a tidy-up: it pushes a region past
+  `canvas - margin` or pulls two closer than the gutter, and `bp apply`
+  refuses exactly those layouts (`layouts.conflicts`).
+- Resolving that means the engine silently decides three things the rest
+  of Blueprint never decides for the client: how much to widen a gutter,
+  where to put the leftover pixels, and how to round. The core's promise
+  is that it does what the files say, to the letter.
+
+**What it would take** (recorded so this isn't re-derived): equal tracks
+and equal gaps, every number a multiple of the grid, each gap at least
+the gutter, filling the usable span exactly. That rule reproduces the
+shipped layouts' own numbers — 2 columns 616/16, 3 columns 400/24,
+4 columns 288/32 — so it could land without changing a byte of output.
+The precondition is `(canvas - 2 x margin) % grid == 0`, which belongs
+in the guidelines check, not in the layout engine.
+
+**What else extensions add here:**
+- Weighted columns (`[2, 1]`) and responsive floors, once rows exist
+- Conditional regions (present only if the spec has certain visuals)
 
 ### 6. Validation rules
 

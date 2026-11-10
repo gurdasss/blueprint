@@ -87,9 +87,9 @@ header, card, kpi, column, line, bar, table (7 types).
 
 ### Overall: ~75% compatible
 
-The PBIR layer, model, and render path are untouched. The guideline schema
-and layout format are the two areas that change significantly. The page spec
-changes are small.
+The PBIR layer, model, and render path are untouched. The guideline schema is
+the one area that changes significantly. The layout format doesn't change at
+all (see "Layouts" below), and the page spec changes are small.
 
 ### Module-by-module assessment
 
@@ -141,26 +141,38 @@ changes are small.
 
 **1 module + 2 YAML files — the core of the rewrite, ~400 lines.**
 
-#### Layouts — the structural change (~40% compatible)
+#### Layouts — unchanged (100% compatible)
 
-| Module | What changes | What stays |
-|--------|-------------|-----------|
-| `layouts.py` | **Input format:** `canvas` + `regions` with pixel coords → `rows` with role/height/columns. **`parse()` function:** rewritten to read structural rows instead of explicit regions. **New:** `compute_regions()` function (the engine that turns rows + guidelines into pixel regions). | **`Layout` dataclass** output shape (name, width, height, regions) — identical. **`Region`/`Placement` dataclasses** — identical. **`place()` function** — identical (it works with computed regions, doesn't care how they were made). **`find()`/`available()`/`load()`** — identical. **`conflicts()`** — identical. **`unused()`** — identical. |
-| `guidelines/layouts/*.yaml` | New structural format (rows instead of pixel regions). | Same file names, same layout names, same roles. |
+The pixel format stays: `canvas` + `regions` with explicit `x/y/w/h`. The
+structural-rows engine that an earlier draft of this plan called for is **not
+built** — it is a later version, recorded in `template/extensions.md`.
 
-**1 module — `parse()` rewritten + `compute_regions()` added. ~150 lines. Everything downstream of `Layout` is unchanged.**
+| Module | Why it's unchanged |
+|--------|-------------------|
+| `layouts.py` | `parse()` keeps reading pixel regions. No `compute_regions()`. `place()`, `find()`, `available()`, `load()`, `conflicts()`, `unused()` already do their jobs. |
+| `guidelines/layouts/*.yaml` | The six shipped layouts are already in the final format, already on the grid, already inside the margin. |
+| `tests/pinned-layouts/` | Probes 9/14/17/19 pinned `standard-4-up` at 120px; nothing has to be re-pinned. |
+
+**Why:** one unit, stated by the client, verified by the tool. `conflicts()`
+already refuses a layout that is off the grid, inside the margin or closer
+than the gutter, naming the breakage, so an explicit coordinate is checked
+rather than trusted. A generative engine would instead make three silent
+choices (widen which gutter, place the leftover pixels where, round which
+way) that nothing else in Blueprint takes the liberty of making — and the
+arithmetic is cheap for the client that actually writes these files, an LLM
+agent. `template/layout.template.yaml` carries the worked numbers.
 
 #### Tests
 
 | Test area | Impact |
 |-----------|--------|
 | `tests/test_guidelines.py` | Rewrite — tests the guideline schema directly. |
-| `tests/test_layouts.py` | Partial rewrite — layout parsing tests change, placement tests stay. |
+| `tests/test_layouts.py` | Minor — field paths only (`g.spacing.*`). Layout parsing and placement tests stay. |
 | `tests/test_spec.py` | Add tests — pipe syntax, long-form slots, named formats. |
 | `tests/test_validate.py` | Minor — remap field paths, typography role names. |
-| `tests/test_apply_golden.py` | Regenerate golden output after guidelines/layout format changes. |
-| `tests/test_probe_replay.py` | Minor — update guidelines/layout fixtures used in replays. |
-| `tests/test_robustness.py` | Minor — adapt to new guideline/layout shapes. |
+| `tests/test_apply_golden.py` | Unchanged until steps 5-6. Guidelines and layout changes must not alter a byte. |
+| `tests/test_probe_replay.py` | Minor — probe 15's guidelines fixture only; layout fixtures untouched. |
+| `tests/test_robustness.py` | Minor — adapt to the new guideline shape. |
 | All other tests | Unchanged — they test PBIR, model, grid, formatting. |
 
 ---
@@ -218,9 +230,9 @@ carry its own `fontWeight` (probe 03) and a guidelines file could previously req
 forbid it. Bold textboxes now go unchecked. Re-add it as an extension rule if clients
 want it back.
 
-**Carried forward:** two items of the old step 3 depend on later steps and are *not*
-done — `apply.py` passing layout rows through `compute_regions()` (moved to step 2) and
-`describe.py` listing named formats (moved to step 6).
+**Carried forward:** one item of the old step 3 depends on a later step and is *not*
+done — `describe.py` listing named formats (moved to step 6). The other, `apply.py`
+passing layout rows through `compute_regions()`, no longer exists: step 2 is dropped.
 
 **Tests:** `test_guidelines.py` rewritten (new paths, retired-key errors, role mapping).
 Old YAML in the other tests rewritten. `test_apply_golden.py` and `test_probe_replay.py`
@@ -230,24 +242,26 @@ runs clean and is still idempotent.
 
 **Result:** 582 passed, `ruff` clean.
 
-### Step 2: Layout structural format
+### Step 2 (dropped): layout structural format
 
-**What:** Rewrite `layouts.py` `parse()` to read structural rows. Add
-`compute_regions()` that takes rows + guidelines → pixel regions.
+**Decision:** not built in this version. Layouts stay explicit pixels, the
+format `layouts.py` already reads. Relative positioning (rows, column
+counts, computed coordinates) is a later version, written up as an extension
+point in `template/extensions.md` with the remainder rule it would need, so
+it doesn't have to be re-derived.
 
-**Changes:**
-- `parse()` reads `rows:` instead of `canvas:` + `regions:`
-- New `compute_regions(rows, canvas, spacing)` → list of `Region` with pixel coords
-- `Layout` dataclass output is identical — downstream code sees the same thing
-- Rewrite `guidelines/layouts/*.yaml` to structural format
-- `commands/apply.py`: pass the parsed rows through `compute_regions()`
-  (carried over from the old step 3, which otherwise landed with step 1)
+**What replaced it:** `template/layout.template.yaml` restored to the pixel
+format (canvas width/height back, explicit regions), with the column and row
+arithmetic worked out in the file — including the precondition
+`(canvas - 2 x margin) % grid == 0` and the solved column table (2 -> 616/16,
+3 -> 400/24, 4 -> 288/32, 5 -> 224/32, 6 -> 168/48). A test parses the
+template and asserts `conflicts()` finds nothing against the template
+guidelines, so the two template files can't drift apart.
 
-**Tests:** Rewrite layout parsing tests. Placement tests (`place()`, `unused()`,
-`conflicts()`) stay — they work with `Region` objects, not the raw YAML.
-
-**Risk:** Low. The `Layout` object is the same shape. Everything downstream
-of `parse()` is unchanged.
+**Still open, cheap, not done:** `conflicts()` could warn when a `kpi-row`
+region is under 160px. That number is measured (bridge screenshots: at 120px
+Desktop clips a KPI's goal line and a titled card's label) and currently
+lives only in a comment in six layout files.
 
 ### Step 4: Visual inheritance
 
@@ -300,22 +314,20 @@ to `pbir/render.py`.
 against Desktop (a probe). Aggregation is already partially supported in
 the reader (`reader.AGGREGATE_FUNCTIONS`).
 
-### Step 7: Update shipped layouts and example files
+### Step 7 (mostly done): shipped layouts and example files
 
-**What:** Convert all `guidelines/layouts/*.yaml` to structural format.
-Update `guidelines/example.yaml` to new schema. Update demo specs if needed.
+**What's left:** nothing for layouts — the six shipped files are already in
+the format the tool reads, on the grid and inside the margin. `example.yaml`
+moved to the new guidelines schema in step 1, and `scripts/demo.sh` runs
+clean and idempotent.
 
-**Changes:**
-- Rewrite 6 layout files (standard-4-up, dashboard-6, kpi-row-plus-detail,
-  grid-2x3, two-up, one-up) from pixel regions to structural rows
-- Update example.yaml to new guidelines schema
-- Verify demo still works: `scripts/demo.sh`
+**What remains for later steps:** demo specs may gain named formats and
+aggregation syntax once steps 5 and 6 land; the demo is the integration test
+for those.
 
-**Tests:** Run `test_probe_replay.py` and `test_apply_golden.py` with
-`BLUEPRINT_UPDATE_GOLDEN=1` to regenerate expected output.
-
-**Risk:** Low. The layouts produce the same pixel regions — just described
-differently. The demo is the integration test.
+**Golden output:** must stay byte-identical. No step may need
+`BLUEPRINT_UPDATE_GOLDEN=1` unless it deliberately changes what `apply`
+writes (steps 5 and 6 will; nothing before them does).
 
 ### Step 8: Update remaining tests and golden output
 
@@ -339,11 +351,8 @@ test suite passes.
 ```
 Step 1 + 3 (guidelines schema, wired into consumers)  [done]
   │
-  ├──▶ Step 2 (layout structural format)
-  │       │
-  │       └──▶ Step 7 (shipped layouts + examples)
-  │                │
-  │                └──▶ Step 8 (test sweep)
+  ├──▶ Step 2 (layout structural format)  [dropped: pixels stay]
+  │       └──▶ Step 7 (shipped layouts + examples)  [already conform]
   │
   ├──▶ Step 4 (visual inheritance)  [independent]
   │
@@ -372,9 +381,9 @@ landed together.
 - [x] Compatibility analysis and incremental plan (this section)
 - [x] Step 1: Guidelines schema rewrite (merged with step 3)
 - [x] Step 3: Wire guidelines into consumers (done with step 1)
-- [ ] Step 2: Layout structural format
+- [x] Step 2: Layout structural format — dropped, pixels stay (see above)
 - [ ] Step 4: Visual inheritance
 - [ ] Step 5: Spec enhancements
 - [ ] Step 6: Wire into render
-- [ ] Step 7: Update shipped layouts and examples
+- [x] Step 7: Shipped layouts and examples (layouts already conform)
 - [ ] Step 8: Final test sweep

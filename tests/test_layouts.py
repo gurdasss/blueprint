@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import yaml
 
 from blueprint import guidelines, layouts, spec
 from blueprint.layouts import LayoutError
@@ -59,6 +60,18 @@ def test_shipped_layouts_fit_the_example_guidelines(name):
     assert (layout.width, layout.height) == (g.canvas.width, g.canvas.height)
     assert layouts.conflicts(layout, g.spacing.grid, g.spacing.margin, g.spacing.gutter) == []
     assert sum(r.role == "header" for r in layout.regions) == 1
+
+
+def test_the_shipped_template_layout_fits_the_template_guidelines():
+    """template/layout.template.yaml and template/guidelines.template.yaml are what a client
+    starts from: the layout must parse and break none of the guidelines it ships beside."""
+    g = guidelines.load(ROOT / "template" / "guidelines.template.yaml")
+    data = yaml.safe_load((ROOT / "template" / "layout.template.yaml").read_text())
+    layout = layouts.parse(data, "layout.template.yaml", "standard-dashboard")
+    assert (layout.width, layout.height) == (g.canvas.width, g.canvas.height)
+    assert layouts.conflicts(layout, g.spacing.grid, g.spacing.margin, g.spacing.gutter) == []
+    assert [r.key for r in layout.regions] == [
+        "header#1", "kpi-row#1", "kpi-row#2", "main#1", "main#2"]
 
 
 def test_shipped_layouts():
