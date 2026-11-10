@@ -4,6 +4,12 @@ A contract maps a spec type to its PBIR ``visualType``, the layout region role i
 default, and its typed slots (spec slot name -> query role, accepted field kind, required,
 ordered). Only types whose PBIR shape has been verified in Desktop ship here; the YAML files
 cite the probe that verified them.
+
+The core ships seven types: header, card, kpi, column, line, bar, table. Further verified
+contracts live in ``visuals/archive/`` and load only when a guidelines file puts a directory
+on the visuals search path (``extensions.custom_visuals.search_path``), which `contracts()`
+takes as ``extra``. Loading is deterministic: the core directory first, then each extra in
+the order given, each sorted by file name.
 """
 
 from __future__ import annotations
@@ -15,6 +21,8 @@ from pathlib import Path
 import yaml
 
 VISUALS_DIR = Path(__file__).resolve().parent / "visuals"
+ARCHIVE_DIR = VISUALS_DIR / "archive"
+CORE_TYPES = ("bar", "card", "column", "header", "kpi", "line", "table")
 # "hierarchy": a hierarchy built in the model, written like a column (Table[Hierarchy]). It's one
 # field, as in Desktop's wells, that binds all its levels in order (probes 16, 18). So a slot that
 # takes a single field can take one, without also allowing a list of columns there.
@@ -88,5 +96,20 @@ def _load(path: Path) -> Contract:
 
 
 @cache
-def contracts() -> dict[str, Contract]:
-    return {p.stem: _load(p) for p in sorted(VISUALS_DIR.glob("*.yaml"))}
+def contracts(extra: tuple[Path, ...] = ()) -> dict[str, Contract]:
+    """The loaded contracts by spec type: the core seven, plus any directory in ``extra``.
+
+    ``extra`` is part of the cache key, so each distinct search path is loaded once. A type
+    defined twice is refused, naming both files: silently shadowing one would change what a
+    spec means depending on the search path order.
+    """
+    out: dict[str, Contract] = {}
+    source: dict[str, Path] = {}
+    for directory in (VISUALS_DIR, *extra):
+        for path in sorted(Path(directory).glob("*.yaml")):
+            if path.stem in out:
+                raise ContractError(f"visual type {path.stem!r} is defined twice: "
+                                    f"{source[path.stem]} and {path}")
+            out[path.stem] = _load(path)
+            source[path.stem] = path
+    return out

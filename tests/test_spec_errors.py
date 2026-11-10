@@ -62,7 +62,7 @@ def test_ignored_visual_needs_no_slots():
     ({"page": "P", "visuals": [], "colour": 1}, ["colour: unknown key (expected: id, layout, page, visuals)",
                                                  "visuals: required, a non-empty list"]),
     ({"page": "P", "visuals": [{"type": "gauge"}]},
-     ["visuals[0].type: 'gauge' is not a supported visual type (supported: area, bar, card, column, donut, header, kpi, line, matrix, pie, slicer, stacked-bar, stacked-column, stacked-column-100, table)"]),
+     ["visuals[0].type: 'gauge' is not a supported visual type (supported: bar, card, column, header, kpi, line, table)"]),
     ({"page": "P", "visuals": [{"type": "header"}]},
      ["visuals[0].title: a header needs a title (it is the header's text)"]),
     ({"page": "P", "visuals": [{"type": "card"}]}, ["visuals[0].slots.value: required by card"]),

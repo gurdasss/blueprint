@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from blueprint import __version__
@@ -35,8 +36,8 @@ def _refs(fields: list[Field]) -> str | list[str]:
     return refs[0] if len(refs) == 1 else refs
 
 
-def _visual(v: Visual) -> dict[str, Any]:
-    by_visual_type = {c.visual_type: c for c in contracts().values()}
+def _visual(v: Visual, visual_dirs: tuple[Path, ...]) -> dict[str, Any]:
+    by_visual_type = {c.visual_type: c for c in contracts(visual_dirs).values()}
     contract = by_visual_type.get(v.visual_type or "") if v.spec_id else None
     role_to_slot = {s.role: name for name, s in contract.slots.items()} if contract else {}
     r = v.rect
@@ -58,7 +59,7 @@ def _visual(v: Visual) -> dict[str, Any]:
     return out
 
 
-def _page(p: Page) -> dict[str, Any]:
+def _page(p: Page, visual_dirs: tuple[Path, ...]) -> dict[str, Any]:
     out: dict[str, Any] = {"id": p.name, "name": p.display_name}
     if p.spec_page is not None:
         out["spec"] = p.spec
@@ -67,7 +68,7 @@ def _page(p: Page) -> dict[str, Any]:
         out["built_with"] = p.guidelines
     out["size"] = None if p.width is None else {"w": _num(p.width), "h": _num(p.height or 0)}
     visuals = sorted(p.visuals, key=lambda v: (v.rect.y, v.rect.x, v.name))
-    out["visuals"] = [_visual(v) for v in visuals]
+    out["visuals"] = [_visual(v, visual_dirs) for v in visuals]
     return out
 
 
@@ -77,7 +78,7 @@ def build(report: Report, rules: Guidelines, generated_at: str) -> dict[str, Any
         "guidelines": {"name": rules.name, "version": rules.version},
         "pbir_schema": report.schema_versions,
         "generated_at": generated_at,
-        "pages": [_page(p) for p in report.pages],
+        "pages": [_page(p, rules.visuals) for p in report.pages],
     }
 
 

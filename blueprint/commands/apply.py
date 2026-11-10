@@ -42,13 +42,14 @@ class ApplyError(Exception):
     pass
 
 
-def _resolve(placements: list[layouts.Placement], report: Report) -> dict[str, dict[str, list[render.Binding]]]:
+def _resolve(placements: list[layouts.Placement], report: Report,
+             visual_dirs: tuple[Path, ...] = ()) -> dict[str, dict[str, list[render.Binding]]]:
     """Spec field references -> PBIR bindings by query role, checked against the semantic model."""
     if not any(p.visual.slots for p in placements):
         return {}
     pbir = report.source.documents[Path("definition.pbir")].data
     model = semantic.load(semantic.model_dir_for(report.root, pbir))
-    known = contracts()
+    known = contracts(visual_dirs)
     out: dict[str, dict[str, list[render.Binding]]] = {}
     problems: list[str] = []
     for p in placements:
@@ -174,7 +175,7 @@ def _gap_warnings(page_spec: spec.PageSpec, layout: layouts.Layout,
                     or layouts.conflicts(other, rules.spacing.grid, rules.spacing.margin,
                                          rules.spacing.gutter)):
                 continue
-            if not layouts.unused(other, layouts.place(page_spec, other)):
+            if not layouts.unused(other, layouts.place(page_spec, other, rules.visuals)):
                 fits.append(name)
         except layouts.LayoutError:
             continue
@@ -185,9 +186,10 @@ def _gap_warnings(page_spec: spec.PageSpec, layout: layouts.Layout,
 
 
 def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
-    page_spec = spec.load(spec_path)
     report = read_report(args.report)
-    rules = guidelines.load(args.guidelines, report.root)
+    rules = guidelines.load(args.guidelines, report.root,
+                            guidelines.visuals_override(getattr(args, "visuals", None)))
+    page_spec = spec.load(spec_path, rules.visuals)
     layout_name = page_spec.layout or rules.layouts.default
     if not layout_name:
         raise ApplyError(f"{page_spec.source}: no layout (set `layout:` or layouts.default in guidelines)")
@@ -198,9 +200,9 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
                          "would keep moving its visuals back and forth, or bp check would flag "
                          "the page it builds. Fix the layout:\n  "
                          + "\n  ".join(clash))
-    placements = layouts.place(page_spec, layout)
-    bindings = _resolve(placements, report)
-    known = contracts()
+    placements = layouts.place(page_spec, layout, rules.visuals)
+    bindings = _resolve(placements, report, rules.visuals)
+    known = contracts(rules.visuals)
     plan = Plan(root=report.root)
     plan.warnings.extend(report.warnings)
     plan.warnings.extend(_title_warnings(placements, rules))
@@ -412,7 +414,8 @@ def run(args: argparse.Namespace) -> int:
             raise
     # The manifest describes the report after the writes, so it's rebuilt from disk.
     report = read_report(args.report)
-    follow = manifest_cmd.plan_for(report, guidelines.load(args.guidelines, report.root))
+    follow = manifest_cmd.plan_for(report, guidelines.load(
+        args.guidelines, report.root, guidelines.visuals_override(getattr(args, "visuals", None))))
     writer.apply(follow)
     if multi:
         _print([*paths, Path("manifest")], [*plans, follow])

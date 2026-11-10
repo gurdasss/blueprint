@@ -101,15 +101,16 @@ def parse_field(text: Any) -> FieldRef | None:
     return None
 
 
-def load(path: Path) -> PageSpec:
+def load(path: Path, visual_dirs: tuple[Path, ...] = ()) -> PageSpec:
     try:
         data = yaml.safe_load(path.read_bytes())  # bytes: PyYAML detects UTF-8, BOM and UTF-16
     except (OSError, yaml.YAMLError) as exc:
         raise SpecError(str(path), [str(exc)]) from exc
-    return parse(data, str(path), default_id=default_id(path))
+    return parse(data, str(path), default_id=default_id(path), visual_dirs=visual_dirs)
 
 
-def parse(data: Any, source: str = "<spec>", default_id: str = "spec") -> PageSpec:
+def parse(data: Any, source: str = "<spec>", default_id: str = "spec",
+          visual_dirs: tuple[Path, ...] = ()) -> PageSpec:
     problems: list[str] = []
     if not isinstance(data, dict):
         raise SpecError(source, ["top level must be a mapping with page, layout and visuals"])
@@ -131,7 +132,7 @@ def parse(data: Any, source: str = "<spec>", default_id: str = "spec") -> PageSp
     if not isinstance(raw_visuals, list) or not raw_visuals:
         problems.append("visuals: required, a non-empty list")
         raw_visuals = []
-    known = contracts()
+    known = contracts(visual_dirs)
     counts: dict[str, int] = {}
     seen_ids: dict[str, int] = {}
     for i, raw in enumerate(raw_visuals):

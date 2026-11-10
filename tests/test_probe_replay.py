@@ -46,6 +46,17 @@ ROOT = Path(__file__).resolve().parent.parent
 PROBES = ROOT / "docs" / "probes"
 FIXTURE = ROOT / "fixtures" / "02-card-and-chart"
 GUIDE = ROOT / "guidelines" / "example.yaml"
+# Probes 11 and 20-24, 27-28 built pie, donut, slicer, matrix, area and the stacked charts, which
+# are archived out of the core seven. The replays are Desktop's evidence for those shapes, so they
+# opt the archive back in exactly as a client would (`--visuals`, or
+# extensions.custom_visuals.search_path in guidelines).
+ARCHIVE = ROOT / "blueprint" / "visuals" / "archive"
+VISUALS = ("--visuals", str(ARCHIVE))
+
+
+def _rules(path=GUIDE):
+    """``path`` loaded with the archived visual types opted in."""
+    return guidelines.load(path, overrides=guidelines.visuals_override([ARCHIVE]))
 REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28]
 # Probes whose report Blueprint built and Desktop then opened and saved.
 ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24, 26, 27, 28]
@@ -204,7 +215,7 @@ def _without_active(state: dict) -> dict:
 def _desktop_visuals(replays):
     """(step, visual) for every visual Desktop itself created or changed, of a type Blueprint ships,
     bound only to fields a spec can express."""
-    shipped = {c.visual_type: c for c in contracts().values()}
+    shipped = {c.visual_type: c for c in contracts((ARCHIVE,)).values()}
     seen = set()
     for step in _all_steps(replays):
         if not step.by_desktop:
@@ -246,7 +257,7 @@ def test_rendering_desktops_bindings_gives_desktops_query(replays):
 
 
 def _slots(step: Step, visual_type: str) -> list[dict]:
-    m = manifest.build(read_report(step.report), guidelines.load(GUIDE), "2026-01-01T00:00:00Z")
+    m = manifest.build(read_report(step.report), _rules(), "2026-01-01T00:00:00Z")
     return [v["slots"] for p in m["pages"] for v in p["visuals"]
             if v["visual_type"] == visual_type and not v["managed"]]
 
@@ -321,7 +332,9 @@ def _pinned_guide(tmp_path: Path) -> Path:
 
 
 @pytest.mark.parametrize(("probe", "specs"), [
-    (9, [ROOT / "examples" / "sales-mix.yaml"]),
+    # the spec probe 9 was built from, pinned: the shipped example moved off the archived
+    # pie type (tests/pinned-specs/README.md)
+    (9, [Path(__file__).resolve().parent / "pinned-specs" / "sales-mix.yaml"]),
     (14, ["specs/dates-and-bars.yaml", "specs/pies-and-lines.yaml"]),
     (17, ["specs/geography.yaml"]),
     (19, ["specs/geo-bar-pie.yaml", "specs/geo-line.yaml"]),
@@ -338,11 +351,11 @@ def test_reapply_after_desktop_saved_changes_nothing(replays, probe, specs, tmp_
     for spec in specs:
         path = spec if isinstance(spec, Path) else proj / spec
         capsys.readouterr()
-        assert main(["apply", str(path), "--report", str(proj), "--guidelines", str(guide)]) == 0
+        assert main(["apply", str(path), "--report", str(proj), "--guidelines", str(guide), *VISUALS]) == 0
         written = [ln[2:] for ln in capsys.readouterr().out.splitlines() if ln[:2] in ("A ", "M ")]
         assert set(written) <= {manifest.FILE}, f"{probe}: {spec} rewrote {written}"
     names = {name for _, name in _managed(_last(replays, probe))}
-    found = check_report(read_report(proj / "Fixture.Report"), guidelines.load(guide)).findings
+    found = check_report(read_report(proj / "Fixture.Report"), _rules(guide)).findings
     assert [f for f in found if f.visual in names] == []
 
 
@@ -371,7 +384,7 @@ def test_fmt_only_moves_is_idempotent_and_passes_check(replays, probe, tmp_path,
     capsys.readouterr()
     assert main(["fmt", "--report", str(proj), "--guidelines", str(GUIDE), "--dry-run"]) == 0
     assert capsys.readouterr().out.startswith("No changes."), "fmt is not idempotent"
-    found = check_report(read_report(report), guidelines.load(GUIDE)).findings
+    found = check_report(read_report(report), _rules()).findings
     assert [f.message for f in found if f.rule == "grid"] == []
 
 
@@ -421,7 +434,7 @@ def test_spec_hierarchy_binds_what_desktop_bound(replays, tmp_path, capsys):
     proj = _copy(steps["02 create hierarchy Geography"], tmp_path)  # the model has Geography now
     spec = tmp_path / "geo.yaml"
     spec.write_text(HIERARCHY_SPEC)
-    args = ["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]
+    args = ["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE), *VISUALS]
     assert main(args) == 0
     report = proj / "Fixture.Report"
     # exactly Desktop's queries: the column chart as created in step 03 (first level active, the
@@ -445,7 +458,7 @@ def test_spec_hierarchy_refused_where_unverified(replays, tmp_path, capsys, slot
     spec = tmp_path / "bad.yaml"
     spec.write_text(f"page: Bad\nlayout: standard-4-up\nvisuals:\n  - {slot}\n")
     before = {p: p.read_bytes() for p in proj.rglob("*") if p.is_file()}
-    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) != 0
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE), *VISUALS]) != 0
     assert re.search(match, capsys.readouterr().err)
     assert {p: p.read_bytes() for p in proj.rglob("*") if p.is_file()} == before  # nothing written
 
@@ -459,7 +472,7 @@ def test_spec_hierarchy_on_bar_pie_line_matches_probe_18(replays, tmp_path, spec
     proj = _copy(replays[18][0], tmp_path)  # fixture 02 plus the Geography hierarchy
     spec = tmp_path / f"{spec_type}.yaml"
     spec.write_text(f"page: P\nlayout: standard-4-up\nvisuals:\n  - type: {spec_type}\n    slots: {slots}\n")
-    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE), *VISUALS]) == 0
     # exactly what Desktop wrote when Geography was dragged onto that chart, active flags included
     assert _query(proj / "Fixture.Report", visual_type, True) == _query(_last(replays, 18).report, visual_type, False)
 
@@ -485,7 +498,7 @@ def test_20_spec_writes_desktops_queries(replays, tmp_path, visual_type):
     proj = _copy(_last(replays, 20), tmp_path)  # has Target Amount
     spec = tmp_path / "p20.yaml"
     spec.write_text(PROBE_20_SPEC)
-    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE), *VISUALS]) == 0
     fixture_visuals = {d["name"] for d in _visual_docs(FIXTURE / "Fixture.Report")}
 
     def query(report: Path, managed: bool) -> dict:
@@ -503,7 +516,7 @@ def test_20_line_with_a_legend_takes_one_measure(replays, tmp_path, capsys):
     spec = tmp_path / "bad.yaml"
     spec.write_text("page: Bad\nvisuals:\n  - {type: line, slots: {category: \"Sales[Country]\", "
                     "legend: \"Sales[Region]\", value: [\"[Total Amount]\", \"[Target Amount]\"]}}\n")
-    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 2
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE), *VISUALS]) == 2
     assert "visuals[0].slots.value: takes one field when legend is set" in capsys.readouterr().err
 
 
@@ -549,7 +562,7 @@ def test_22_new_types_write_what_desktop_drew(replays, tmp_path):
     proj = _copy(accepted, tmp_path)
     spec = tmp_path / "v.yaml"
     spec.write_text(PROBE_22_SPEC)
-    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE), *VISUALS]) == 0
     [page] = [p for p in read_report(proj / "Fixture.Report").pages if p.display_name == "V"]
     ours = {v.visual_type: v.source.data["visual"]["query"]["queryState"] for v in page.visuals
             if v.visual_type != "textbox"}
@@ -565,7 +578,7 @@ def test_22_dropdown_option_writes_what_desktop_drew(replays, tmp_path):
     spec = tmp_path / "d.yaml"
     spec.write_text("page: D\nlayout: standard-4-up\nvisuals:\n  - {type: header, title: D}\n"
                     "  - {type: slicer, slots: {field: 'Sales[Country]'}, options: {style: dropdown}}\n")
-    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE), *VISUALS]) == 0
     [page] = [p for p in read_report(proj / "Fixture.Report").pages if p.display_name == "D"]
     [ours] = [v.source.data for v in page.visuals if v.visual_type == "slicer"]
     assert ours["visual"]["objects"] == desktop["visual"]["objects"]
@@ -614,7 +627,7 @@ def test_23_specs_write_what_desktop_drew(replays, tmp_path, step_name, sid):
     spec = tmp_path / "x.yaml"
     spec.write_text(f"page: X\nlayout: standard-4-up\nvisuals:\n  - {{type: header, title: X}}\n"
                     f"  - {{id: x, {PROBE_23[(step_name, sid)][1:]}\n")
-    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE), *VISUALS]) == 0
     [page] = [p for p in read_report(proj / "Fixture.Report").pages if p.display_name == "X"]
     [ours] = [v.source.data["visual"] for v in page.visuals if v.spec_id == "x"]
     assert ours["visualType"] == drawn["visualType"]
@@ -651,7 +664,7 @@ def test_27_drill_down_specs_write_what_desktop_drew(replays, tmp_path, sid):
     spec = tmp_path / "x.yaml"
     spec.write_text(f"page: X\nlayout: one-up\nvisuals:\n  - {{type: header, title: X}}\n"
                     f"  - {{id: x, {PROBE_27[sid][1:]}\n")
-    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE), *VISUALS]) == 0
     [page] = [p for p in read_report(proj / "Fixture.Report").pages if p.display_name == "X"]
     [ours] = [v.source.data["visual"] for v in page.visuals if v.spec_id == "x"]
     assert ours["visualType"] == drawn["visualType"]
@@ -679,7 +692,7 @@ def test_27_two_legend_columns_are_refused(replays, tmp_path, capsys, vtype):
     spec.write_text(f"page: Bad\nlayout: one-up\nvisuals:\n  - {{type: header, title: B}}\n"
                     f"  - {{type: {vtype}, slots: {{category: 'Sales[Order Date]', value: '[Total Amount]', "
                     "legend: ['Sales[Country]', 'Sales[Region]']}}\n")
-    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 2
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE), *VISUALS]) == 2
     assert "visuals[1].slots.legend: takes a single field, not a list" in capsys.readouterr().err
 
 
@@ -704,7 +717,7 @@ def test_28_specs_write_what_desktop_drew(replays, tmp_path, sid):
     spec = tmp_path / "x.yaml"
     spec.write_text(f"page: X\nlayout: one-up\nvisuals:\n  - {{type: header, title: X}}\n"
                     f"  - {{id: x, {PROBE_28[sid][1:]}\n")
-    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 0
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE), *VISUALS]) == 0
     [page] = [p for p in read_report(proj / "Fixture.Report").pages if p.display_name == "X"]
     [ours] = [v.source.data["visual"] for v in page.visuals if v.spec_id == "x"]
     assert ours["visualType"] == drawn["visualType"]
@@ -721,7 +734,7 @@ def test_28_several_measures_with_a_legend_are_refused(replays, tmp_path, capsys
     spec.write_text(f"page: Bad\nlayout: one-up\nvisuals:\n  - {{type: header, title: B}}\n"
                     f"  - {{type: {vtype}, slots: {{category: 'Sales[Country]', legend: 'Sales[Region]', "
                     "value: ['[Total Amount]', '[Target Amount]']}}\n")
-    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 2
+    assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE), *VISUALS]) == 2
     err = capsys.readouterr().err
     assert "visuals[1].slots.value: takes one field when legend is set" in err
     assert "Desktop doesn't draw a value list together with a legend" in err
@@ -735,7 +748,7 @@ def test_21_rebinding_after_desktops_save(replays, tmp_path, capsys):
     text = spec.read_text()
     spec.write_text(text.replace('slots: {category: "Sales[Country]", value: ["[Total Amount]", "[Target Amount]"]}',
                                  'slots: {category: "Sales[Region]", value: "[Total Amount]"}'))
-    args = ["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]
+    args = ["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE), *VISUALS]
     capsys.readouterr()
     assert main(args) == 0
     assert capsys.readouterr().out.count("rebind Category [Country]; Y [Total Amount, Target Amount] -> "
@@ -745,7 +758,7 @@ def test_21_rebinding_after_desktops_save(replays, tmp_path, capsys):
         if d["visual"]["visualType"] in ("clusteredBarChart", "lineChart"):  # Desktop saved these two
             assert [f["field"] for f in d["filterConfig"]["filters"]] == [
                 {"Measure": {"Expression": {"SourceRef": {"Entity": "Sales"}}, "Property": "Total Amount"}}]
-    found = check_report(report, guidelines.load(GUIDE)).findings
+    found = check_report(report, _rules()).findings
     assert [f for f in found if f.rule == "format"] == []
     capsys.readouterr()
     assert main(args) == 0 and capsys.readouterr().out.startswith("No changes.")

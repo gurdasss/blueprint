@@ -56,7 +56,7 @@ SPEC_SYNTAX = {
         "  - type: column\n"
         "    title: By Country\n"
         "    slots: {category: [\"Sales[Country]\", \"Sales[Region]\"], value: \"[Total Amount]\"}\n"
-        "  - type: pie\n"
+        "  - type: bar\n"
         "    title: Share by Region\n"
         "    slots: {category: \"Sales[Region]\", value: \"[Total Amount]\"}\n"
     ),
@@ -65,7 +65,8 @@ SPEC_SYNTAX = {
 
 def run(args: argparse.Namespace) -> int:
     report = read_report(args.report) if args.report else None
-    rules = guidelines.load(args.guidelines, report.root if report else None)
+    rules = guidelines.load(args.guidelines, report.root if report else None,
+                            guidelines.visuals_override(getattr(args, "visuals", None)))
     data = describe(rules, report)
     print(json.dumps(data, indent=2, ensure_ascii=False) if args.json else to_text(data))
     return 0
@@ -75,7 +76,7 @@ def describe(rules: Guidelines, report: Report | None) -> dict[str, Any]:
     data: dict[str, Any] = {
         "spec": SPEC_SYNTAX,
         "guidelines": _guidelines(rules),
-        "types": _types(),
+        "types": _types(rules.visuals),
         "layouts": _layouts(rules),
     }
     if report is not None:
@@ -99,9 +100,9 @@ def _guidelines(rules: Guidelines) -> dict[str, Any]:
     }
 
 
-def _types() -> dict[str, Any]:
+def _types(visual_dirs: tuple[Path, ...] = ()) -> dict[str, Any]:
     out = {}
-    for name, c in contracts().items():
+    for name, c in contracts(visual_dirs).items():
         out[name] = {
             "visual_type": c.visual_type,
             "region": c.region,

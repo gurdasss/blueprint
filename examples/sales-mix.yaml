@@ -1,4 +1,4 @@
-# Example page spec using the pie, table and kpi types (probe 08). Fields refer to the invented
+# Example page spec using the bar, table and kpi types (probe 08). Fields refer to the invented
 # model in fixtures/02-card-and-chart (table Sales: Country, Region, Amount; measure [Total Amount]).
 page: Sales Mix
 layout: standard-4-up
@@ -10,7 +10,7 @@ visuals:
       value: "[Total Amount]"
       trend: "Sales[Country]"
 
-  - type: pie
+  - type: bar
     title: Share by Region
     slots:
       category: "Sales[Region]"

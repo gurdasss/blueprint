@@ -9,7 +9,8 @@ Layers, later overriding earlier (mappings merge key by key; anything else is re
 
 Core keys (v1): version, name, canvas, spacing, page, palette, typography, layouts.
 Everything else is opt-in under ``extensions:`` (see ``template/extensions.md``): extra
-typography roles, severity overrides, decorative types and ``max_resize``. Keys the core
+typography roles, severity overrides, decorative types, ``max_resize`` and
+``custom_visuals.search_path`` (directories of visual contracts beyond the core seven). Keys the core
 doesn't know inside ``extensions:`` are passed through untouched.
 
 Keys from the pre-template schema (``grid:``, ``canvas.margin``, ``canvas.gutter``,
@@ -149,6 +150,7 @@ class Guidelines:
     typography: dict[str, FontRule]  # keyed by internal role (see CORE_ROLES)
     layouts: Layouts
     check: CheckRules
+    visuals: tuple[Path, ...]  # extra directories of visual contracts; core seven always load
     max_resize: float | None
     sources: tuple[str, ...]
     raw: dict[str, Any] = field(repr=False)
@@ -181,6 +183,13 @@ def _read(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise GuidelinesError(f"{path}: top level must be a mapping")
     return data
+
+
+def visuals_override(dirs: list[Path] | None) -> dict[str, Any] | None:
+    """A command-line ``--visuals DIR`` as the top guideline layer (layer 4)."""
+    if not dirs:
+        return None
+    return {"extensions": {"custom_visuals": {"search_path": [str(Path(d).resolve()) for d in dirs]}}}
 
 
 def load(
@@ -275,6 +284,7 @@ def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
         typography=_typography(raw, ext),
         layouts=_layouts(raw),
         check=CheckRules(severity=_severity(ext), decorative_types=_decorative(ext)),
+        visuals=_visuals(ext),
         max_resize=_max_resize(ext),
         sources=sources,
         raw=raw,
@@ -358,6 +368,31 @@ def _decorative(ext: dict[str, Any]) -> tuple[str, ...]:
     return tuple(value)
 
 
+def _visuals(ext: dict[str, Any]) -> tuple[Path, ...]:
+    """extensions.custom_visuals.search_path: directories holding further visual contracts.
+    A missing directory is refused here rather than later as a confusing "unknown type"."""
+    section = ext.get("custom_visuals")
+    if section is None:
+        return ()
+    if not isinstance(section, dict):
+        raise GuidelinesError("extensions.custom_visuals must be a mapping with search_path")
+    unknown = set(section) - {"search_path"}
+    if unknown:
+        raise GuidelinesError("extensions.custom_visuals: unknown keys "
+                              + ", ".join(sorted(map(str, unknown))))
+    search = section.get("search_path", [])
+    if not isinstance(search, list) or not all(isinstance(p, str) and p for p in search):
+        raise GuidelinesError("extensions.custom_visuals.search_path must be a list of directories")
+    out = []
+    for entry in search:
+        path = Path(entry)
+        if not path.is_dir():
+            raise GuidelinesError(
+                f"extensions.custom_visuals.search_path: {entry} is not a directory")
+        out.append(path)
+    return tuple(out)
+
+
 def _max_resize(ext: dict[str, Any]) -> float | None:
     if "max_resize" not in ext:
         return DEFAULT_MAX_RESIZE
@@ -439,14 +474,24 @@ def _title_region(raw: dict[str, Any]) -> str | None:
 
 
 def _anchor(layer: dict[str, Any], path: Path) -> dict[str, Any]:
-    """Resolve a layer's relative layouts.search_path entries against the file declaring them,
-    so a guidelines file works from any current directory."""
-    section = layer.get("layouts")
-    if not isinstance(section, dict) or not isinstance(section.get("search_path"), list):
-        return layer
+    """Resolve a layer's relative search_path entries (layouts, and extensions.custom_visuals)
+    against the file declaring them, so a guidelines file works from any current directory."""
     base = path.resolve().parent
-    resolved = [str((base / p).resolve()) if isinstance(p, str) else p for p in section["search_path"]]
-    return {**layer, "layouts": {**section, "search_path": resolved}}
+    out = layer
+    section = out.get("layouts")
+    if isinstance(section, dict) and isinstance(section.get("search_path"), list):
+        out = {**out, "layouts": {**section, "search_path": _resolve_paths(section["search_path"], base)}}
+    ext = out.get("extensions")
+    visuals = ext.get("custom_visuals") if isinstance(ext, dict) else None
+    if isinstance(visuals, dict) and isinstance(visuals.get("search_path"), list):
+        out = {**out, "extensions": {
+            **ext, "custom_visuals": {**visuals,
+                                      "search_path": _resolve_paths(visuals["search_path"], base)}}}
+    return out
+
+
+def _resolve_paths(entries: list[Any], base: Path) -> list[Any]:
+    return [str((base / p).resolve()) if isinstance(p, str) else p for p in entries]
 
 
 def _layouts(raw: dict[str, Any]) -> Layouts:

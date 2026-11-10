@@ -12,15 +12,18 @@ from blueprint.slots import contracts
 
 ROOT = Path(__file__).resolve().parent.parent
 GUIDE = ROOT / "guidelines" / "example.yaml"
+ARCHIVE = ROOT / "blueprint" / "visuals" / "archive"
+VISUALS = ("--visuals", str(ARCHIVE))  # pie/slicer left the core seven; this is a client's opt-in
+
 DROPDOWN = {"data": [{"properties": {"mode": {"expr": {"Literal": {"Value": "'Dropdown'"}}}}}]}
 
 
 def _spec(visual: dict) -> spec.PageSpec:
-    return spec.parse({"page": "P", "visuals": [visual]}, "p.yaml")
+    return spec.parse({"page": "P", "visuals": [visual]}, "p.yaml", visual_dirs=(ARCHIVE,))
 
 
 def test_contract_declares_the_slicer_style():
-    [opt] = contracts()["slicer"].options.values()
+    [opt] = contracts((ARCHIVE,))["slicer"].options.values()
     assert (opt.name, opt.object, opt.property, opt.values) == ("style", "data", "mode", {"dropdown": "'Dropdown'"})
 
 
@@ -44,7 +47,7 @@ def _apply(tmp_path: Path, options: str, capsys) -> tuple[int, str]:
     s.write_text("page: S\nlayout: standard-4-up\nvisuals:\n  - {type: header, title: S}\n"
                  f"  - {{type: slicer, slots: {{field: 'Sales[Country]'}}{options}}}\n")
     capsys.readouterr()
-    code = main(["apply", str(s), "--report", str(tmp_path / "proj"), "--guidelines", str(GUIDE)])
+    code = main(["apply", str(s), "--report", str(tmp_path / "proj"), "--guidelines", str(GUIDE), *VISUALS])
     out = capsys.readouterr()
     return code, out.out + out.err
 

@@ -153,9 +153,9 @@ def conflicts(layout: Layout, grid: int, margin: int, gutter: int = 0) -> list[s
     return problems
 
 
-def place(spec: PageSpec, layout: Layout) -> list[Placement]:
+def place(spec: PageSpec, layout: Layout, visual_dirs: tuple[Path, ...] = ()) -> list[Placement]:
     """Assign each non-ignored visual the next free region of its role, in spec order."""
-    known = contracts()
+    known = contracts(visual_dirs)
     free = list(layout.regions)
     placements: list[Placement] = []
     problems: list[str] = []

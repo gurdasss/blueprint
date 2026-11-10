@@ -7,7 +7,6 @@ from pathlib import Path
 from blueprint import guidelines, spec
 from blueprint.cli import main
 from blueprint.commands.describe import SPEC_SYNTAX, describe
-from blueprint.slots import contracts
 from tests.builders import make_report
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -21,12 +20,12 @@ def _describe(capsys, *args) -> dict:
 
 def test_types_layouts_and_limits_without_a_report(capsys):
     d = _describe(capsys)
-    assert set(d["types"]) == set(contracts())
+    # describe shows what a spec may use: the core seven, until the client opts the archive in
+    assert sorted(d["types"]) == ["bar", "card", "column", "header", "kpi", "line", "table"]
     assert d["types"]["kpi"] == {"visual_type": "kpi", "region": "kpi-row", "options": {}, "slots": {
         "value": {"accepts": ["measure"], "required": True, "list": False, "list_excludes": []},
         "trend": {"accepts": ["column"], "required": True, "list": False, "list_excludes": []},
         "target": {"accepts": ["measure"], "required": False, "list": False, "list_excludes": []}}}
-    assert d["types"]["slicer"]["options"] == {"style": ["dropdown"]}
     # A combination apply refuses is visible up front (several measures with a Legend, probe 28)
     assert d["types"]["line"]["slots"]["value"]["list_excludes"] == ["legend"]
     assert list(d["layouts"]) == ["dashboard-6", "grid-2x3", "kpi-row-plus-detail", "one-up", "standard-4-up", "two-up"]
@@ -93,8 +92,13 @@ def test_text_output(capsys, tmp_path: Path):
     shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
     assert main(["describe", "--report", str(tmp_path / "proj"), "--guidelines", str(GUIDE)]) == 0
     out = capsys.readouterr().out
-    assert "  kpi                region kpi-row  value*: measure, trend*: column, target: measure\n" in out
-    assert "  slicer             region main     field*[]: column; options style: dropdown\n" in out
+    assert "  kpi    region kpi-row  value*: measure, trend*: column, target: measure\n" in out
+    assert "  slicer" not in out  # archived out of the core seven
+    # with the opt-in, the archived types are listed too
+    assert main(["describe", "--report", str(tmp_path / "proj"), "--guidelines", str(GUIDE),
+                 "--visuals", str(ROOT / "blueprint" / "visuals" / "archive")]) == 0
+    assert ("  slicer             region main     field*[]: column; options style: dropdown\n"
+            in capsys.readouterr().out)
     assert "  standard-4-up (default): 1280x720; 1 header, 1 kpi-row, 2 main" in out
     assert "    measures: [Total Amount]" in out
     assert "  Overview  (1920x1080; not built by a spec)" in out

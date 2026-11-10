@@ -259,7 +259,7 @@ visuals:
       trend: "Calendar[Month]"
       target: "[Sales Target]"
 
-  - type: pie
+  - type: bar
     title: Sales by Category
     slots:
       category: "Product[Category]"
@@ -283,14 +283,37 @@ A visual may also set **options**, formatting choices its type declares (`bp des
 them). Leaving one out keeps Desktop's default:
 
 ```yaml
+  - type: line
+    options: { labels: on, legend: right }   # data labels on, legend on the right (probe 23)
+    slots: { category: "Calendar[Month]", value: ["[Total Sales]", "[Sales Target]"] }
+```
+
+### Core types, and the archive
+
+The core ships seven types: `header`, `card`, `kpi`, `column`, `line`, `bar`, `table`.
+Eight further contracts are probe-verified but archived out of the core to keep it small:
+`pie`, `donut`, `slicer`, `matrix`, `area`, `stacked-column`, `stacked-column-100` and
+`stacked-bar` (in `blueprint/visuals/archive/`). A spec naming one is refused, listing the
+types that are loaded, until you opt in — per run, or in your guidelines:
+
+```bash
+bp apply spec.yaml --report <report> --visuals blueprint/visuals/archive
+```
+
+```yaml
+# guidelines.yaml — relative to this file, like layouts.search_path
+extensions:
+  custom_visuals:
+    search_path: ["../blueprint/visuals/archive"]
+```
+
+With that opt-in, archived types behave exactly as before, options included:
+
+```yaml
   - type: slicer
     region: kpi-row
     options: { style: dropdown }   # the slicer as a dropdown (probes 20, 22)
     slots: { field: "Sales[Country]" }
-
-  - type: stacked-bar
-    options: { labels: on, legend: right }   # data labels on, legend on the right (probe 23)
-    slots: { category: "Sales[Country]", value: ["[Total Amount]", "[Target Amount]"] }
 ```
 
 ### Which page a spec builds
@@ -331,7 +354,7 @@ Desktop does. Column, bar, pie and line chart categories and the table's columns
 confusing result in Desktop.
 
 ```yaml
-# blueprint/visuals/pie.yaml  (slot contract, not the template; verified in probes 08 and 11)
+# blueprint/visuals/archive/pie.yaml  (slot contract, not the template; probes 08 and 11)
 type: pie
 visual_type: pieChart
 region: main

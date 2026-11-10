@@ -1,4 +1,7 @@
-"""Pie, table and KPI (probe 08): `bp apply` writes the query shapes Desktop wrote for them."""
+"""Pie, table and KPI (probe 08): `bp apply` writes the query shapes Desktop wrote for them.
+
+pie is archived out of the core seven, so these tests opt it back in the way a client would.
+"""
 
 import shutil
 from pathlib import Path
@@ -12,8 +15,24 @@ from blueprint.validate import check_report
 
 ROOT = Path(__file__).resolve().parent.parent
 GUIDE = ROOT / "guidelines" / "example.yaml"
+ARCHIVE = ROOT / "blueprint" / "visuals" / "archive"
+VISUALS = ("--visuals", str(ARCHIVE))  # pie/slicer left the core seven; this is a client's opt-in
 
-SPEC = ROOT / "examples" / "sales-mix.yaml"
+# What examples/sales-mix.yaml held when pie was core: probe 08's three types on one page.
+SPEC_TEXT = """\
+page: Sales Mix
+layout: standard-4-up
+visuals:
+  - type: kpi
+    title: Total by Country
+    slots: {value: "[Total Amount]", trend: "Sales[Country]"}
+  - type: pie
+    title: Share by Region
+    slots: {category: "Sales[Region]", value: "[Total Amount]"}
+  - type: table
+    title: Detail
+    slots: {columns: ["Sales[Country]", "Sales[Region]", "[Total Amount]"]}
+"""
 
 
 def col(name: str, active: bool = False) -> dict:
@@ -35,8 +54,16 @@ DESKTOP = {
 }
 
 
+def test_the_core_ships_seven_types_and_the_archive_eight():
+    """The core 20%: a client's spec sees these seven and nothing else until it opts in."""
+    assert sorted(contracts()) == ["bar", "card", "column", "header", "kpi", "line", "table"]
+    assert sorted(set(contracts((ARCHIVE,))) - set(contracts())) == [
+        "area", "donut", "matrix", "pie", "slicer", "stacked-bar", "stacked-column",
+        "stacked-column-100"]
+
+
 def test_contracts_ship_the_probed_types():
-    c = contracts()
+    c = contracts((ARCHIVE,))
     assert (c["pie"].visual_type, c["table"].visual_type, c["kpi"].visual_type) == ("pieChart", "tableEx", "kpi")
     assert c["table"].slots["columns"].accepts == ("column", "measure", "hierarchy")
 
@@ -44,7 +71,10 @@ def test_contracts_ship_the_probed_types():
 def test_apply_writes_desktops_query_shapes(tmp_path: Path):
     shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
     report = tmp_path / "proj" / "Fixture.Report"
-    assert main(["apply", str(SPEC), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
+    spec_path = tmp_path / "sales-mix.yaml"
+    spec_path.write_text(SPEC_TEXT)
+    assert main(["apply", str(spec_path), "--report", str(report), "--guidelines", str(GUIDE),
+                 *VISUALS]) == 0
 
     made = {}
     for f in report.glob("definition/pages/*/visuals/*/visual.json"):
@@ -89,7 +119,7 @@ def test_kpi_target_matches_probe_10(tmp_path: Path):
     spec = tmp_path / "kpi-target.yaml"
     spec.write_text('page: K\nlayout: standard-4-up\nvisuals:\n  - type: kpi\n    title: T\n'
                     '    slots: {value: "[Total Amount]", trend: "Sales[Country]", target: "[Target Amount]"}\n')
-    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
+    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE), *VISUALS]) == 0
     state = _made(report)["kpi"]["visual"]["query"]["queryState"]
     target = {**MEASURE, "field": {"Measure": {"Expression": {"SourceRef": {"Entity": "Sales"}},
                                                "Property": "Target Amount"}},
@@ -106,7 +136,7 @@ def test_roles_are_written_in_alphabetical_order_whatever_the_spec_order(tmp_pat
     spec = tmp_path / "order.yaml"
     spec.write_text('page: O\nlayout: standard-4-up\nvisuals:\n  - type: column\n    title: C\n'
                     '    slots: {value: "[Total Amount]", category: "Sales[Region]"}\n')
-    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
+    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE), *VISUALS]) == 0
     assert list(_made(report)["clusteredColumnChart"]["visual"]["query"]["queryState"]) == ["Category", "Y"]
 
 
@@ -162,7 +192,7 @@ def test_pie_drill_down_and_details_match_probe_11(tmp_path: Path):
                     '    slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}\n'
                     '  - type: pie\n    title: Split\n'
                     '    slots: {category: "Sales[Country]", details: "Sales[Region]", value: "[Total Amount]"}\n')
-    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
+    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE), *VISUALS]) == 0
     pies = {}
     for f in report.glob("definition/pages/*/visuals/*/visual.json"):
         doc = jsonfmt.load(f)
@@ -189,7 +219,7 @@ def test_line_and_bar_match_probe_12(tmp_path: Path):
                     '    slots: {category: "Sales[Country]", value: "[Total Amount]", legend: "Sales[Region]"}\n'
                     '  - type: bar\n    title: Bar\n'
                     '    slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}\n')
-    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
+    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE), *VISUALS]) == 0
     made = _made(report)
     # probe 12 step 05 (line with Legend) and step 04 (bar drill-down), roles in Desktop's order
     assert list(made["lineChart"]["visual"]["query"]["queryState"].items()) == [

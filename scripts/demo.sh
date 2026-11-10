@@ -43,12 +43,16 @@ tmdl.write_bytes(text.encode())
 print("model: + [Target Amount], + Sales[Order Date], + hierarchy Geography")
 EOF
 
-step "3. report-level guidelines: the new card's fonts (probes 07, 15)"
-cat > "$R/Fixture.Report/.blueprint.yaml" <<'EOF'
+step "3. report-level guidelines: the new card's fonts (probes 07, 15) + the archived pie type"
+cat > "$R/Fixture.Report/.blueprint.yaml" <<EOF
 extensions:
   typography:
     callout:    { font: Segoe UI Light, size: 32 }
     card_label: { font: Arial, size: 14 }
+  # the demo's pie pages: pie is probe-verified but archived out of the core seven, so a
+  # client that wants it says so (bp apply --visuals does the same for one run)
+  custom_visuals:
+    search_path: ["$BP/blueprint/visuals/archive"]
 EOF
 
 step "4. before (errors expected)"
