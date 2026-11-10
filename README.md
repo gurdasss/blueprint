@@ -221,7 +221,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: gurdasss/blueprint@v0.5.0        # a release tag (or commit SHA) pins Blueprint
         with:
-          reports: |                           # one per line: .Report folder, .pbip, or its folder
+          reports: |                           # one per line: .Report folder, .pbip, its folder, or a glob
             reports/Sales.Report
             reports/Operations.pbip
           guidelines: guidelines/corp.yaml     # optional; else $BLUEPRINT_GUIDELINES, else defaults

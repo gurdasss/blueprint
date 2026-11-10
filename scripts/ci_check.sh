@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Run `bp check --github` over each report in $REPORTS (one per line) for the composite action in
+# Run `bp check --github` over each report in $REPORTS (one per line; a line with * ? or [ is a
+# glob, expanded and sorted) for the composite action in
 # action.yml. Annotations go to the log, the text reports to $GITHUB_STEP_SUMMARY, and the step
 # exits with the worst exit code (2 unreadable > 1 failing findings > 0).
 #
@@ -20,10 +21,24 @@ esac
 
 worst=0
 checked=0
-while IFS= read -r report || [ -n "$report" ]; do
-  report="${report#"${report%%[![:space:]]*}"}"   # trim leading and trailing whitespace
-  report="${report%"${report##*[![:space:]]}"}"
-  [ -z "$report" ] && continue
+reports=()
+while IFS= read -r line || [ -n "$line" ]; do
+  line="${line#"${line%%[![:space:]]*}"}"   # trim leading and trailing whitespace
+  line="${line%"${line##*[![:space:]]}"}"
+  [ -z "$line" ] && continue
+  if [[ "$line" == *[*?[]* ]]; then   # a glob, e.g. reports/*.Report: expanded, sorted
+    mapfile -t matches < <(compgen -G "$line" | LC_ALL=C sort)
+    if [ "${#matches[@]}" -eq 0 ]; then
+      echo "::error title=bp check::'$line' matches no report"
+      worst=2
+    fi
+    reports+=("${matches[@]}")
+  else
+    reports+=("$line")
+  fi
+done <<< "${REPORTS:-}"
+
+for report in "${reports[@]}"; do
   checked=$((checked + 1))
   out=$("$BP" check --report "$report" "${args[@]}" 2>&1)
   code=$?
@@ -41,9 +56,9 @@ while IFS= read -r report || [ -n "$report" ]; do
     echo "::error title=bp check::$report could not be checked (exit $code): $(printf '%s' "$out" | grep -v '^::' | tail -n 1)"
   fi
   [ "$code" -gt "$worst" ] && worst=$code
-done <<< "${REPORTS:-}"
+done
 
-if [ "$checked" -eq 0 ]; then
+if [ "$checked" -eq 0 ] && [ "$worst" -eq 0 ]; then
   echo "::error title=bp check::no reports given (set the 'reports' input)"
   worst=2
 fi

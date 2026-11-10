@@ -131,3 +131,15 @@ def test_no_cap_notice_within_the_limit(card_chart_fixture, tmp_path, capsys, mo
     monkeypatch.setenv("GITHUB_WORKSPACE", str(tmp_path))
     _github(capsys, tmp_path / "proj")
     assert "aren't annotated" not in capsys.readouterr().out
+
+
+@pytest.mark.skipif(not BP.exists(), reason="needs the bp entry point (pip install -e .)")
+def test_action_script_expands_globs(card_chart_fixture, tmp_path):
+    for name in ("b", "a"):
+        shutil.copytree(card_chart_fixture.parent, tmp_path / "reports" / name)
+    code, out, summary, _ = _ci(tmp_path, "reports/*/Fixture.Report")
+    assert code == 1  # the fixture fails the example guidelines
+    text = summary.read_text()
+    assert text.index("reports/a/Fixture.Report") < text.index("reports/b/Fixture.Report")  # sorted
+    code, out, _, _ = _ci(tmp_path, "reports/*/Nope.Report")
+    assert code == 2 and "'reports/*/Nope.Report' matches no report" in out

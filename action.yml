@@ -11,7 +11,7 @@ inputs:
   reports:
     description: >-
       Reports to check, one per line: a .Report folder, a .pbip file or the folder holding one,
-      relative to the repository root.
+      relative to the repository root. A line may be a glob (reports/*.Report), expanded sorted.
     required: true
   guidelines:
     description: Guidelines YAML file. Empty uses $BLUEPRINT_GUIDELINES, else Blueprint's defaults.
