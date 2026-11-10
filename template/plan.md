@@ -368,8 +368,10 @@ measure's format is a different thing and lives in TMDL, which Blueprint only re
 `bp describe` listing both keys. Two fields Desktop would name alike (count and distinct count of
 one column) are refused rather than guessing its suffix rule.
 
-**Not verified yet:** that Desktop *accepts* these shapes when **Blueprint** writes them, which is
-the repo's bar (probe 20's shapes → probe 21's acceptance). Probe 30 does that.
+**Verified end to end.** Probe 30 applied all six aggregations and four format strings across
+cards, column charts and a table; Desktop drew every one, wrote its own subtitles from the
+bindings, and its save changed nothing Blueprint wrote (only the `$schema` bump, its auto
+`filterConfig` and `activePageName`). Both probes replay in CI.
 
 ### Step 7 (mostly done): shipped layouts and example files
 

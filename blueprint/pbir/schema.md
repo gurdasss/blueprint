@@ -596,6 +596,24 @@ chosen on a **fresh** field, because an aggregation changed in place keeps the f
 - **No "Display units" on the new card** in this build: that part of the probe (step 10) was
   skipped, so display units stay unverified.
 
+**Verified 2026-11-10, probe 30** (`scripts/probe_apply_aggregate.py`; evidence
+`docs/probes/30-apply-aggregate.diff`). Probe 29 recorded Desktop's own shapes; this one is the
+other claim, that **Desktop accepts them from Blueprint**. `bp apply` built two pages on fixture
+02 — all six aggregations across cards and column charts, and four format strings across cards, a
+column chart and a table mixing an aggregated column with a measure — and the user refreshed and
+saved.
+
+- **Desktop drew every one** (bridge captures, `_screenshots/30-apply-aggregate/`): Sum 500,
+  Average 125.00, distinct count 4, Min FR 50 / UK 100, Max FR 150 / UK 200, Count 2 / 2, and the
+  formats as `500`, `500.00`, `$ 500.00`, a percent axis, and `$200.00`/`$300.00` on the
+  aggregated table column beside an unformatted measure. Desktop wrote its own subtitles from the
+  bindings ("Min of Amount by Country"), so it read them as its own.
+- **The save changed nothing Blueprint wrote.** No `queryRef`, `nativeQueryRef`, `format`,
+  `Aggregation` or `Function` differs. Desktop only raised each changed file's `$schema`
+  2.13.0 -> 2.14.0, added its usual condition-less auto `filterConfig` (here an `Advanced` filter
+  on the aggregated field) and rewrote `pages.json` `activePageName`, all of which it does to any
+  visual it touches.
+
 - **Aggregation codes:** "Average of Amount" is `Function: 1` and "Count of Region" (a text column) is
   `Function: 5`. Desktop kept the field's old `queryRef` (`Sum(Sales.Amount)` on the Average,
   `Sales.Region` on the Count), so a `queryRef` says nothing reliable about the aggregation.

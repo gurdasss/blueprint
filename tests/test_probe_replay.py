@@ -57,9 +57,9 @@ VISUALS = ("--visuals", str(ARCHIVE))
 def _rules(path=GUIDE):
     """``path`` loaded with the archived visual types opted in."""
     return guidelines.load(path, visuals=[ARCHIVE])
-REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29]
+REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30]
 # Probes whose report Blueprint built and Desktop then opened and saved.
-ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24, 26, 27, 28]
+ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24, 26, 27, 28, 30]
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git to apply the evidence")
 
