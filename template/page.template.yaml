@@ -37,12 +37,6 @@ layout: standard-dashboard
 #   region   Override the visual type's default region role.
 #            Example: a `card` normally goes to `main`, but
 #            `region: kpi-row` places it in the KPI row.
-#
-# Field syntax:
-#   "[Measure Name]"           — a measure (square brackets, no table)
-#   "Table[Column]"            — a column
-#   "Table[Hierarchy]"         — a model hierarchy (binds all levels)
-#   ["A[Col1]", "A[Col2]"]    — an ordered list (drill-down path)
 
 visuals:
 
@@ -81,3 +75,39 @@ visuals:
         - "Product[Category]"
         - "[Total Revenue]"
         - "[Order Count]"
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Field syntax reference
+# ─────────────────────────────────────────────────────────────────────
+#
+# Measures (pre-aggregated in the semantic model):
+#   "[Measure Name]"                  a measure
+#
+# Columns (raw model columns):
+#   "Table[Column]"                   a column
+#   "Table[Hierarchy]"                a model hierarchy (binds all levels)
+#
+# Ordered lists (drill-down paths):
+#   category:
+#     - "Geography[Country]"
+#     - "Geography[State]"
+#     - "Geography[City]"
+#
+# Aggregated columns (visual-level aggregation on a column):
+#   "Table[Column] | sum"             Sum
+#   "Table[Column] | average"         Average
+#   "Table[Column] | distinctcount"   Distinct count
+#   "Table[Column] | count"           Count (non-null values)
+#   "Table[Column] | min"             Minimum
+#   "Table[Column] | max"             Maximum
+#
+# Use a measure when the aggregation is reusable business logic (DAX).
+# Use `| aggregate` when it's a one-off visual-level summary.
+#
+# Examples:
+#   value: "[Total Revenue]"                    ← measure (preferred)
+#   value: "Orders[Amount] | sum"               ← column with Sum
+#   value: "Investors[ID] | distinctcount"      ← distinct count of IDs
+#   value: "Orders[Shipping Cost] | average"    ← average shipping cost
+# ─────────────────────────────────────────────────────────────────────
