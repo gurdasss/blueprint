@@ -6,16 +6,12 @@
 version: 1
 name: Blueprint defaults
 
-grid:
-  size: 8
-  snap: true
-  # Leave a visual alone (with a warning) if snapping would change its width or height
-  # by more than this fraction. null disables the limit.
-  max_resize: 0.25
-
 canvas:
   width: null    # null: page size is not checked
   height: null
+
+spacing:
+  grid: 8
   margin: 0      # minimum distance from visual edges to the page edge
   gutter: 0      # minimum gap between neighbouring visuals (0: not checked)
 
@@ -43,27 +39,13 @@ layouts:
   search_path: []      # directories of <name>.yaml layouts; relative to the file declaring them
   default: null        # layout used when a page spec doesn't name one
 
-# typography: per text role, the allowed font face(s), size(s) in pt, and bold. Roles:
-# title, subtitle, callout (a card's value, old or new card), card_label (the new card's Category
-# label), header (the textboxes bp apply creates for `type: header`)
-# and textbox (all other textboxes). A font weight is part of the face name,
-# exactly as in Desktop's font list (e.g. "Segoe UI Semibold"). Nothing is checked by default.
+# typography: per text role, the allowed font face(s) and size(s) in pt. Roles:
+# page_title (the textboxes bp apply creates for `type: header`),
+# visual_title (chart/card/table titles),
+# body (everything else: labels, textboxes, data labels).
+# A font weight is part of the face name, exactly as in Desktop's font list
+# (e.g. "Segoe UI Semibold"). Nothing is checked by default.
 #   typography:
-#     title:   {font: Segoe UI Semibold, size: 14}
-#     textbox: {font: [Segoe UI, Segoe UI Light], size: [10, 12, 28]}
-
-check:
-  severity:            # error fails `bp check`; warning is reported; off is skipped
-    format: error      # schema-invalid files, names Desktop ignores, missing required files
-    bounds: error      # visual extends outside the page
-    grid: error        # an edge is off the grid (page edges count as grid lines)
-    margin: warning    # an edge is closer to the page edge than canvas.margin
-    gutter: warning    # two side-by-side or stacked visuals are closer than canvas.gutter
-    overlap: warning   # visuals partially overlap
-    page-size: warning # page size differs from canvas.width/height
-    density: warning   # more visuals than page.max_visuals
-    typography: error  # a font, size or bold setting outside the typography guidelines
-    title: error       # a spec-built page has no header, or it's outside page.title_region
-  # Visual types allowed to contain other visuals (backgrounds, panels); exempt from margin
-  # and gutter.
-  decorative_types: [image, shape, basicShape]
+#     page_title:    {font: Segoe UI Semibold, size: 18}
+#     visual_title:  {font: Segoe UI, size: 12}
+#     body:          {font: [Segoe UI, Segoe UI Light], size: [10, 12]}

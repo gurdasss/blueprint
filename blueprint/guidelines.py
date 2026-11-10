@@ -7,9 +7,10 @@ Layers, later overriding earlier (mappings merge key by key; anything else is re
 3. ``<report>/.blueprint.yaml``                 committed with the report
 4. command-line overrides                       e.g. ``--grid 8``
 
-Only keys some command uses are validated, so a guidelines file can contain sections whose
-code doesn't exist yet. Those are listed in :data:`NOT_IMPLEMENTED`, so ``bp check`` can say
-what it didn't check instead of passing them silently.
+Core keys (v1): version, name, canvas, spacing, page, palette, typography, layouts.
+The ``extensions:`` key is reserved for future opt-in features; the core validator
+ignores it. Keys some command uses are validated; unrecognised keys in ``extensions:``
+are silently passed through.
 """
 
 from __future__ import annotations
@@ -31,8 +32,24 @@ ENV_VAR = "BLUEPRINT_GUIDELINES"
 SEVERITIES = ("error", "warning", "off")
 RULES = ("format", "bounds", "grid", "margin", "gutter", "overlap", "page-size", "density", "typography",
          "title")
-# Documented in README but unchecked until the PBIR format for them is verified.
 NOT_IMPLEMENTED: tuple[str, ...] = ()
+
+# Severity defaults baked into code — no longer in the client's YAML.
+DEFAULT_SEVERITY: dict[str, str] = {
+    "format": "error",
+    "bounds": "error",
+    "grid": "error",
+    "margin": "warning",
+    "gutter": "warning",
+    "overlap": "warning",
+    "page-size": "warning",
+    "density": "warning",
+    "typography": "error",
+    "title": "error",
+}
+
+# Visual types allowed to contain other visuals (backgrounds, panels); exempt from margin/gutter.
+DEFAULT_DECORATIVE_TYPES = ("image", "shape", "basicShape")
 
 
 class GuidelinesError(Exception):
@@ -40,18 +57,16 @@ class GuidelinesError(Exception):
 
 
 @dataclass(frozen=True)
-class Grid:
-    size: int
-    snap: bool
-    max_resize: float | None  # fraction; None = no limit
+class Spacing:
+    grid: int
+    margin: int
+    gutter: int  # minimum gap between neighbouring visuals; 0: not checked
 
 
 @dataclass(frozen=True)
 class Canvas:
     width: int | None  # None: page size isn't checked
     height: int | None
-    margin: int
-    gutter: int  # minimum gap between neighbouring visuals; 0: not checked
 
 
 @dataclass(frozen=True)
@@ -80,14 +95,16 @@ class Palette:
         return {"strict": "error", "warn": "warning", "off": "off"}[self.enforce]
 
 
-TYPOGRAPHY_ROLES = ("title", "subtitle", "callout", "card_label", "header", "textbox")
+TYPOGRAPHY_ROLES = ("page_title", "visual_title", "body")
+# Old role names accepted for backward compat; mapped to new names internally.
+_ROLE_COMPAT = {"header": "page_title", "title": "visual_title", "subtitle": "body",
+                "callout": "body", "card_label": "body", "textbox": "body"}
 
 
 @dataclass(frozen=True)
 class FontRule:
     fonts: tuple[str, ...]  # allowed faces, exact names from Desktop's font list; () = any
     sizes: tuple[float, ...]  # allowed sizes in pt; () = any
-    bold: bool | None  # required bold setting; None = either
 
 
 @dataclass(frozen=True)
@@ -102,19 +119,76 @@ class CheckRules:
     decorative_types: tuple[str, ...]  # may contain other visuals; exempt from margin and gutter
 
 
+# --- Backward-compatible shims (consumed by validate.py and commands until step 3) -----------
+
 @dataclass(frozen=True)
+class _GridCompat:
+    """Shim so ``rules.grid.size`` still works while consumers use the old paths."""
+    size: int
+    snap: bool = True
+    max_resize: float | None = 0.25
+
+
+@dataclass(frozen=True)
+class _CanvasCompat:
+    """Shim so ``rules.canvas.margin`` and ``rules.canvas.gutter`` still work."""
+    width: int | None
+    height: int | None
+    margin: int
+    gutter: int
+
+
 class Guidelines:
-    name: str
-    version: int
-    grid: Grid
-    canvas: Canvas
-    page: PageRules
-    palette: Palette
-    typography: dict[str, FontRule]  # role -> rule; only roles the guidelines mention
-    layouts: Layouts
-    check: CheckRules
-    sources: tuple[str, ...]  # which layers contributed, lowest first
-    raw: dict[str, Any]
+    """Frozen guidelines object. Uses __slots__ + __init__ instead of dataclass
+    to allow a ``canvas`` property that returns the backward-compatible shim."""
+
+    __slots__ = ("name", "version", "spacing", "_canvas", "page", "palette",
+                 "typography", "layouts", "check", "sources", "raw")
+
+    def __init__(self, *, name: str, version: int, spacing: Spacing, canvas: Canvas,
+                 page: PageRules, palette: Palette, typography: dict[str, FontRule],
+                 layouts: Layouts, check: CheckRules, sources: tuple[str, ...],
+                 raw: dict[str, Any]) -> None:
+        object.__setattr__(self, "name", name)
+        object.__setattr__(self, "version", version)
+        object.__setattr__(self, "spacing", spacing)
+        object.__setattr__(self, "_canvas", canvas)
+        object.__setattr__(self, "page", page)
+        object.__setattr__(self, "palette", palette)
+        object.__setattr__(self, "typography", typography)
+        object.__setattr__(self, "layouts", layouts)
+        object.__setattr__(self, "check", check)
+        object.__setattr__(self, "sources", sources)
+        object.__setattr__(self, "raw", raw)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        raise AttributeError("Guidelines is immutable")
+
+    # --- Backward-compatible access (step 3 simplifies this back to a dataclass) ---
+
+    @property
+    def canvas(self) -> _CanvasCompat:
+        """Returns a compat shim with width, height, margin AND gutter so old code
+        that reads ``rules.canvas.margin`` still works."""
+        return _CanvasCompat(
+            width=self._canvas.width, height=self._canvas.height,
+            margin=self.spacing.margin, gutter=self.spacing.gutter,
+        )
+
+    @property
+    def grid(self) -> _GridCompat:
+        snap = _get(self.raw, "grid.snap")
+        snap = snap if isinstance(snap, bool) else True
+        max_resize = _get(self.raw, "grid.max_resize", _MISSING)
+        if max_resize is _MISSING:
+            max_resize = 0.25  # default when not explicitly set
+        elif max_resize is None:
+            pass  # explicit null disables it
+        elif isinstance(max_resize, bool) or not isinstance(max_resize, (int, float)):
+            max_resize = 0.25
+        return _GridCompat(size=self.spacing.grid, snap=snap,
+                           max_resize=float(max_resize) if max_resize is not None else None)
+
 
     def has(self, dotted: str) -> bool:
         return _get(self.raw, dotted, _MISSING) is not _MISSING
@@ -169,21 +243,19 @@ def load(
 
 
 def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
-    severity = _get(raw, "check.severity", {})
-    if not isinstance(severity, dict):
-        raise GuidelinesError("check.severity must be a mapping of rule -> error|warning|off")
-    # PyYAML reads unquoted `off` as False (YAML 1.1); accept it as the level it was meant as.
-    severity = {rule: "off" if level is False else level for rule, level in severity.items()}
-    for rule, level in severity.items():
-        if rule not in RULES:
-            raise GuidelinesError(f"check.severity: unknown rule {rule!r} (known: {', '.join(RULES)})")
-        if not isinstance(level, str) or level not in SEVERITIES:
-            raise GuidelinesError(f"check.severity.{rule} must be one of {', '.join(SEVERITIES)}")
-    missing = [r for r in RULES if r not in severity]
-    if missing:
-        raise GuidelinesError(f"check.severity: no level for {', '.join(missing)}")
+    # Severity: use defaults, allow overrides from raw for backward compat with existing files.
+    severity = dict(DEFAULT_SEVERITY)
+    raw_severity = _get(raw, "check.severity", {})
+    if isinstance(raw_severity, dict):
+        for rule, level in raw_severity.items():
+            level = "off" if level is False else level  # YAML 1.1: unquoted off → False
+            if rule not in RULES:
+                raise GuidelinesError(f"check.severity: unknown rule {rule!r} (known: {', '.join(RULES)})")
+            if not isinstance(level, str) or level not in SEVERITIES:
+                raise GuidelinesError(f"check.severity.{rule} must be one of {', '.join(SEVERITIES)}")
+            severity[rule] = level
 
-    decorative = _get(raw, "check.decorative_types", [])
+    decorative = _get(raw, "check.decorative_types", list(DEFAULT_DECORATIVE_TYPES))
     if not isinstance(decorative, list) or not all(isinstance(t, str) for t in decorative):
         raise GuidelinesError("check.decorative_types must be a list of visual type names")
 
@@ -195,13 +267,9 @@ def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
     return Guidelines(
         name=str(raw.get("name", "")),
         version=_int(raw, "version", minimum=1),
-        grid=Grid(size=_int(raw, "grid.size", minimum=1),
-                  snap=_bool(raw, "grid.snap"),
-                  max_resize=_number(raw, "grid.max_resize", nullable=True)),
+        spacing=_spacing(raw),
         canvas=Canvas(width=_int(raw, "canvas.width", minimum=1, nullable=True),
-                      height=_int(raw, "canvas.height", minimum=1, nullable=True),
-                      margin=_int(raw, "canvas.margin", minimum=0),
-                      gutter=_int(raw, "canvas.gutter", minimum=0)),
+                      height=_int(raw, "canvas.height", minimum=1, nullable=True)),
         page=PageRules(max_visuals=_int(raw, "page.max_visuals", minimum=1, nullable=True),
                        density_policy=policy,
                        require_title=_bool(raw, "page.require_title"),
@@ -209,7 +277,7 @@ def _build(raw: dict[str, Any], sources: tuple[str, ...]) -> Guidelines:
         palette=_palette(raw),
         typography=_typography(raw),
         layouts=_layouts(raw),
-        check=CheckRules(severity=dict(severity), decorative_types=tuple(decorative)),
+        check=CheckRules(severity=severity, decorative_types=tuple(decorative)),
         sources=sources,
         raw=raw,
     )
@@ -244,15 +312,6 @@ def _bool(raw: dict[str, Any], key: str) -> bool:
     return value
 
 
-def _number(raw: dict[str, Any], key: str, *, nullable: bool = False) -> float | None:
-    value = _get(raw, key)
-    if value is None and nullable:
-        return None
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
-        raise GuidelinesError(f"{key} must be a number >= 0 (e.g. 0.25) or null, got {value!r}")
-    return float(value)
-
-
 _HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
 
@@ -271,6 +330,45 @@ def _hex_list(raw: dict[str, Any], key: str) -> tuple[str, ...]:
     if not isinstance(value, list):
         raise GuidelinesError(f"{key} must be a list of #RRGGBB colours")
     return tuple(_hex(v, f"{key}[{i}]") or "" for i, v in enumerate(value))
+
+
+def _spacing(raw: dict[str, Any]) -> Spacing:
+    # Accept both new paths (spacing.*) and old paths (grid.size, canvas.margin, canvas.gutter).
+    # New paths take priority if both exist.
+    grid = _get(raw, "spacing.grid")
+    if grid is None:
+        grid = _get(raw, "grid.size")
+    if grid is None:
+        grid = 8  # fallback
+    if isinstance(grid, bool) or not isinstance(grid, int) or grid < 1:
+        raise GuidelinesError(f"spacing.grid must be an integer >= 1, got {grid!r}")
+
+    margin = _get(raw, "spacing.margin")
+    if margin is None:
+        margin = _get(raw, "canvas.margin")
+    if margin is None:
+        margin = 0
+    if isinstance(margin, bool) or not isinstance(margin, int) or margin < 0:
+        raise GuidelinesError(f"spacing.margin must be an integer >= 0, got {margin!r}")
+
+    gutter = _get(raw, "spacing.gutter")
+    if gutter is None:
+        gutter = _get(raw, "canvas.gutter")
+    if gutter is None:
+        gutter = 0
+    if isinstance(gutter, bool) or not isinstance(gutter, int) or gutter < 0:
+        raise GuidelinesError(f"spacing.gutter must be an integer >= 0, got {gutter!r}")
+
+    # Validate old-path keys that the compat shim exposes (step 3 removes these).
+    snap = _get(raw, "grid.snap")
+    if snap is not None and not isinstance(snap, bool):
+        raise GuidelinesError(f"grid.snap must be true or false, got {snap!r}")
+    max_resize = _get(raw, "grid.max_resize")
+    if max_resize is not None:
+        if isinstance(max_resize, bool) or not isinstance(max_resize, (int, float)) or max_resize < 0:
+            raise GuidelinesError(f"grid.max_resize must be a number >= 0 or null, got {max_resize!r}")
+
+    return Spacing(grid=grid, margin=margin, gutter=gutter)
 
 
 def _palette(raw: dict[str, Any]) -> Palette:
@@ -292,19 +390,25 @@ def _typography(raw: dict[str, Any]) -> dict[str, FontRule]:
     if section is None:
         return {}
     if not isinstance(section, dict):
-        raise GuidelinesError("typography must be a mapping of role -> {font, size, bold}")
+        raise GuidelinesError("typography must be a mapping of role -> {font, size}")
     out: dict[str, FontRule] = {}
     for role, spec in section.items():
         key = f"typography.{role}"
+        if role in _ROLE_COMPAT:
+            role = _ROLE_COMPAT[role]
         if role not in TYPOGRAPHY_ROLES:
             raise GuidelinesError(f"{key}: unknown role (known: {', '.join(TYPOGRAPHY_ROLES)})")
         if not isinstance(spec, dict):
-            raise GuidelinesError(f"{key} must be a mapping with font, size and/or bold")
+            raise GuidelinesError(f"{key} must be a mapping with font and/or size")
         if "weight" in spec:
             raise GuidelinesError(
                 f"{key}.weight: Power BI has no separate weight; a weight is part of the font "
                 "face. Use the exact name from Desktop's font list, e.g. font: Segoe UI Semibold")
-        unknown = set(spec) - {"font", "size", "bold"}
+        if "bold" in spec:
+            raise GuidelinesError(
+                f"{key}.bold: Power BI encodes weight in the font face name. "
+                "Use font: Segoe UI Semibold instead of bold: true")
+        unknown = set(spec) - {"font", "size"}
         if unknown:
             raise GuidelinesError(f"{key}: unknown keys {', '.join(sorted(map(str, unknown)))}")
         fonts = spec.get("font", [])
@@ -316,10 +420,7 @@ def _typography(raw: dict[str, Any]) -> dict[str, FontRule]:
         if not isinstance(sizes, list) or not all(
                 isinstance(z, (int, float)) and not isinstance(z, bool) and z > 0 for z in sizes):
             raise GuidelinesError(f"{key}.size must be a positive number (pt) or a list of them")
-        bold = spec.get("bold")
-        if bold is not None and not isinstance(bold, bool):
-            raise GuidelinesError(f"{key}.bold must be true or false")
-        out[role] = FontRule(tuple(f.strip() for f in fonts), tuple(float(z) for z in sizes), bold)
+        out[role] = FontRule(tuple(f.strip() for f in fonts), tuple(float(z) for z in sizes))
     return out
 
 

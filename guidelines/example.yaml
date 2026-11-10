@@ -3,13 +3,12 @@
 version: 1
 name: Example Corp Reporting Standard
 
-grid:
-  size: 8
-  snap: true
-
 canvas:
   width: 1280
   height: 720
+
+spacing:
+  grid: 8
   margin: 16
   gutter: 16      # minimum gap between neighbouring visuals
 
@@ -20,9 +19,9 @@ palette:
   enforce: strict        # strict | warn | off
 
 typography:
-  title:    { font: Segoe UI Semibold, size: 18 }   # weight is part of the face name
-  subtitle: { font: Segoe UI, size: 12 }
-  header:   { font: Segoe UI Semibold, size: 20 }   # bp apply writes this onto header textboxes
+  page_title:    { font: Segoe UI Semibold, size: 20 }   # bp apply writes this onto header textboxes
+  visual_title:  { font: Segoe UI Semibold, size: 18 }   # weight is part of the face name
+  body:          { font: Segoe UI, size: 12 }
 
 page:
   require_title: true
