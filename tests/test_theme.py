@@ -206,3 +206,22 @@ def test_theme_then_check_passes_the_card_label(tmp_path: Path, card_chart_fixtu
     assert main(["theme", "--report", str(report), "--guidelines", str(guide)]) == 0
     after = check_report(read_report(report), rules).findings
     assert [f for f in after if f.rule == "typography"] == []
+
+
+def test_replacing_a_custom_theme_when_there_is_no_base_theme(card_chart_fixture, tmp_path):
+    """Microsoft's Retail sample has only a customTheme (Concourse) and no baseTheme. The schema
+    requires reportVersionAtImport on customTheme, so it comes from the theme being replaced
+    (Desktop gave both layers the same value, probes 02 and 03). Desktop opened the result."""
+    proj = tmp_path / "proj"
+    shutil.copytree(card_chart_fixture.parent, proj)
+    report_json = proj / "Fixture.Report" / "definition" / "report.json"
+    doc = jsonfmt.load(report_json)
+    version = {"visual": "1.8.26", "report": "2.0.26", "page": "1.3.26"}
+    doc["themeCollection"] = {"customTheme": {"name": "Concourse", "reportVersionAtImport": version,
+                                              "type": "RegisteredResources"}}
+    report_json.write_bytes(jsonfmt.dump_bytes(doc))
+    args = ["theme", "--report", str(proj), "--guidelines", str(GUIDE)]
+    assert main(args) == 2  # a non-Blueprint custom theme needs --replace-theme
+    assert main([*args, "--replace-theme"]) == 0
+    assert jsonfmt.load(report_json)["themeCollection"] == {"customTheme": {
+        "name": "blueprint-theme.json", "reportVersionAtImport": version, "type": "RegisteredResources"}}

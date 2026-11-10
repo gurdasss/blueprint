@@ -147,10 +147,13 @@ def with_theme(report_doc: dict, *, replace: bool) -> dict:
             f"the report already uses custom theme {current.get('name')!r}; pass --replace-theme to "
             "switch it to the guidelines theme (its file is kept, only the reference changes)")
     entry: dict[str, Any] = {"name": FILE_NAME}
-    base = collection.get("baseTheme")
-    if isinstance(base, dict) and isinstance(base.get("reportVersionAtImport"), dict):
-        # Desktop gave both layers the same reportVersionAtImport (probe 02 phase 2, probe 03).
-        entry["reportVersionAtImport"] = dict(base["reportVersionAtImport"])
+    # Desktop gave both layers the same reportVersionAtImport (probe 02 phase 2, probe 03), and
+    # the schema requires it on customTheme. A report with no base theme (Microsoft's Retail
+    # sample) has it only on the custom theme being replaced.
+    for layer in (collection.get("baseTheme"), current):
+        if isinstance(layer, dict) and isinstance(layer.get("reportVersionAtImport"), dict):
+            entry["reportVersionAtImport"] = dict(layer["reportVersionAtImport"])
+            break
     entry["type"] = PACKAGE
     collection["customTheme"] = entry
 
