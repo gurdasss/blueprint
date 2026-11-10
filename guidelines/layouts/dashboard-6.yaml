@@ -1,12 +1,13 @@
 # A header, a row of three KPIs and three main visuals. Columns are 400px with 24px gaps, so every
 # edge lands on the 8px grid (1248 = 3 x 400 + 2 x 24).
+# The KPI row is 160px: at 120px Desktop clips a KPI visual's goal line and a titled card's label.
 name: dashboard-6
 canvas: { width: 1280, height: 720 }
 regions:
   - { role: header,  x: 16,  y: 16,  w: 1248, h: 64 }
-  - { role: kpi-row, x: 16,  y: 96,  w: 400,  h: 120 }
-  - { role: kpi-row, x: 440, y: 96,  w: 400,  h: 120 }
-  - { role: kpi-row, x: 864, y: 96,  w: 400,  h: 120 }
-  - { role: main,    x: 16,  y: 232, w: 400,  h: 472 }
-  - { role: main,    x: 440, y: 232, w: 400,  h: 472 }
-  - { role: main,    x: 864, y: 232, w: 400,  h: 472 }
+  - { role: kpi-row, x: 16,  y: 96,  w: 400,  h: 160 }
+  - { role: kpi-row, x: 440, y: 96,  w: 400,  h: 160 }
+  - { role: kpi-row, x: 864, y: 96,  w: 400,  h: 160 }
+  - { role: main,    x: 16,  y: 272, w: 400,  h: 432 }
+  - { role: main,    x: 440, y: 272, w: 400,  h: 432 }
+  - { role: main,    x: 864, y: 272, w: 400,  h: 432 }

@@ -1,11 +1,12 @@
 # A header, a row of four KPIs and one full-width detail visual (README "Layouts"). KPI columns
 # are 288px with 32px gaps (1248 = 4 x 288 + 3 x 32), so every edge lands on the 8px grid.
+# The KPI row is 160px: at 120px Desktop clips a KPI visual's goal line and a titled card's label.
 name: kpi-row-plus-detail
 canvas: { width: 1280, height: 720 }
 regions:
   - { role: header,  x: 16,  y: 16,  w: 1248, h: 64 }
-  - { role: kpi-row, x: 16,  y: 96,  w: 288,  h: 120 }
-  - { role: kpi-row, x: 336, y: 96,  w: 288,  h: 120 }
-  - { role: kpi-row, x: 656, y: 96,  w: 288,  h: 120 }
-  - { role: kpi-row, x: 976, y: 96,  w: 288,  h: 120 }
-  - { role: main,    x: 16,  y: 232, w: 1248, h: 472 }
+  - { role: kpi-row, x: 16,  y: 96,  w: 288,  h: 160 }
+  - { role: kpi-row, x: 336, y: 96,  w: 288,  h: 160 }
+  - { role: kpi-row, x: 656, y: 96,  w: 288,  h: 160 }
+  - { role: kpi-row, x: 976, y: 96,  w: 288,  h: 160 }
+  - { role: main,    x: 16,  y: 272, w: 1248, h: 432 }

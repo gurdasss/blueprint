@@ -194,7 +194,7 @@ def test_changing_a_visuals_region_moves_it_on_re_apply(tmp_path: Path, capsys):
 
     s.write_text(body % "")
     assert main(["apply", str(s), *args]) == 0
-    assert card() == ("main#1", (16, 232))
+    assert card() == ("main#1", (16, 272))
     s.write_text(body % "region: kpi-row, ")
     assert main(["apply", str(s), *args]) == 0
     assert card() == ("kpi-row#1", (16, 96))
