@@ -218,7 +218,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: gurdasss/blueprint@main          # pin a commit SHA for repeatable checks
         with:
           reports: |                           # one per line: .Report folder, .pbip, or its folder
