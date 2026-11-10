@@ -1,266 +1,237 @@
 # Visual Type System
 
-> How Blueprint defines, stores and creates visuals — and which ones
-> belong in core 20%.
+> How Blueprint defines, loads and creates visuals.
+
+---
+
+## How it works
+
+A visual definition is a YAML file that says what a visual type **is** —
+its Power BI type string, what data slots it has, and what formatting
+options it supports. Blueprint already ships 15 of these in
+`blueprint/visuals/`.
+
+At startup, Blueprint loads every visual YAML into memory as a dict of
+in-memory objects. When `bp apply` runs, it combines each visual's
+definition with the client's page spec to produce the PBIR JSON objects,
+then writes them to disk. Nothing persists in memory after the run.
+
+```
+                        ┌─────────────────────────────────┐
+                        │         Startup (once)          │
+   blueprint/visuals/   │                                 │
+   *.yaml               │  Load all YAMLs                 │
+   ──────────────────▶  │  Resolve inherits: references   │
+                        │  Result: dict[str, VisualDef]   │
+   guidelines           │                                 │
+   visuals.search_path  │  Also load from search_path     │
+   ──────────────────▶  │  directories (client additions) │
+                        └────────────┬────────────────────┘
+                                     │
+                                     ▼
+                        ┌─────────────────────────────────┐
+                        │         Runtime (per spec)      │
+                        │                                 │
+   Page spec            │  1. Validate spec fields        │
+   ──────────────────▶  │     against visual's slots      │
+                        │  2. Resolve fields against TMDL │
+   TMDL model           │  3. Build PBIR JSON objects     │
+   ──────────────────▶  │     in memory                   │
+                        │  4. Write to disk                │
+                        └────────────┬────────────────────┘
+                                     │
+                                     ▼
+                              PBIR files in PBIP
+```
+
+---
+
+## Visual definition format
+
+Each YAML file defines one visual type. Four fields:
+
+```yaml
+# blueprint/visuals/column.yaml
+type: column                          # name used in page specs
+visual_type: clusteredColumnChart     # Power BI's internal type string
+region: main                          # default layout role
+slots:
+  category:
+    role: Category                    # PBIR query role name
+    accepts: [column, hierarchy]      # what field types are valid
+    required: true
+    ordered: true                     # list = drill-down path
+  value:
+    role: Y
+    accepts: measure
+    required: true
+    ordered: true                     # list = multiple series
+options:
+  labels: { object: labels, property: show, values: { "on": "true" } }
+  legend: { object: legend, property: position, values: { ... } }
+```
+
+That's the complete definition. The engine needs nothing else to create
+a column chart.
+
+---
+
+## Inheritance
+
+Many visuals share the same slot structure. Bar is identical to column
+except for the `visual_type` string. Instead of duplicating slots,
+a visual can inherit from another:
+
+```yaml
+# blueprint/visuals/bar.yaml
+type: bar
+visual_type: clusteredBarChart
+inherits: column                      # gets column's slots, options, region
+```
+
+Three lines. The loader copies column's slots and options into bar,
+then applies any overrides bar declares. The result in memory is a
+complete VisualDef — the engine never sees the inheritance, just the
+final merged object.
+
+### What inherits copies
+
+| Field | Behavior |
+|-------|----------|
+| `slots` | Copied from parent. Child can add new slots or override individual ones. |
+| `options` | Copied from parent. Child can add or override. |
+| `region` | Copied from parent. Child can override. |
+| `visual_type` | **Never inherited.** Every visual must declare its own. |
+| `type` | **Never inherited.** Every visual must declare its own. |
+
+### Existing visuals that would share slots
+
+```
+column  ← bar, stacked-column, stacked-bar, stacked-column-100, area
+           (all: category + value, same roles)
+
+line    ← (extends column, adds legend slot)
+
+card    ← standalone (single value)
+
+kpi     ← standalone (value + trend + target)
+
+table   ← matrix (columns of mixed types)
+
+header  ← standalone (no slots, textbox)
+```
+
+---
+
+## Adding a new visual
+
+Drop a YAML file. That's it.
+
+**If an existing visual's slots fit** (most chart types):
+
+```yaml
+# my-visuals/waterfall.yaml
+type: waterfall
+visual_type: waterfallChart
+inherits: column
+```
+
+**If it needs unique slots:**
+
+```yaml
+# my-visuals/gauge.yaml
+type: gauge
+visual_type: gauge
+region: main
+slots:
+  value:
+    role: Y
+    accepts: measure
+    required: true
+  target:
+    role: TargetValue
+    accepts: measure
+```
+
+**Then point your guidelines at the folder:**
+
+```yaml
+# in guidelines.yaml
+visuals:
+  search_path: ["my-visuals"]
+```
+
+Next `bp apply` run, the new type is available in page specs.
+No code changes. No Blueprint updates.
+
+### Load order
+
+```
+1. blueprint/visuals/*          ← built-in defaults (ships with Blueprint)
+2. search_path directories      ← client additions/overrides (later wins)
+```
+
+A client file with the same `type:` as a built-in replaces it.
+That's how a client customizes defaults (e.g. changing a visual's
+default region).
+
+---
+
+## The runtime flow in detail
+
+What happens when `bp apply spec.yaml` runs:
+
+```
+1. Load visual YAMLs → resolve inherits → dict[str, VisualDef]
+
+2. Parse page spec → list of visual specs with types, titles, slots
+
+3. For each visual in the spec:
+   a. Look up type in registry → get its VisualDef
+   b. Validate: does each spec slot match what the def accepts?
+   c. Resolve: does each field exist in the TMDL model?
+   d. Build: construct the PBIR JSON object in memory
+      - visual_type string from the def
+      - query roles + field bindings from def slots + spec fields
+      - formatting properties from def options + spec options
+      - position from layout + guidelines engine
+
+4. All visuals validated and built? Write them all to disk.
+   Any failure? Write nothing.
+
+5. Memory is released. Nothing persists.
+```
+
+The visual definitions provide the **structure** (what a column chart is).
+The page spec provides the **content** (what this column chart shows).
+The engine combines them into **PBIR JSON** (what Power BI reads).
 
 ---
 
 ## Core 20% visual types
 
-These 7 types are sufficient to build any functional report:
+These 7 types cover every standard report pattern:
 
-| Type | What it shows | Why it's core |
-|------|--------------|---------------|
-| **header** | Page title text | Every page needs one |
-| **card** | Single KPI number | The most basic data visual |
-| **kpi** | Value + trend + optional target | Dashboard staple |
-| **column** | Categories vs values (vertical bars) | The default chart |
-| **line** | Trends over time | Time series are everywhere |
-| **bar** | Categories vs values (horizontal bars) | Long category names |
-| **table** | Rows and columns of data | Detail and drill-down |
+| Type | What it shows | Slots |
+|------|--------------|-------|
+| **header** | Page title text | (none — textbox) |
+| **card** | Single KPI number | value |
+| **kpi** | Value + trend + target | value, trend, target |
+| **column** | Categories vs values | category, value |
+| **line** | Trends over time | category, value, legend |
+| **bar** | Horizontal categories | inherits column |
+| **table** | Rows and columns | columns (mixed types) |
 
-With these 7, a client can build: a KPI dashboard, an analytical page,
-a detail page, a summary page, a trend page. Every standard report
-pattern is covered.
+### Deferred (ship via extension or client-added visuals)
 
-### What's deferred (useful, not essential)
+| Type | Status |
+|------|--------|
+| pie, donut | Slot structure exists, verified by probes |
+| area, stacked-column, stacked-bar, stacked-column-100 | Inherit from column |
+| matrix | Inherits from table |
+| slicer | Unique slot structure |
 
-| Type | Why deferred |
-|------|-------------|
-| pie, donut | Controversial in data viz; column/bar covers the same data |
-| area | Line chart covers the same use case |
-| stacked-column, stacked-bar, stacked-column-100 | Variants of column/bar |
-| matrix | Table covers most cases; matrix adds pivot |
-| slicer | Interactive filtering — useful but not structural |
-
-These ship when the extension system exists, or earlier if a client needs them.
-
----
-
-## The duplication problem
-
-Today, 15 visual types are defined as 15 separate YAML files. But most
-share the same slot shape:
-
-```
-column, bar, line, area, stacked-column, stacked-bar, stacked-column-100
-→ ALL have: category (Category) + value (Y) + optional legend (Series)
-
-pie, donut
-→ BOTH have: category (Category) + value (Y) + optional details (Series)
-```
-
-That's 9 visuals with essentially the same contract, differing only in:
-1. The `visual_type` string (what Power BI calls it internally)
-2. Which options they support (labels, legend position)
-3. Minor slot differences (hierarchy support, list behavior)
-
-Adding a new chart variant (say, `waterfall`) means copying an existing
-file and changing one string. That works but doesn't scale.
-
----
-
-## Composable system: slot shapes + visual identity
-
-Instead of one file per visual, split the definition into two layers:
-
-### Layer 1: Slot shapes (reusable)
-
-A slot shape defines the field structure — what slots exist, what they
-accept, and how they behave. Shapes are the building blocks.
-
-```yaml
-# shapes/category_value.yaml
-shape: category_value
-description: A category axis and a value axis (most charts)
-slots:
-  category:
-    role: Category
-    accepts: [column, hierarchy]
-    required: true
-    ordered: true            # list = drill-down
-  value:
-    role: Y
-    accepts: measure
-    required: true
-    ordered: true            # list = multiple series
-```
-
-```yaml
-# shapes/category_value_legend.yaml
-shape: category_value_legend
-extends: category_value
-slots:
-  legend:
-    role: Series
-    accepts: column
-    constraint: list_excludes [value]   # can't have multi-value + legend
-```
-
-```yaml
-# shapes/single_value.yaml
-shape: single_value
-slots:
-  value:
-    role: Data
-    accepts: measure
-    required: true
-```
-
-```yaml
-# shapes/mixed_columns.yaml
-shape: mixed_columns
-slots:
-  columns:
-    role: Values
-    accepts: [column, measure, hierarchy]
-    required: true
-    ordered: true
-```
-
-### Layer 2: Visual identity (per type)
-
-A visual type binds a slot shape to a Power BI visual type, a default
-region, and optional formatting options. This is the lightweight part.
-
-```yaml
-# visuals/column.yaml
-type: column
-visual_type: clusteredColumnChart
-shape: category_value              # ← references a reusable shape
-region: main
-options:
-  labels: { object: labels, property: show, values: { "on": "true" } }
-  legend: { object: legend, property: position, values: { top: "'Top'", bottom: "'Bottom'", left: "'Left'", right: "'Right'" } }
-```
-
-```yaml
-# visuals/bar.yaml
-type: bar
-visual_type: clusteredBarChart
-shape: category_value              # ← same shape as column
-region: main
-options:
-  labels: { object: labels, property: show, values: { "on": "true" } }
-  legend: { object: legend, property: position, values: { top: "'Top'", bottom: "'Bottom'", left: "'Left'", right: "'Right'" } }
-```
-
-```yaml
-# visuals/line.yaml
-type: line
-visual_type: lineChart
-shape: category_value_legend       # ← shape with legend support
-region: main
-```
-
-```yaml
-# visuals/card.yaml
-type: card
-visual_type: cardVisual
-shape: single_value
-region: main
-```
-
-```yaml
-# visuals/table.yaml
-type: table
-visual_type: tableEx
-shape: mixed_columns
-region: main
-```
-
-### Adding a new visual type
-
-With the composable system, adding `waterfall` is:
-
-```yaml
-# visuals/waterfall.yaml
-type: waterfall
-visual_type: waterfallChart
-shape: category_value              # ← reuse existing shape
-region: main
-```
-
-One file, three lines of identity, zero duplicated slot logic.
-
-If the new type needs a unique slot structure (like KPI's value + trend +
-target), you write a new shape first, then reference it.
-
----
-
-## How the system creates a visual (the render path)
-
-The render engine needs three pieces of information to write a PBIR visual:
-
-```
-1. Visual identity    → visual_type string (from the visual definition)
-2. Slot bindings      → which fields go in which query roles (from the shape + spec)
-3. Options            → formatting properties to set (from the visual definition + spec)
-```
-
-The engine assembles the PBIR JSON from these:
-
-```
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│  Slot shape  │     │   Visual ID  │     │  Page spec   │
-│              │     │              │     │              │
-│  category: Y │     │ visual_type: │     │ slots:       │
-│  value: Y    │     │  clustered   │     │  category: X │
-│  legend: ?   │     │  ColumnChart │     │  value: Y    │
-└──────┬───────┘     └──────┬───────┘     └──────┬───────┘
-       │                    │                    │
-       └────────────────────┼────────────────────┘
-                            ▼
-                    ┌──────────────┐
-                    │    Engine    │
-                    │              │
-                    │  Writes:     │
-                    │  visual.json │
-                    │  query roles │
-                    │  objects     │
-                    └──────────────┘
-```
-
-The engine doesn't care whether it's a column chart or a waterfall chart.
-It sees: "a visual_type string, a set of query role bindings, and some
-object properties to set." The slot shape tells it the roles; the visual
-identity tells it the type string; the spec tells it the fields.
-
----
-
-## Core shapes summary
-
-For the core 7 visual types, we need 5 shapes:
-
-| Shape | Slots | Used by |
-|-------|-------|---------|
-| `single_value` | value (measure) | card |
-| `category_value` | category + value | column, bar |
-| `category_value_legend` | category + value + legend | line (extension: area, stacked-*) |
-| `mixed_columns` | columns (mixed types) | table |
-| `indicator` | value + trend + target | kpi |
-
-Plus `header` which has no slots (it's a textbox with text).
-
----
-
-## Workflow for adding a new visual
-
-1. **Does an existing shape fit?** Most chart types reuse `category_value`
-   or `category_value_legend`. If yes, skip to step 3.
-
-2. **Define a new shape.** Write a shape YAML with the slot structure.
-   This is where you declare roles, accepted types, and constraints.
-
-3. **Define the visual identity.** Write a visual YAML: type name,
-   Power BI visual_type, shape reference, default region, options.
-
-4. **Verify with a Desktop probe.** Build the visual in Desktop, save,
-   diff, confirm the PBIR matches what the shape declares. Cite the
-   probe in the YAML.
-
-5. **The visual is available.** `bp describe` lists it, `bp apply`
-   creates it. No engine changes needed.
-
-Steps 1–3 are YAML. Step 4 is a one-time verification. Step 5 is
-automatic. The engine never changes when a visual type is added.
+These already have definitions in `blueprint/visuals/`. A client can
+use them today by adding them to their `visuals.search_path`. They're
+deferred from core only because a client doesn't need them to build
+a functional report.
