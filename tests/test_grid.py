@@ -104,7 +104,7 @@ def test_max_resize_skips_visuals_that_would_be_distorted(tmp_path: Path):
     footer = next(v for v in r.page("p").visuals if v.name == "footer")
     assert footer.rect == Rect(1151.39, 694.51, 126.16, 24.5)  # untouched
     [warning] = [w for w in result.warnings if "footer" in w]
-    assert "126.2x24.5 -> 128x48" in warning and "96% > grid.max_resize 25%" in warning
+    assert "126.2x24.5 -> 128x48" in warning and "96% > extensions.max_resize 25%" in warning
 
 
 def test_max_resize_none_disables_limit(tmp_path: Path):

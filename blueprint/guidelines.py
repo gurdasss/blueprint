@@ -55,6 +55,10 @@ DEFAULT_SEVERITY: dict[str, str] = {
     "title": "error",       # a spec-built page has no header, or it's outside page.title_region
 }
 
+# The extensions.* sub-keys the core itself reads. Anything else under extensions: is passed
+# through untouched for an extension validator, so this is documentation, not a whitelist.
+EXTENSION_KEYS = ("severity", "decorative_types", "max_resize", "typography", "custom_visuals")
+
 # Visual types allowed to contain other visuals (backgrounds, panels); exempt from margin/gutter.
 DEFAULT_DECORATIVE_TYPES = ("image", "shape", "basicShape")
 

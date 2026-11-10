@@ -7,7 +7,7 @@ Copies the project to <dest> and makes it a git repo with two commits:
 
 1. "baseline": the untouched copy.
 2. "blueprint": annotations added at report, page and visual level, a per-report
-   .blueprint.yaml (grid 16, max_resize 0.25), and `bp fmt` applied.
+   .blueprint.yaml (spacing.grid 16, extensions.max_resize 0.25), and `bp fmt` applied.
 
 Then open <dest>/*.pbip in Power BI Desktop, follow the steps the script prints, and
 inspect `git status` / `git diff` to see exactly what Desktop changed.
@@ -39,7 +39,7 @@ TARGETS = {
     # New Stores line chart: the user moves it in Desktop -> Desktop rewrites this file.
     "pages/ReportSection4/visuals/VisualContainer1/visual.json": [(PROBE, "edited-in-desktop")],
 }
-BLUEPRINT_YAML = "grid:\n  size: 16\n  max_resize: 0.25\n"
+BLUEPRINT_YAML = "spacing:\n  grid: 16\nextensions:\n  max_resize: 0.25\n"
 
 
 def git(dest: Path, *args: str) -> None:

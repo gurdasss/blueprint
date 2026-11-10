@@ -25,6 +25,9 @@ BLUEPRINT_UPDATE_GOLDEN=1 pytest tests/test_apply_golden.py   # regenerate apply
 bash scripts/demo.sh                              # end-to-end demo in /tmp/bp-demo (DEMO=/mnt/c/... to open it in Desktop)
 bp manifest --report <report> [--dry-run]                   # rebuild <Name>.Report/.blueprint.manifest.json
 python scripts/vendor_schemas.py <$schema URL>    # vendor a schema + its $refs into blueprint/pbir/schemas/
+rm -rf build && python -m build --wheel          # always clean build/ first: setuptools never removes a
+                                                  # file from build/lib, so a stale one ships (it shipped
+                                                  # the archived visual contracts as core); a test guards it
 ```
 
 ## Architecture

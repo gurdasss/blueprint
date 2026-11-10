@@ -37,7 +37,7 @@ coordinates. The engine connects them.
 
 ### What the engine computes
 
-Given guidelines `canvas: 1280×720, grid: 8, margin: 16, gutter: 16` and
+Given guidelines `canvas: 1280×720` and `spacing: {grid: 8, margin: 16, gutter: 16}`, and
 layout `rows: [{header, 64}, {kpi-row, 160, columns: 2}, {main, columns: 2}]`:
 
 ```

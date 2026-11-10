@@ -413,20 +413,43 @@ for those.
 `BLUEPRINT_UPDATE_GOLDEN=1` unless it deliberately changes what `apply`
 writes (steps 5 and 6 will; nothing before them does).
 
-### Step 8: Update remaining tests and golden output
+### Step 8 (done): test sweep
 
-**What:** Final test sweep. Regenerate all golden output. Ensure full
-test suite passes.
+**What it turned out to be.** The plan expected this step to regenerate golden output and fix
+fixtures still on the old schema. Neither was needed: each step fixed its own tests as it
+landed, and **golden output is byte-identical to `main` across the whole branch**
+(`git diff main -- tests/golden` is empty). So the sweep became a hunt for the drift this branch
+kept producing — a key renamed in code but not in the file a client copies — plus the checks
+that make that drift fail loudly in future.
 
-**Changes:**
-- `BLUEPRINT_UPDATE_GOLDEN=1 pytest tests/test_apply_golden.py`
-- Fix any test fixtures still using old guideline/layout format
-- Update probe replay fixtures
-- Run `ruff check .`
+**Found and fixed:**
+- `bp fmt` warned `96% > grid.max_resize 25%`, naming a key the loader refuses. Now
+  `extensions.max_resize`.
+- `scripts/probe_annotations.py` wrote a `.blueprint.yaml` of `grid: {size: 16, max_resize: …}`,
+  so re-running probe 01 would have failed at guidelines load.
+- `template/interactions.md` described guidelines as `grid: 8, margin: 16, gutter: 16`.
+- **A packaging hazard, found by building a wheel rather than trusting the globs:** setuptools
+  copies into `build/lib` and never removes anything, so a wheel built in a tree with a stale
+  `build/` shipped the eight archived contracts as `blueprint/visuals/*.yaml`. A pip-installed
+  client would have seen 15 core types and no archive. A clean build is correct (7 + 8), the
+  hazard is documented next to the build command, and a test fails on a stale `build/lib`.
 
-**Tests:** Full suite must pass. `scripts/demo.sh` must produce the same report.
+**New: `tests/test_consistency.py`**, pinning the claims the shipped files make:
+- no file in `guidelines/`, `template/` or `examples/` uses a retired key (parametrised per file)
+- every `extensions.*` key the core reads is documented in **both** `defaults.yaml` and the
+  guidelines template, and every key those files show actually loads (`guidelines.EXTENSION_KEYS`
+  is now the single source)
+- the core contract set matches `slots.CORE_TYPES` and the files on disk
+- every `*.yaml` under `blueprint/` matches a `package-data` glob (globs don't recurse)
+- no string literal in `blueprint/` names a retired key (checked over the AST, so attribute
+  access like `rules.check.severity` doesn't false-positive)
+- every rule id has a severity and vice versa (ids are a CI contract)
+- the README's command lines only use flags that exist
+- nothing stale lingers in `build/lib`
 
-**Risk:** Low. This is cleanup — no logic changes.
+**Verified green:** 633 passed, `ruff` clean, `bp check` exit 0 on both real samples,
+`scripts/demo.sh` clean and idempotent, demo output byte-identical to a pre-branch run apart
+from its opt-in lines, and a clean wheel ships 7 core + 8 archived contracts.
 
 ---
 
@@ -470,4 +493,4 @@ landed together.
 - [~] Step 5: One way to say more about a field — decided; code waits on probe 29
 - [ ] Step 6: Wire into render (after probe 29)
 - [x] Step 7: Shipped layouts and examples (layouts already conform)
-- [ ] Step 8: Final test sweep
+- [x] Step 8: Test sweep + consistency checks

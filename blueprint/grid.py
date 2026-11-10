@@ -135,7 +135,7 @@ def _snap_page(page: Page, grid: int, max_resize: float | None, result: SnapResu
         if max_resize is not None and ratio > max_resize:
             result.warnings.append(
                 f"{page.display_name} / {v.name}: skipped (snapping would resize it "
-                f"{_size(v.rect)} -> {_size(new)}, {ratio:.0%} > grid.max_resize {max_resize:.0%})"
+                f"{_size(v.rect)} -> {_size(new)}, {ratio:.0%} > extensions.max_resize {max_resize:.0%})"
             )
             continue
         if new != v.rect:
