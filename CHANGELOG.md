@@ -47,6 +47,8 @@ guidelines schema changed, and the old keys are refused with the replacement nam
 - `legend: off` on `column`, `bar` and `line` (`legend.show = false`). One option is one state:
   choosing it removes `position`, and choosing a position removes `show`.
 - `totals: on|off` on `table` (`total.totals`; Desktop's default is on).
+- Desktop accepts what `bp apply` writes for all of these, and keeps it through a refresh and save
+  (probe 33, which also showed `legend: off` -> `top` on re-apply leaves the legend visible).
 
 ### Under the hood
 

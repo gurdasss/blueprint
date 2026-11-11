@@ -57,9 +57,9 @@ VISUALS = ("--visuals", str(ARCHIVE))
 def _rules(path=GUIDE):
     """``path`` loaded with the archived visual types opted in."""
     return guidelines.load(path, visuals=[ARCHIVE])
-REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30, 31, 32]
+REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30, 31, 32, 33]
 # Probes whose report Blueprint built and Desktop then opened and saved.
-ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24, 26, 27, 28, 30, 31, 32]
+ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24, 26, 27, 28, 30, 31, 32, 33]
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git to apply the evidence")
 
@@ -341,6 +341,7 @@ def _pinned_guide(tmp_path: Path) -> Path:
     (21, ["specs/slicer-matrix.yaml"]),
     (24, ["specs/saved-variants-1.yaml", "specs/saved-variants-2.yaml"]),
     (26, ["specs/slicer-matrix.yaml"]),
+    (33, ["specs/legend-binding.yaml", "specs/legend-show.yaml", "specs/table-totals.yaml"]),
 ])
 def test_reapply_after_desktop_saved_changes_nothing(replays, probe, specs, tmp_path, capsys):
     """Nothing but the manifest: Desktop's save can raise files' $schema versions, which the
@@ -762,3 +763,36 @@ def test_21_rebinding_after_desktops_save(replays, tmp_path, capsys):
     assert [f for f in found if f.rule == "format"] == []
     capsys.readouterr()
     assert main(args) == 0 and capsys.readouterr().out.startswith("No changes.")
+
+
+# --- probe 33: Desktop keeps the legend column, legend off and totals bp apply wrote ------------
+
+
+def _data_visuals_by_spec_id(step: Step) -> dict[str, dict]:
+    out = {}
+    for doc in _visual_docs(step.report):
+        sid = next((a["value"] for a in doc.get("annotations", []) if a.get("name") == "blueprint.visual"), None)
+        if sid and doc.get("visual", {}).get("query"):  # the data visuals (headers repeat "header-1")
+            out[sid] = doc
+    return out
+
+
+def _series(visual: dict) -> dict | None:
+    return visual.get("query", {}).get("queryState", {}).get("Series")
+
+
+def test_33_desktop_keeps_the_legend_column_legend_off_and_totals(replays):
+    """probe 33: Desktop's save changed no Series, `legend` or `total` of what Blueprint wrote. (It
+    flips a drill-down's second level to `active: false`, which is view state, and raises $schema
+    and adds auto filters, so those are compared away.)"""
+    built, saved = (_data_visuals_by_spec_id(replays[33][i]) for i in (1, 2))  # after apply, after Desktop's save
+    assert set(built) == set(saved) and len(built) == 15
+    for sid, doc in built.items():
+        before, after = doc["visual"], saved[sid]["visual"]
+        assert after.get("objects") == before.get("objects"), sid
+        assert _series(after) == _series(before), sid
+    # the pieces that matter, as Blueprint wrote them and Desktop kept them
+    assert "Series" in saved["lb-col"]["visual"]["query"]["queryState"]
+    assert "active" not in saved["lb-col"]["visual"]["query"]["queryState"]["Series"]["projections"][0]
+    assert set(saved["ls-col-off"]["visual"]["objects"]["legend"][0]["properties"]) == {"show"}
+    assert saved["tt-off"]["visual"]["objects"]["total"][0]["properties"]["totals"]["expr"]["Literal"]["Value"] == "false"

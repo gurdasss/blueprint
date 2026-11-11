@@ -560,6 +560,26 @@ content, so Blueprint's theme file matches Desktop's format exactly.
   well's menu set every level `active` (expand) and **did not switch to the plain column**.
   Probe 14 settled how Blueprint binds a date: `Table[Column]` as a plain `Column`, which Desktop draws
   and keeps as written.
+**Verified 2026-11-11, probe 33** (`scripts/probe_apply_legend_totals.py`; evidence
+`docs/probes/33-apply-legend-totals.diff`, the demo's model on fixture 02). The acceptance probe
+for probe 32's shapes: **everything was written by `bp apply`**, nothing patched by hand, then
+drawn, refreshed and saved by Desktop (predictions A1-A4 are in the script).
+
+- **Desktop draws and keeps what Blueprint wrote.** A Legend `Series` on a clustered column and bar
+  (alone, beside a drill-down, with `legend: bottom`/`right`), `legend: off` (`show: false`) on a
+  column, a bar and a line, `legend: top`, and a table's `totals: "off"`/`"on"` all drew as in probe
+  32, with no error. The save changed no `Series`, `objects.legend` or `objects.total`
+  (`tests/test_probe_replay.py::test_33_desktop_keeps_the_legend_column_legend_off_and_totals`).
+- **What the save did change:** 11 of the 15 data visuals had `$schema` raised 2.13.0 -> 2.14.0 and
+  gained condition-less auto `filterConfig` entries (Categorical for a column, Advanced for a
+  measure); 4 were untouched (`lb-col`, `lb-bar`, `tt-off`, `tt-on`; the reason is not known).
+  On the bar drill-down it flipped the second Category level `active` true -> false: that is drill
+  view state (probe 11), and the reader ignores it.
+- **Re-applying the same specs on the saved report changed nothing**, not even the manifest.
+- **`legend: off` -> `legend: top` on re-apply** rewrote only that visual (`show: false` removed,
+  `position: 'Top'` written) and Desktop, reloaded through the bridge, drew its legend on top. A
+  capture taken right after a reload can be blank (a mid-reload frame); the next one drew every chart.
+
 **Verified 2026-11-11, probe 32** (`scripts/probe_legend_totals.py`; evidence
 `docs/probes/32-legend-totals.diff`, the demo's model on fixture 02). Candidates written by hand
 after `bp apply` built verified shapes, drawn by Desktop, then kept through a real refresh and save
