@@ -199,6 +199,18 @@ Then open the report in Power BI Desktop and look at it.
 `--dry-run` is available on every mutating command and prints the planned file writes
 without performing them. `inspect`, `check` and `describe` take `--json`; `check` also takes `--github`.
 
+Every command that reads guidelines takes **`--set KEY=VALUE`** (layer 4), repeatable: the key is
+a dotted path into the guidelines file and the value is read as YAML, so types survive.
+
+```bash
+bp check --report ./Sales.Report --set spacing.grid=4 --set page.max_visuals=8
+bp fmt   --report ./Sales.Report --set spacing.grid=16
+```
+
+A key outside the core is refused there as in a file, naming the closest real one
+(`--set spacing.margn=4` → `did you mean margin?`). `--grid` was the earlier, single-key form of
+this and now names its replacement.
+
 **For agents writing specs:** run `bp describe --report <report> --json` first. It's the whole
 vocabulary in one call: which types, slots, layouts and fields exist, written the way a spec uses
 them. `bp apply` reports every problem with its location (`visuals[2].slots.value: …`), and
@@ -482,7 +494,7 @@ Resolution order, later overriding earlier:
 1. built-in defaults          blueprint/defaults.yaml       (ships with the tool)
 2. organisation guidelines    guidelines/<name>.yaml         (yours, usually private)
 3. per-report overrides       <report>/.blueprint.yaml       (committed with the report)
-4. command-line flags         --grid 8
+4. command-line flags         --set spacing.grid=8
 ```
 
 ```yaml

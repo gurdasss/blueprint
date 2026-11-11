@@ -165,7 +165,7 @@ def test_exit_codes_and_read_only(tmp_path: Path, capsys):
     before = _snapshot(messy)
     assert main(["check", "--report", str(messy)]) == 0          # overlap is only a warning
     assert main(["check", "--report", str(messy), "--strict"]) == 1
-    assert main(["check", "--report", str(messy), "--grid", "3"]) == 1  # now off-grid: error
+    assert main(["check", "--report", str(messy), "--set", "spacing.grid=3"]) == 1  # now off-grid: error
     assert _snapshot(messy) == before
     assert main(["check", "--report", str(tmp_path / "nope")]) == 2
     capsys.readouterr()
@@ -208,9 +208,9 @@ def test_fmt_then_check_leaves_only_fmt_skipped_grid_findings(real_report: Path,
     copy = tmp_path / real_report.name
     shutil.copytree(real_report, copy)
     for g in ("8", "16", "32"):
-        assert main(["fmt", "--report", str(copy), "--grid", g]) == 0
+        assert main(["fmt", "--report", str(copy), "--set", f"spacing.grid={g}"]) == 0
         capsys.readouterr()
-        main(["check", "--report", str(copy), "--grid", g, "--json"])
+        main(["check", "--report", str(copy), "--set", f"spacing.grid={g}", "--json"])
         out = json.loads(capsys.readouterr().out)
         grid_findings = [f for f in out["findings"] if f["rule"] == "grid"]
         assert all("bp fmt skips it" in f["message"] for f in grid_findings), (g, grid_findings)

@@ -201,7 +201,7 @@ the commands read `rules.grid.size` / `rules.canvas.margin` / `rules.canvas.gutt
 directly, so the schema and its consumers have to move together. A first attempt that
 kept backward-compatible shims (`_GridCompat`, `_CanvasCompat`) also broke layering:
 `defaults.yaml` sets `spacing.*`, so a higher layer's old `grid.size` (including
-`--grid`) could never win.
+`--set spacing.grid=…`) could never win.
 
 **Changes:**
 - `Spacing(grid, margin, gutter)` replaces `grid.size`, `canvas.margin`, `canvas.gutter`
@@ -213,7 +213,7 @@ kept backward-compatible shims (`_GridCompat`, `_CanvasCompat`) also broke layer
 - Pre-template keys are **refused with their replacement named** (`guidelines.RETIRED`,
   checked per layer so the offending file is named), never ignored — ignoring `grid.size`
   would silently leave the grid at 8 ("refuse rather than surprise")
-- Consumers read `rules.spacing.*` / `rules.max_resize`; `--grid` overrides `spacing.grid`;
+- Consumers read `rules.spacing.*` / `rules.max_resize`; `--set` overrides any core key;
   the `gutter` finding now says `spacing.gutter is Npx`
 - `bp describe --json` reports `spacing: {grid, margin, gutter}` and `canvas: {width, height}`
 - Findings and theme notes name the client's key (`visual_title size 18pt…`,

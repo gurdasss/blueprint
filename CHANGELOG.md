@@ -10,6 +10,11 @@ code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, eviden
   load with the default margin, so the file said one thing and `bp check` did another. Unknown
   keys and sub-keys are now an error naming the closest real key (`did you mean margin?`).
   `extensions:` stays open, so an extension's own keys still pass through untouched.
+- **Layer 4 covers the whole guidelines file.** `--set KEY=VALUE` (repeatable, value read as
+  YAML) on every command that reads guidelines — `check`, `fmt`, `apply`, `describe`, `manifest`,
+  `theme` — instead of `--grid` on two of them. `--grid` is refused by name, with `--set
+  spacing.grid=N` given as its replacement. `fmt` and `apply` now pass the same overrides to the
+  manifest they rebuild afterwards, which silently used the un-overridden guidelines.
 - Which query well carries Desktop's `"active"` flag is declared by each visual contract
   (`active: true` on the slot) instead of a table of visual-type names in core code. No output
   changes; a custom visual can now declare it without a code change.

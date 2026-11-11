@@ -137,7 +137,7 @@ def test_fmt_keeps_an_existing_manifest_current_but_never_creates_one(report: Pa
     assert _run("fmt", "--report", str(report)) == 0
     assert not (report / manifest.FILE).exists()
     _run("manifest", "--report", str(report))
-    _run("fmt", "--report", str(report), "--grid", "16")
+    _run("fmt", "--report", str(report), "--set", "spacing.grid=16")
     capsys.readouterr()
     _run("check", "--report", str(report), "--json")
     assert not any("out of date" in n for n in json.loads(capsys.readouterr().out)["notes"])

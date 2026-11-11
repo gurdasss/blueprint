@@ -263,3 +263,23 @@ def test_the_client_template_shows_every_core_guideline_key():
     defaults = set(flat(yaml.safe_load((ROOT / "blueprint" / "defaults.yaml").read_text(
         encoding="utf-8"))))
     assert defaults - template == set(), f"core keys missing from the client template: {sorted(defaults - template)}"
+
+
+def test_every_command_that_loads_guidelines_takes_the_same_layer_4_flag():
+    """Layer 4 of the documented layering used to be `--grid` on `check` and `fmt` only. A
+    command that reads guidelines but can't be overridden makes the layering a half-truth."""
+    sub = {name: p for action in build_parser()._subparsers._group_actions
+           for name, p in getattr(action, "choices", {}).items()}
+    flags = {name: {o for a in p._actions for o in a.option_strings} for name, p in sub.items()}
+    takes_guidelines = {name for name, f in flags.items() if "--guidelines" in f}
+    assert takes_guidelines == {"check", "describe", "apply", "manifest", "theme", "fmt"}
+    assert {name for name, f in flags.items() if "--set" in f} == takes_guidelines
+    assert [name for name, f in flags.items() if "--grid" in f and name not in takes_guidelines] == []
+
+
+def test_the_retired_grid_flag_names_its_replacement(tmp_path, capsys):
+    """Refused by name, like a retired guidelines key: argparse alone would say
+    "unrecognized arguments", which doesn't say what to write instead."""
+    from blueprint.cli import main
+    assert main(["check", "--report", str(tmp_path), "--grid", "8"]) == 2
+    assert "--grid was replaced by --set spacing.grid=8" in capsys.readouterr().err

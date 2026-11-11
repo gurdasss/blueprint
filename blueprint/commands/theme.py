@@ -21,7 +21,7 @@ from blueprint.plan import Plan
 
 def build_plan(args: argparse.Namespace) -> Plan:
     report = read_report(args.report)
-    rules = guidelines.load(args.guidelines, report.root)
+    rules = guidelines.load(args.guidelines, report.root, guidelines.overrides_from(getattr(args, "overrides", None)))
     doc, notes = theme.build(rules)
     report_doc = report.source.documents.get(Path("definition/report.json"))
     if report_doc is None:

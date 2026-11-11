@@ -223,6 +223,42 @@ def load(
                   tuple(Path(d).resolve() for d in visuals))
 
 
+def overrides_from(settings: Sequence[str] | None) -> dict[str, Any] | None:
+    """Layer 4 (``--set KEY=VALUE``, repeatable) as a guidelines layer.
+
+    One flag for the whole core file, so the layering is real for every key instead of the one
+    (``--grid``) that happened to have a flag. The key is a dotted path into the file
+    (``spacing.grid``, ``typography.body.font``, ``extensions.severity.grid``) and the loader
+    refuses a path outside the core, naming the closest real key."""
+    if not settings:
+        return None
+    out: dict[str, Any] = {}
+    for setting in settings:
+        key, sep, text = setting.partition("=")
+        if not sep:
+            raise GuidelinesError(f"--set {setting}: expected KEY=VALUE, e.g. --set spacing.grid=8")
+        parts = key.strip().split(".")
+        if not all(parts) or not key.strip():
+            raise GuidelinesError(f"--set {setting}: {key.strip()!r} is not a guidelines key "
+                                  "(a dotted path, e.g. spacing.grid or typography.body.font)")
+        nested: dict[str, Any] = {parts[-1]: _setting_value(text, setting)}
+        for part in reversed(parts[:-1]):
+            nested = {part: nested}
+        out = merge(out, nested)
+    return out
+
+
+def _setting_value(text: str, setting: str) -> Any:
+    """``--set``'s value, read as YAML so a number, a boolean, null and a list all work."""
+    try:
+        value = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        raise GuidelinesError(f"--set {setting}: {exc}") from exc
+    # YAML reads a leading # as a comment, and a colour is the one core value that starts with
+    # one: `--set palette.text=#333333` means the string, not nothing.
+    return text if value is None and text.strip() not in ("null", "~", "") else value
+
+
 # Keys of the pre-template schema -> what replaces them. Refused per layer, so the file that
 # still carries one is named.
 RETIRED: tuple[tuple[str, str], ...] = (

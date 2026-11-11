@@ -202,3 +202,47 @@ def test_core_keys_lists_exactly_what_defaults_yaml_ships():
         assert section in guidelines.CORE_KEYS, f"defaults.yaml ships {section}, CORE_KEYS doesn't"
         if isinstance(value, dict):
             assert set(value) <= set(guidelines.CORE_KEYS[section]), section
+
+
+# --- layer 4: one flag for the whole core file ----------------------------------------------
+
+
+def test_set_reads_each_value_as_yaml():
+    """`--grid` was the only key with a flag, so the documented fourth layer existed for one key
+    on two commands. `--set KEY=VALUE` is the whole file: the key is a dotted path and the value
+    keeps its type, including a hex colour, which YAML alone would read as a comment."""
+    assert guidelines.overrides_from([
+        "spacing.grid=8", "page.require_title=true", "page.max_visuals=null",
+        "palette.text=#333333", 'palette.categorical=["#4E79A7", "#F28E2B"]',
+        "typography.body.font=Segoe UI Light", "extensions.severity.grid=warning",
+    ]) == {
+        "spacing": {"grid": 8},
+        "page": {"require_title": True, "max_visuals": None},
+        "palette": {"text": "#333333", "categorical": ["#4E79A7", "#F28E2B"]},
+        "typography": {"body": {"font": "Segoe UI Light"}},
+        "extensions": {"severity": {"grid": "warning"}},
+    }
+
+
+def test_set_merges_rather_than_replaces_a_section():
+    assert guidelines.overrides_from(["spacing.grid=8", "spacing.margin=16"]) == {
+        "spacing": {"grid": 8, "margin": 16}}
+
+
+def test_no_settings_is_no_layer():
+    assert guidelines.overrides_from(None) is None and guidelines.overrides_from([]) is None
+
+
+@pytest.mark.parametrize("setting", ["spacing.grid", "=8", "spacing..grid=8", " =8"])
+def test_a_malformed_setting_is_refused(setting):
+    with pytest.raises(guidelines.GuidelinesError, match="--set"):
+        guidelines.overrides_from([setting])
+
+
+def test_set_is_the_highest_layer_and_is_checked_like_a_file(tmp_path):
+    """It outranks the guidelines file, and a key outside the core is refused there too — the
+    layer is named 'command line' so the message says where the bad key came from."""
+    path = _write(tmp_path, "spacing: {grid: 8, margin: 16}")
+    assert guidelines.load(path, overrides=guidelines.overrides_from(["spacing.grid=4"])).spacing.grid == 4
+    with pytest.raises(guidelines.GuidelinesError, match="command line: unknown key spacing.margn"):
+        guidelines.load(path, overrides=guidelines.overrides_from(["spacing.margn=4"]))
