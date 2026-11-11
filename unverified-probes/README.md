@@ -28,9 +28,11 @@ that has to be written before Desktop is at hand:
 | `scatter-map-options/` | **probe 38** (`scripts/probe_scatter_map_options.py`, `docs/probes/38-scatter-map-options.diff`) | `scatter` and `map` take `legend`; Desktop **deletes** a `labels` object from both. Their default legend is at the **bottom**, so the default position is per type. P3 failed. |
 | `hierarchy-matrix-slicer/` | **probe 39** (`scripts/probe_hierarchy_matrix_slicer.py`, `docs/probes/39-hierarchy-matrix-slicer.diff`) | Desktop writes a hierarchy in a matrix's Rows with the first level active and the deeper one an explicit `"active": false`, and in a slicer's Field with every level active — and it accepts Blueprint's own shape in both, unchanged. |
 
-The contracts are **not** changed by any of them: each is the candidate half, and the second half
-is an acceptance probe built entirely by `bp apply` (as 33 followed 32). Until that is decided,
-`matrix` and `slicer` still refuse a hierarchy and the four chart types still take no options.
+Each was the candidate half; **probe 40** (`scripts/probe_accept_options_hierarchy.py`,
+`docs/probes/40-accept-options-hierarchy.diff`) is the acceptance half that followed, built
+entirely by `bp apply`, the way 33 followed 32. The contracts carry all of it now: `labels` and
+`legend` on pie and donut, `legend` on scatter and map, and a hierarchy in `matrix.rows` and
+`slicer.field`.
 
 ## Running one, when you are at a Windows machine with Desktop
 
@@ -39,7 +41,7 @@ Same as any probe in `scripts/` (CLAUDE.md, "Test data"):
 ```bash
 # from the repo, with the venv active
 python unverified-probes/<topic>/probe.py \
-    /mnt/c/Users/<user>/blueprint-probes/40-<topic> \
+    /mnt/c/Users/<user>/blueprint-probes/41-<topic> \
     /mnt/c/Users/<user>/blueprint-probes/_cache/demo-cache.abf
 ```
 
@@ -48,7 +50,7 @@ without a refresh; `scripts/demo.sh` documents which one. Then open the `.pbip`,
 probe's `STEPS.md`, and `bash snap.sh "<step>"` after each save.
 
 Numbering: each script has `PROBE = "NN"` at the top — set it to the next free probe number
-(40 after probe 39 ran) before you run it, so `STEPS.md` names the right folder.
+(41 after probe 40 ran) before you run it, so `STEPS.md` names the right folder.
 
 ## When a probe has run
 

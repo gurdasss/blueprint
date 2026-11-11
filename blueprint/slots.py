@@ -157,6 +157,10 @@ def _contract(data: dict, where: str, stem: str) -> Contract:
             levels = str(spec.get("active_levels", "first"))
             if levels not in ("first", "all"):
                 raise ContractError(f"{where}: slot {name}: active_levels must be first or all")
+            if levels == "all" and not spec.get("active", False):
+                # It only says how many levels an *active* well marks, so on its own it is a typo,
+                # not a setting: refuse it rather than ignore it (README, "Refuse rather than surprise").
+                raise ContractError(f"{where}: slot {name}: active_levels needs active: true")
             slots[name] = Slot(name, spec["role"], accepts, bool(spec.get("required", False)),
                                bool(spec.get("ordered", False)), tuple(spec.get("list_excludes", ())),
                                bool(spec.get("active", False)), levels)

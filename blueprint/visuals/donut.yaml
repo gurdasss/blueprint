@@ -15,6 +15,6 @@ options:
   labels: { object: labels, property: show, values: { "on": "true", "off": "false" } }
   # Probe 37: `legend.position = 'Top'` moved the legend above the chart and `show = false` left
   # none. Their default sits at the RIGHT (not the theme's bottom, probe 35), so 'Right' is
-  # indistinguishable from it; 'Bottom' and 'Left' are the same property's other literals, as on
-  # every other chart type (probes 23, 28, 32, 35). Probe 40 is the acceptance half.
+  # indistinguishable from it. Probe 40 then drew all four positions and `off` on both types from
+  # a spec, 'Bottom' and 'Left' included, and Desktop's save kept every one.
   legend: { object: legend, property: position, values: { top: "'Top'", bottom: "'Bottom'", left: "'Left'", right: "'Right'", "off": { property: show, literal: "false" } } }

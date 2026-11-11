@@ -424,3 +424,31 @@ def test_a_visuals_directory_that_does_not_exist_is_refused_by_either_route(tmp_
 
     assert main(["describe", "--guidelines", str(GUIDE), "--visuals", str(gone)]) == 2
     assert "is not a directory" in capsys.readouterr().err
+
+
+def test_active_levels_is_refused_unless_it_is_first_or_all(tmp_path: Path):
+    extra = _dir(tmp_path, odd="type: odd\nvisual_type: oddChart\nregion: main\nslots:\n"
+                               "  field: { role: Values, accepts: column, active: true, active_levels: deepest }\n")
+    with pytest.raises(ContractError, match="active_levels must be first or all"):
+        contracts(extra)
+
+
+def test_active_levels_all_needs_an_active_slot(tmp_path: Path):
+    """On a well Desktop doesn't mark at all it says nothing, so it is a typo, not a setting."""
+    extra = _dir(tmp_path, odd="type: odd\nvisual_type: oddChart\nregion: main\nslots:\n"
+                               "  field: { role: Values, accepts: column, active_levels: all }\n")
+    with pytest.raises(ContractError, match="active_levels needs active: true"):
+        contracts(extra)
+
+
+def test_the_two_hierarchy_wells_say_how_many_levels_they_mark():
+    """Probes 39 and 40: a matrix's Rows marks the first level, a slicer's Field every level."""
+    c = contracts()
+    assert c["matrix"].slots["rows"].active_levels == "first"
+    assert c["matrix"].all_level_roles == frozenset()
+    assert c["slicer"].slots["field"].active_levels == "all"
+    assert c["slicer"].all_level_roles == frozenset({"Values"})
+    assert "hierarchy" in c["matrix"].slots["rows"].accepts
+    assert "hierarchy" in c["slicer"].slots["field"].accepts
+    # probe 39 never put a hierarchy in a matrix's Columns, so it still refuses one
+    assert "hierarchy" not in c["matrix"].slots["columns"].accepts

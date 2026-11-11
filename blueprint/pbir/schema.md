@@ -582,6 +582,12 @@ this says Desktop takes what Blueprint writes. All seven predictions held.
   additions appeared: `"active": true` on each scatter's `X` (probes 34, 36, 38), the matrix's
   `Region` flipped active with `expansionStates` where the user expanded it, the `$schema` bump
   on the files it rewrote, and `pages.json` `activePageName`.
+- **A hierarchy slicer draws expanded with nothing saved for it.** The user expanded the matrix
+  here and **not** the slicer, yet the slicer rendered `FR` and `UK` open to their regions and
+  the file carries no `expansionStates` — so what Blueprint writes (`active_levels: all`) is
+  already the expanded state, and the expanders in probe 39's capture of the candidate slicer
+  need no saved state behind them either. A matrix is the opposite: its deeper level stays
+  `false` until someone expands it, which is then recorded.
 - **`bp check` reports no `format` findings**, and **re-applying the same specs over Desktop's
   save changed nothing at all** — not even the manifest, so the bindings fingerprint survives
   Desktop's flags and expansion state.
@@ -620,7 +626,8 @@ landed in one save, so the evidence has one Desktop step. Predictions P1-P7 are 
 - **`expansionStates` is written at `visual.expansionStates`, not under `query`.** Desktop's own
   slicer gained one when the user expanded a node (P3's second half held); its own matrix, never
   expanded, has none and kept `Region` inactive; the candidate matrix gained one when expanded.
-  The candidate slicer has none, so its expanders in the capture are live state, not saved state.
+  The candidate slicer has none — probe 40 then showed why: a hierarchy slicer Blueprint writes
+  draws **expanded** with nothing saved for it.
 - **Both drew.** The matrix shows `FR`/`UK` with expanders (FR -> East 150, West 50; total 500);
   the slicer shows `Country, Region` with `FR` and `UK` expanding to their regions.
 - Otherwise only what any save changes: `$schema` 2.13.0 -> 2.14.0 on the files it rewrote and

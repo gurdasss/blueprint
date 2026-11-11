@@ -3,7 +3,8 @@
 # `Values`. Row and column fields are columns ("active": true); values are measures, in well order.
 # Probe 39: a hierarchy built in the model binds its levels in Rows, the first level active and
 # each deeper one an explicit "active": false — which is what `render` already writes. Desktop
-# drew Blueprint's own shape there and kept it. Columns is unprobed, so it still takes columns.
+# drew Blueprint's own shape there and kept it, and probe 40 built one from a spec. Columns is
+# unprobed, so it still takes columns only.
 type: matrix
 visual_type: pivotTable
 region: main

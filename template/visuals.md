@@ -58,6 +58,8 @@ slots:
     accepts: [column, hierarchy]      # what field types are valid
     required: true
     ordered: true                     # list = drill-down path
+    active: true                      # Desktop marks this well's columns "active"
+    active_levels: first              # of a hierarchy: first (default) or all (a slicer's Field)
   value:
     role: Y
     accepts: measure

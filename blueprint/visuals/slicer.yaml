@@ -3,7 +3,7 @@
 # there are an ordered list (a hierarchy slicer: Country, expandable to Region), each projection
 # "active": true. Probe 39: a hierarchy built in the model binds its levels in the Field with
 # EVERY level "active": true (`active_levels: all`), which is how Desktop wrote its own; it drew
-# Blueprint's shape and kept it through a save.
+# Blueprint's shape and kept it through a save; probe 40 built one from a spec.
 type: slicer
 visual_type: slicer
 region: main
