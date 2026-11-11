@@ -95,23 +95,16 @@ class Binding:
         return p
 
 
-# Roles whose column projections Desktop marks "active": every chart's Category (probes 04, 08, 12),
-# the slicer's Values and the matrix's Rows and Columns (probe 20). It depends on the visual type:
-# a table's Values (probe 08) and a KPI's TrendLine columns don't carry it.
-ACTIVE_ROLES = frozenset({"Category"})
-ACTIVE_BY_TYPE = {"slicer": frozenset({"Values"}), "pivotTable": frozenset({"Rows", "Columns"})}
+def _projections(role: str, fields: list[Binding], active_roles: frozenset[str]) -> list[dict]:
+    """Projections for one role. In an active role every column is "active": true, as in Desktop's
+    own drill-down (fixture 02), and a hierarchy's levels are active only on its first level, as
+    Desktop created them (probe 16; the rest is drill view state).
 
-
-def _active(visual_type: str, role: str) -> bool:
-    return role in ACTIVE_ROLES or role in ACTIVE_BY_TYPE.get(visual_type, frozenset())
-
-
-def _projections(role: str, fields: list[Binding], visual_type: str = "") -> list[dict]:
-    """Projections for one role. In an active role (_active) every column is "active": true, as in
-    Desktop's own drill-down (fixture 02), and a hierarchy's levels are active only on its first
-    level, as Desktop created them (probe 16; the rest is drill view state)."""
+    ``active_roles`` comes from the visual's contract (``slots.Contract.active_roles``), because
+    which well carries the flag is a fact about one visual type: Category on every chart, the
+    slicer's Values, the matrix's Rows and Columns, and nothing on a table or KPI."""
     out, seen = [], set()
-    marked = _active(visual_type, role)
+    marked = role in active_roles
     for b in fields:
         active = None
         if marked and b.kind == "column":
@@ -239,13 +232,15 @@ def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec
            bindings: dict[str, list[Binding]] | None = None, title: str | None = None,
            text: str | None = None, text_style: dict | None = None,
            options: list[tuple[str, str, str]] | None = None, bindings_mark: str | None = None,
-           sort: tuple[Binding, str] | None = None) -> dict:
+           sort: tuple[Binding, str] | None = None,
+           active_roles: frozenset[str] = frozenset()) -> dict:
     """A visual container. ``bindings``: query role -> ordered fields. ``text``: textbox content.
-    ``options``: (object, property, literal) formatting choices from the contract."""
+    ``options``: (object, property, literal) formatting choices from the contract.
+    ``active_roles``: the contract's ``active_roles`` (see ``_projections``)."""
     body: dict[str, Any] = {"visualType": visual_type}
     if bindings:
         # Desktop writes roles in alphabetical order (probe 10: Goal, Indicator, TrendLine).
-        body["query"] = {"queryState": {role: {"projections": _projections(role, fields, visual_type)}
+        body["query"] = {"queryState": {role: {"projections": _projections(role, fields, active_roles)}
                                         for role, fields in sorted(bindings.items())}}
         if sort is not None:
             body["query"]["sortDefinition"] = sort_definition(*sort)
@@ -269,7 +264,8 @@ def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec
     }
 
 
-def with_bindings(visual_doc: dict, visual_type: str, bindings: dict[str, list[Binding]]) -> dict:
+def with_bindings(visual_doc: dict, bindings: dict[str, list[Binding]],
+                  active_roles: frozenset[str] = frozenset()) -> dict:
     """``visual_doc`` with its query replaced by what a new visual with these bindings gets, and
     the state Desktop keeps about the old fields cleared, so the visual is as Blueprint would
     create it apart from what the user formatted:
@@ -284,7 +280,7 @@ def with_bindings(visual_doc: dict, visual_type: str, bindings: dict[str, list[B
 
     A new Blueprint visual has none of the dropped parts, and Desktop takes it (probes 05-24)."""
     body = dict(visual_doc.get("visual") or {})
-    state = {role: {"projections": _projections(role, fields, visual_type)}
+    state = {role: {"projections": _projections(role, fields, active_roles)}
              for role, fields in sorted(bindings.items())}
     bound = [p["field"] for entry in state.values() for p in entry["projections"]]
     refs = {p["queryRef"] for entry in state.values() for p in entry["projections"]}

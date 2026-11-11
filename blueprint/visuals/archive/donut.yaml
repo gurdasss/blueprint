@@ -5,6 +5,6 @@ type: donut
 visual_type: donutChart
 region: main
 slots:
-  category: { role: Category, accepts: column, required: true, ordered: true }   # "Legend"
+  category: { role: Category, accepts: column, required: true, ordered: true, active: true }   # "Legend"
   value:    { role: Y, accepts: measure, required: true }
   details:  { role: Series, accepts: column }                                    # "Details"

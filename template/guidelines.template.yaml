@@ -44,11 +44,15 @@ spacing:
 #   max_visuals     Upper bound on visuals per page.
 #   density_policy  How visuals are counted: all | visible | data
 #   require_title   Every spec page must have a `type: header` visual.
+#   title_region    The region role that header must sit in (null: any).
+#                   Hand-built pages are never checked: nothing marks
+#                   which textbox is their title.
 
 page:
   max_visuals: 8
   density_policy: data
   require_title: true
+  title_region: header
 
 
 # ── Palette ──────────────────────────────────────────────────────────
@@ -57,6 +61,8 @@ page:
 #   categorical   Ordered series colours for charts.
 #   background    Page / visual background colour.
 #   text          Default text colour.
+#   extra         Further approved colours (e.g. a shade picked from the
+#                 theme, which is stored as resolved hex). Optional.
 #   enforce       strict (error) | warn (warning) | off (skip check)
 
 palette:
@@ -68,6 +74,7 @@ palette:
     - "#59A14F"
   background: "#FFFFFF"
   text: "#333333"
+  extra: []
   enforce: strict
 
 

@@ -41,6 +41,12 @@ class Slot:
     required: bool = False
     ordered: bool = False  # an ordered list is allowed (e.g. a drill-down path)
     list_excludes: tuple[str, ...] = ()  # slots that must be empty when this one holds a list
+    # Desktop marks this slot's column projections `"active": true` (every chart's Category,
+    # probes 04/08/12; the slicer's Values and the matrix's Rows/Columns, probe 20). It is a fact
+    # about one well of one visual type, so it belongs in the type's contract: the core must not
+    # carry the shape of a type it doesn't ship, and a custom visual can declare it without a
+    # code change.
+    active: bool = False
 
 
 @dataclass(frozen=True)
@@ -73,6 +79,11 @@ class Contract:
     region: str
     slots: dict[str, Slot]
     options: dict[str, Option] = field(default_factory=dict)
+
+    @property
+    def active_roles(self) -> frozenset[str]:
+        """The query roles whose column projections carry ``"active": true`` (see ``Slot.active``)."""
+        return frozenset(s.role for s in self.slots.values() if s.active)
 
 
 def _read(path: Path) -> dict:
@@ -133,7 +144,8 @@ def _contract(data: dict, where: str, stem: str) -> Contract:
             if not accepts or any(a not in KINDS for a in accepts):
                 raise ContractError(f"{where}: slot {name}: accepts must be from {KINDS}")
             slots[name] = Slot(name, spec["role"], accepts, bool(spec.get("required", False)),
-                               bool(spec.get("ordered", False)), tuple(spec.get("list_excludes", ())))
+                               bool(spec.get("ordered", False)), tuple(spec.get("list_excludes", ())),
+                               bool(spec.get("active", False)))
         options = {}
         for name, spec in (data.get("options") or {}).items():
             if not all(isinstance(k, str) for k in spec["values"]):

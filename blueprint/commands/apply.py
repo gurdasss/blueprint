@@ -314,7 +314,7 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
                         f"{_bindings_text(_bound(want))}. Put the Desktop change in the spec, or pass "
                         "--overwrite-edits to replace it")
                     continue
-                current.source.data = render.with_bindings(current.source.data, contract.visual_type, want)
+                current.source.data = render.with_bindings(current.source.data, want, contract.active_roles)
                 if have != _bound(want):
                     current.notes.append(f"rebind {_bindings_text(have)} -> {_bindings_text(_bound(want))}")
                 else:
@@ -368,7 +368,7 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
                             options=[(contract.options[n].object, contract.options[n].prop(val),
                                       contract.options[n].values[val]) for n, val in vs.options.items()],
                             bindings_mark=render.bindings_fingerprint(_bound(want)) if want else None,
-                            sort=sorts.get(vs.id))
+                            sort=sorts.get(vs.id), active_roles=contract.active_roles)
         writer.add_create(plan, PAGES / pid / "visuals" / vid / "visual.json", doc,
                           f"new {vs.type} {vs.id!r} in region {p.region.key} at "
                           f"{rect.x},{rect.y} {rect.width}x{rect.height}")

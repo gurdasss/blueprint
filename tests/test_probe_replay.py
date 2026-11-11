@@ -244,7 +244,8 @@ def test_rendering_desktops_bindings_gives_desktops_query(replays):
         bindings = {role: [render.Binding(f.kind, f.table, f.name, f.level) for f in fs]
                     for role, fs in reversed(list(v.fields.items()))}
         ours = render.visual("x", v.visual_type, Rect(0, 0, 10, 10), 0, 0, "s", "r",
-                             bindings=bindings)["visual"]["query"]["queryState"]
+                             bindings=bindings,
+                             active_roles=contract.active_roles)["visual"]["query"]["queryState"]
         assert list(ours) == list(desktop), str(step)
         assert _without_active(ours) == _without_active(desktop), f"{step}: {v.visual_type}"
         checked += 1

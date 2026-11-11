@@ -208,3 +208,58 @@ def test_the_readme_quotes_flags_that_exist(subcommand: str):
     """Agents copy these command lines, and a flag renamed in cli.py has to fail here."""
     unknown = _readme_commands()[subcommand] - _flags_of(subcommand)
     assert unknown == set(), f"bp {subcommand}: README uses {sorted(unknown)}"
+
+
+def test_no_core_module_knows_an_archived_visual_type():
+    """The core 20%: a client who never opts into the archive must not be carrying its shapes.
+    `render.ACTIVE_BY_TYPE` used to map "slicer" and "pivotTable" (the archived slicer and matrix)
+    to the roles Desktop marks `active`, so core code held the shape of two types it doesn't ship
+    and a custom visual couldn't declare the same fact without a code change. It is a `Slot`
+    field now (`slots.Contract.active_roles`). Only the write path is covered: `pbir/reader.py`,
+    `formatting.py` and `validate.py` read *any* report, including visuals no contract describes,
+    so they legitimately name PBIR types."""
+    archived = {name: c.visual_type for name, c in contracts((ARCHIVE_DIR,)).items()
+                if name not in CORE_TYPES}
+    assert archived, "no archived contracts to check"
+    core_written = [ROOT / "blueprint" / "pbir" / "render.py", ROOT / "blueprint" / "slots.py",
+                    ROOT / "blueprint" / "spec.py", ROOT / "blueprint" / "layouts.py",
+                    ROOT / "blueprint" / "commands" / "apply.py"]
+    offenders = []
+    for path in core_written:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                for spec_type, pbir_type in archived.items():
+                    if node.value in (spec_type, pbir_type):
+                        offenders.append(f"{path.relative_to(ROOT)}:{node.lineno}: {node.value!r}")
+    assert offenders == [], f"archived visual types named in core code: {offenders}"
+
+
+def test_which_well_carries_active_is_declared_by_each_contract():
+    """Desktop marks a column projection `"active": true` in a chart's Category, the slicer's
+    Values and the matrix's Rows/Columns, and nowhere else (probes 04, 08, 12, 20). That is a
+    fact about one well of one type, so each contract declares it."""
+    c = contracts((ARCHIVE_DIR,))
+    assert {t: sorted(c[t].active_roles) for t in CORE_TYPES} == {
+        "bar": ["Category"], "card": [], "column": ["Category"], "header": [],
+        "kpi": [], "line": ["Category"], "table": []}
+    assert sorted(c["slicer"].active_roles) == ["Values"]
+    assert sorted(c["matrix"].active_roles) == ["Columns", "Rows"]
+
+
+def test_the_client_template_shows_every_core_guideline_key():
+    """`template/guidelines.template.yaml` is the annotated file a client starts from, so a core
+    key missing from it is a key nobody finds. (`page.title_region` and `palette.extra` were.)
+    Typography is the exception: `defaults.yaml` only comments the roles, because nothing is
+    checked until a client names a font."""
+    def flat(obj, prefix=""):
+        for key, value in (obj or {}).items():
+            if isinstance(value, dict):
+                yield from flat(value, f"{prefix}{key}.")
+            else:
+                yield f"{prefix}{key}"
+    template = set(flat(yaml.safe_load((ROOT / "template" / "guidelines.template.yaml").read_text(
+        encoding="utf-8"))))
+    defaults = set(flat(yaml.safe_load((ROOT / "blueprint" / "defaults.yaml").read_text(
+        encoding="utf-8"))))
+    assert defaults - template == set(), f"core keys missing from the client template: {sorted(defaults - template)}"

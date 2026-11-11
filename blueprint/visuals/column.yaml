@@ -7,7 +7,7 @@ type: column
 visual_type: clusteredColumnChart
 region: main
 slots:
-  category: { role: Category, accepts: [column, hierarchy], required: true, ordered: true }
+  category: { role: Category, accepts: [column, hierarchy], required: true, ordered: true, active: true }
   value:    { role: Y, accepts: measure, required: true, ordered: true, list_excludes: [legend] }   # a list: one series each (probe 20)
   legend:   { role: Series, accepts: column }   # probe 32: one Legend column, as on the line chart
 options:

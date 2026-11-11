@@ -6,7 +6,7 @@ type: slicer
 visual_type: slicer
 region: main
 slots:
-  field: { role: Values, accepts: column, required: true, ordered: true }
+  field: { role: Values, accepts: column, required: true, ordered: true, active: true }
 options:
   # Probe 20: Desktop wrote the Dropdown style as objects.data[0].properties.mode = 'Dropdown';
   # probe 22: Desktop drew Blueprint's slicer with it as a dropdown. Left out: Desktop's default list.

@@ -7,6 +7,6 @@ type: pie
 visual_type: pieChart
 region: main
 slots:
-  category: { role: Category, accepts: [column, hierarchy], required: true, ordered: true }
+  category: { role: Category, accepts: [column, hierarchy], required: true, ordered: true, active: true }
   value:    { role: Y, accepts: measure, required: true }
   details:  { role: Series, accepts: column }

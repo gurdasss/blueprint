@@ -8,6 +8,6 @@ type: area
 visual_type: areaChart
 region: main
 slots:
-  category: { role: Category, accepts: column, required: true, ordered: true }
+  category: { role: Category, accepts: column, required: true, ordered: true, active: true }
   value:    { role: Y, accepts: measure, required: true, ordered: true, list_excludes: [legend] }
   legend:   { role: Series, accepts: column }
