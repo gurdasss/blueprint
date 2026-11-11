@@ -1,12 +1,14 @@
 # Slot contract for spec type `slicer`. Verified in probe 20 (pbir/schema.md "Creating pages and
 # visuals"): the plain Slicer is `slicer`, its Field well is role `Values`, and several columns
 # there are an ordered list (a hierarchy slicer: Country, expandable to Region), each projection
-# "active": true. A hierarchy built in the model wasn't probed in a slicer, so it isn't accepted.
+# "active": true. Probe 39: a hierarchy built in the model binds its levels in the Field with
+# EVERY level "active": true (`active_levels: all`), which is how Desktop wrote its own; it drew
+# Blueprint's shape and kept it through a save.
 type: slicer
 visual_type: slicer
 region: main
 slots:
-  field: { role: Values, accepts: column, required: true, ordered: true, active: true }
+  field: { role: Values, accepts: [column, hierarchy], required: true, ordered: true, active: true, active_levels: all }
 options:
   # Probe 20: Desktop wrote the Dropdown style as objects.data[0].properties.mode = 'Dropdown';
   # probe 22: Desktop drew Blueprint's slicer with it as a dropdown. Left out: Desktop's default list.

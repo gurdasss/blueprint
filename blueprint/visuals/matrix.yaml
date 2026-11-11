@@ -1,11 +1,13 @@
 # Slot contract for spec type `matrix`. Verified in probe 20 (pbir/schema.md "Creating pages and
 # visuals"): `pivotTable`, with wells Rows, Columns and Values in roles `Rows`, `Columns` and
 # `Values`. Row and column fields are columns ("active": true); values are measures, in well order.
-# Hierarchies built in the model weren't probed in a matrix, so they aren't accepted.
+# Probe 39: a hierarchy built in the model binds its levels in Rows, the first level active and
+# each deeper one an explicit "active": false — which is what `render` already writes. Desktop
+# drew Blueprint's own shape there and kept it. Columns is unprobed, so it still takes columns.
 type: matrix
 visual_type: pivotTable
 region: main
 slots:
-  rows:    { role: Rows, accepts: column, required: true, ordered: true, active: true }
+  rows:    { role: Rows, accepts: [column, hierarchy], required: true, ordered: true, active: true }
   columns: { role: Columns, accepts: column, ordered: true, active: true }
   values:  { role: Values, accepts: measure, required: true, ordered: true }

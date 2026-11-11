@@ -103,5 +103,7 @@ def test_the_contracts_say_what_the_probes_verified():
     assert c["multi-row-card"].slots["fields"].accepts == ("column", "measure")
     assert [s.name for s in c["scatter"].slots.values() if s.required] == ["category", "x", "y"]
     assert [s.name for s in c["map"].slots.values() if s.required] == ["category", "size"]
-    # none of the three ships an option: probe 34 wrote no objects on them
-    assert not (c["scatter"].options or c["map"].options or c["multi-row-card"].options)
+    # probe 34 wrote no objects on any of the three; probe 38 then gave the two charts the legend
+    # option and showed that Desktop DELETES a labels object on them, so they must not have one.
+    assert set(c["scatter"].options) == {"legend"} and set(c["map"].options) == {"legend"}
+    assert not c["multi-row-card"].options

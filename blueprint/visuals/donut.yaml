@@ -8,3 +8,13 @@ slots:
   category: { role: Category, accepts: column, required: true, ordered: true, active: true }   # "Legend"
   value:    { role: Y, accepts: measure, required: true }
   details:  { role: Series, accepts: column }                                    # "Details"
+options:
+  # Probe 37: `objects.labels[0].properties.show` is the detail-label switch on both types, the same
+  # object the cartesian charts use. Unlike every other chart type, their default is labels **on**
+  # (the control showed them), so this option needs `off` as well as `on`.
+  labels: { object: labels, property: show, values: { "on": "true", "off": "false" } }
+  # Probe 37: `legend.position = 'Top'` moved the legend above the chart and `show = false` left
+  # none. Their default sits at the RIGHT (not the theme's bottom, probe 35), so 'Right' is
+  # indistinguishable from it; 'Bottom' and 'Left' are the same property's other literals, as on
+  # every other chart type (probes 23, 28, 32, 35). Probe 40 is the acceptance half.
+  legend: { object: legend, property: position, values: { top: "'Top'", bottom: "'Bottom'", left: "'Left'", right: "'Right'", "off": { property: show, literal: "false" } } }

@@ -16,3 +16,11 @@ slots:
   category: { role: Category, accepts: column, required: true, ordered: true, active: true }
   size:     { role: Size, accepts: measure, required: true }
   legend:   { role: Series, accepts: column }
+options:
+  # Probe 38: `legend.position` moved the legend ('Right', 'Top') and `show = false` left none, on
+  # the scatter and on the map alike — the map takes the cartesian charts' legend object although it
+  # renders through a different control. Their default sits at the BOTTOM, so 'Bottom' is
+  # indistinguishable from it; 'Left' is the same property's other literal (probes 23, 32, 35).
+  # NO `labels` option, and don't add one: probe 38 wrote `objects.labels` on both types and the
+  # save DELETED it. Which object carries a scatter's point labels is unprobed. Probe 40 accepts.
+  legend: { object: legend, property: position, values: { top: "'Top'", bottom: "'Bottom'", left: "'Left'", right: "'Right'", "off": { property: show, literal: "false" } } }
