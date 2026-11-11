@@ -21,7 +21,8 @@ def _describe(capsys, *args) -> dict:
 def test_types_layouts_and_limits_without_a_report(capsys):
     d = _describe(capsys)
     # describe shows what a spec may use: the core seven, until the client opts the archive in
-    assert sorted(d["types"]) == ["bar", "card", "column", "header", "kpi", "line", "table"]
+    assert sorted(d["types"]) == ["bar", "card", "column", "header", "kpi", "line", "matrix",
+                                  "slicer", "table"]
     assert d["types"]["kpi"] == {"visual_type": "kpi", "region": "kpi-row", "options": {}, "slots": {
         "value": {"accepts": ["measure"], "required": True, "list": False, "list_excludes": []},
         "trend": {"accepts": ["column"], "required": True, "list": False, "list_excludes": []},
@@ -93,11 +94,11 @@ def test_text_output(capsys, tmp_path: Path):
     assert main(["describe", "--report", str(tmp_path / "proj"), "--guidelines", str(GUIDE)]) == 0
     out = capsys.readouterr().out
     assert "  kpi    region kpi-row  value*: measure, trend*: column, target: measure\n" in out
-    assert "  slicer" not in out  # archived out of the core seven
-    # with the opt-in, the archived types are listed too
+    assert "  pie" not in out  # still archived: a spec sees it only after an opt-in
+    # with the opt-in, what is still archived is listed too
     assert main(["describe", "--report", str(tmp_path / "proj"), "--guidelines", str(GUIDE),
                  "--visuals", str(ROOT / "blueprint" / "visuals" / "archive")]) == 0
-    assert ("  slicer             region main     field*[]: column; options style: dropdown\n"
+    assert ("  pie                region main     category*[]: column|hierarchy, value*: measure"
             in capsys.readouterr().out)
     assert "  standard-4-up (default): 1280x720; 1 header, 1 kpi-row, 2 main" in out
     assert "    measures: [Total Amount]" in out

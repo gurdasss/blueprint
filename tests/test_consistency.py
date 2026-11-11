@@ -242,9 +242,9 @@ def test_which_well_carries_active_is_declared_by_each_contract():
     c = contracts((ARCHIVE_DIR,))
     assert {t: sorted(c[t].active_roles) for t in CORE_TYPES} == {
         "bar": ["Category"], "card": [], "column": ["Category"], "header": [],
-        "kpi": [], "line": ["Category"], "table": []}
-    assert sorted(c["slicer"].active_roles) == ["Values"]
-    assert sorted(c["matrix"].active_roles) == ["Columns", "Rows"]
+        "kpi": [], "line": ["Category"], "matrix": ["Columns", "Rows"], "slicer": ["Values"],
+        "table": []}
+    assert sorted(c["pie"].active_roles) == ["Category"]  # still archived
 
 
 def test_the_client_template_shows_every_core_guideline_key():

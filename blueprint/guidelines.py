@@ -10,7 +10,7 @@ Layers, later overriding earlier (mappings merge key by key; anything else is re
 Core keys (v1): version, name, canvas, spacing, page, palette, typography, layouts.
 Everything else is opt-in under ``extensions:`` (see ``template/extensions.md``): extra
 typography roles, severity overrides, decorative types, ``max_resize`` and
-``custom_visuals.search_path`` (directories of visual contracts beyond the core seven). Keys the core
+``custom_visuals.search_path`` (directories of visual contracts beyond the core). Keys the core
 doesn't know inside ``extensions:`` are passed through untouched.
 
 Keys from the pre-template schema (``grid:``, ``canvas.margin``, ``canvas.gutter``,
@@ -156,7 +156,7 @@ class Guidelines:
     typography: dict[str, FontRule]  # keyed by internal role (see CORE_ROLES)
     layouts: Layouts
     check: CheckRules
-    visuals: tuple[Path, ...]  # extra directories of visual contracts; core seven always load
+    visuals: tuple[Path, ...]  # extra directories of visual contracts; the core always load
     max_resize: float | None
     sources: tuple[str, ...]
     raw: dict[str, Any] = field(repr=False)

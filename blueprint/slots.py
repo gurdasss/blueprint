@@ -22,7 +22,7 @@ import yaml
 
 VISUALS_DIR = Path(__file__).resolve().parent / "visuals"
 ARCHIVE_DIR = VISUALS_DIR / "archive"
-CORE_TYPES = ("bar", "card", "column", "header", "kpi", "line", "table")
+CORE_TYPES = ("bar", "card", "column", "header", "kpi", "line", "matrix", "slicer", "table")
 # "hierarchy": a hierarchy built in the model, written like a column (Table[Hierarchy]). It's one
 # field, as in Desktop's wells, that binds all its levels in order (probes 16, 18). So a slot that
 # takes a single field can take one, without also allowing a list of columns there.
@@ -178,7 +178,7 @@ def _load(path: Path) -> Contract:
 
 @cache
 def contracts(extra: tuple[Path, ...] = ()) -> dict[str, Contract]:
-    """The loaded contracts by spec type: the core seven, plus any directory in ``extra``.
+    """The loaded contracts by spec type: the core (``CORE_TYPES``), plus any directory in ``extra``.
 
     ``extra`` is part of the cache key, so each distinct search path is loaded once. A type
     defined twice is refused, naming both files: silently shadowing one would change what a

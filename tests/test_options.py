@@ -23,7 +23,7 @@ def _spec(visual: dict) -> spec.PageSpec:
 
 
 def test_contract_declares_the_slicer_style():
-    [opt] = contracts((ARCHIVE,))["slicer"].options.values()
+    [opt] = contracts()["slicer"].options.values()
     assert (opt.name, opt.object, opt.property, opt.values) == ("style", "data", "mode", {"dropdown": "'Dropdown'"})
 
 

@@ -4,6 +4,16 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
+## Unreleased
+
+- **`slicer` and `matrix` are core types**, so a spec uses them with no opt-in and `bp describe`
+  lists them. The archive was a holding pen for the v0.6 refactor, not a permanent split: types
+  move into the core in batches as their Desktop evidence is confirmed (these two: probe 20 for
+  the shapes, probe 21 for Desktop accepting what `bp apply` writes). Still opt-in: `pie`,
+  `donut`, `area`, `stacked-column`, `stacked-column-100`, `stacked-bar`.
+- A report whose guidelines still opt into `blueprint/visuals/archive` keeps working; hand-built
+  visuals are unaffected (the manifest has always named those by PBIR type and query role).
+
 ## v0.7.0 (2026-11-11)
 
 What a core-20% audit of the codebase found and fixed. **Breaking twice:** a guidelines file with

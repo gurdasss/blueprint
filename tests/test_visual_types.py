@@ -58,12 +58,14 @@ DESKTOP = {
 }
 
 
-def test_the_core_ships_seven_types_and_the_archive_eight():
-    """The core 20%: a client's spec sees these seven and nothing else until it opts in."""
-    assert sorted(contracts()) == ["bar", "card", "column", "header", "kpi", "line", "table"]
+def test_the_core_ships_the_promoted_types_and_the_archive_the_rest():
+    """Types move into the core as their Desktop evidence is confirmed; what is left in the
+    archive still needs an opt-in. `slicer` and `matrix` came first: probe 20 recorded the shapes
+    and probe 21 showed Desktop accepts what `bp apply` writes."""
+    assert sorted(contracts()) == ["bar", "card", "column", "header", "kpi", "line", "matrix",
+                                   "slicer", "table"]
     assert sorted(set(contracts((ARCHIVE,))) - set(contracts())) == [
-        "area", "donut", "matrix", "pie", "slicer", "stacked-bar", "stacked-column",
-        "stacked-column-100"]
+        "area", "donut", "pie", "stacked-bar", "stacked-column", "stacked-column-100"]
 
 
 def test_contracts_ship_the_probed_types():

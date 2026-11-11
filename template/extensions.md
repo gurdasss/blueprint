@@ -49,7 +49,7 @@ extensions:
     subtitle:   {font: Segoe UI, size: 12}
     callout:    {font: Segoe UI Light, size: 32}   # a card's value (probe 07)
     card_label: {font: Segoe UI, size: 12}         # the new card's label (probe 15)
-  custom_visuals:                     # visual types beyond the core seven
+  custom_visuals:                     # visual types beyond the core
     search_path: ["my-visuals", "../blueprint/visuals/archive"]
 ```
 

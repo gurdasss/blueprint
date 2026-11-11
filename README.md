@@ -352,9 +352,9 @@ visuals:
 
 ### Core types, and the archive
 
-The core ships seven types: `header`, `card`, `kpi`, `column`, `line`, `bar`, `table`.
-Eight further contracts are probe-verified but archived out of the core to keep it small:
-`pie`, `donut`, `slicer`, `matrix`, `area`, `stacked-column`, `stacked-column-100` and
+The core ships `header`, `card`, `kpi`, `column`, `line`, `bar`, `table`, `slicer` and `matrix`.
+Types move into the core as their Desktop evidence is confirmed; the rest are probe-verified but
+still need an opt-in: `pie`, `donut`, `area`, `stacked-column`, `stacked-column-100` and
 `stacked-bar` (in `blueprint/visuals/archive/`). A spec naming one is refused, listing the
 types that are loaded, until you opt in — per run, or in your guidelines:
 
@@ -671,7 +671,7 @@ blueprint/
 │   ├── validate.py             # guideline rules (used by `check`)
 │   ├── policies.py             # named policies the config selects (e.g. density)
 │   ├── manifest.py
-│   └── visuals/                # slot contracts: the core seven, archive/ for the rest
+│   └── visuals/                # slot contracts: the core, archive/ for what needs an opt-in
 │
 ├── guidelines/
 │   ├── example.yaml            # invented; committed so the tool is runnable
