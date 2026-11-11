@@ -561,6 +561,46 @@ content, so Blueprint's theme file matches Desktop's format exactly.
   Probe 14 settled how Blueprint binds a date: `Table[Column]` as a plain `Column`, which Desktop draws
   and keeps as written.
 
+**Verified 2026-11-11, probe 39** (`scripts/probe_hierarchy_matrix_slicer.py`; evidence
+`docs/probes/39-hierarchy-matrix-slicer.diff`). Binding a hierarchy built in the model has been
+core since probes 16-19, but `matrix` and `slicer` refused one for lack of a probe, and both
+contracts said so. This probe made both claims at once: the user built Desktop's own matrix and
+slicer on `Geography` by hand (the authority on the shape), and `bp apply`'s matrix and slicer
+carried candidate projections copied from Blueprint's own column chart. The user's three steps
+landed in one save, so the evidence has one Desktop step. Predictions P1-P7 are in the script.
+
+- **Dragging the hierarchy into either well shows `Geography` as a root with `Country` and
+  `Region` under it** — one field in the UI, levels underneath, as on a chart's axis.
+- **Desktop's own matrix** writes one `HierarchyLevel` projection per level in `queryState.Rows`,
+  in level order, exactly the shape probe 16 recorded (`queryRef` `Sales.Geography.Country`,
+  `nativeQueryRef` `Geography Country`). P1 held.
+- **Only the first level is active in a matrix's Rows, and the deeper one carries an explicit
+  `"active": false`** — not an omitted flag. P2 held in substance (I was least sure of it, since
+  a matrix expands rather than drills), and the explicit `false` is the part worth having.
+- **Desktop's own slicer** writes both levels in `queryState.Values` with **`"active": true` on
+  each**, as probe 20 recorded for two plain columns in a slicer. P3 held.
+- **Desktop accepts the candidates unchanged, and they are its own shape exactly.** Compared
+  projection by projection, the candidates as written equal Desktop's own — same keys, same
+  order, same flags — in the matrix's `Rows` and the slicer's `Values` alike. The save did not
+  rewrite the candidate slicer at all, and changed the candidate matrix only by flipping `Region`
+  to `"active": true`, which the user's expand explains (Desktop's own matrix, left unexpanded,
+  kept `false`), plus `expansionStates`. P4 held.
+- **But only the matrix's flags are `render`'s today.** The candidate matrix's projections are
+  `render`'s column-chart output moved across (first level active, the rest an explicit `false`),
+  and that is what Desktop writes for a matrix. The candidate **slicer**'s every-level-active was
+  set by the probe on purpose, because probe 20 suggested it — so what this settles is that
+  Desktop writes and accepts that shape, **not** that `render` emits it. Letting `slicer.field`
+  take a hierarchy therefore needs a `render` change as well as an `accepts:` entry.
+- **`expansionStates` is written at `visual.expansionStates`, not under `query`.** Desktop's own
+  slicer gained one when the user expanded a node (P3's second half held); its own matrix, never
+  expanded, has none and kept `Region` inactive; the candidate matrix gained one when expanded.
+  The candidate slicer has none, so its expanders in the capture are live state, not saved state.
+- **Both drew.** The matrix shows `FR`/`UK` with expanders (FR -> East 150, West 50; total 500);
+  the slicer shows `Country, Region` with `FR` and `UK` expanding to their regions.
+- Otherwise only what any save changes: `$schema` 2.13.0 -> 2.14.0 on the files it rewrote and
+  the condition-less auto `filterConfig` on the control column chart (P7).
+
+
 **Verified 2026-11-11, probe 38** (`scripts/probe_scatter_map_options.py`; evidence
 `docs/probes/38-scatter-map-options.diff`). `scatter` and `map` came into the core with probes 34
 and 36 carrying **no options at all**, while the other seven chart types take `labels` and

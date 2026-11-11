@@ -1,8 +1,9 @@
 # Unverified probes
 
-Probe scripts that have **never been opened in Power BI Desktop**. They are written, their
-predictions are on record, and nothing more. Desktop runs on Windows; whichever machine you are
-reading this on may not have it, which is why these sit here instead of in `scripts/`.
+Probe scripts that have **never been opened in Power BI Desktop**: written, predictions on
+record, nothing more. They sit here instead of in `scripts/` until Desktop has answered. Whether
+Desktop is reachable depends on the machine — on the Windows host's WSL it is, through
+`/mnt/c/.../blueprint-probes/` and `scripts/desktop.sh`.
 
 **Nothing in this folder is evidence.** A prediction is a guess with a reason, and the method in
 `README.md` ("How the PBIP format is learned") only counts what Desktop did:
@@ -16,22 +17,20 @@ They are written up front for one reason: the prediction has to exist **before**
 or the probe just confirms whatever we see. Writing them while the evidence is out of reach is
 the one part of the loop that doesn't need Desktop.
 
-## What is here, and why these
+## What is here: nothing, and that is the point
 
-Each probe is a folder with one `probe.py`, isolated: no shared state, no imports between them,
-and any can be run without the others. They all close an **unevenness in a fact the core
-already relies on** — not new surface. That is the whole list; see "Deliberately not probed".
+**All three have run** (2026-11-11), so this folder holds only these rules, for the next probe
+that has to be written before Desktop is at hand:
 
-| Folder | Settles | Why it is core |
+| Was | Ran as | What it settled |
 |---|---|---|
-| `hierarchy-matrix-slicer/` | the shape Desktop writes for a **model hierarchy** in a matrix's Rows and a slicer's Field, and whether it accepts Blueprint's | Hierarchy binding is already core (probes 16-19) on `column`, `bar`, `line`, `pie` and `table`. `matrix` and `slicer` refuse it **only because no probe covered it**, and both contracts say so. A matrix and a slicer are where reports put a hierarchy. |
+| `pie-donut-options/` | **probe 37** (`scripts/probe_pie_donut_options.py`, `docs/probes/37-pie-donut-options.diff`) | `pie` and `donut` take `labels` and `legend`; their default is labels **on** and a legend at the **right**, so `labels` there needs both values. P5 failed: the object really is `labels`. |
+| `scatter-map-options/` | **probe 38** (`scripts/probe_scatter_map_options.py`, `docs/probes/38-scatter-map-options.diff`) | `scatter` and `map` take `legend`; Desktop **deletes** a `labels` object from both. Their default legend is at the **bottom**, so the default position is per type. P3 failed. |
+| `hierarchy-matrix-slicer/` | **probe 39** (`scripts/probe_hierarchy_matrix_slicer.py`, `docs/probes/39-hierarchy-matrix-slicer.diff`) | Desktop writes a hierarchy in a matrix's Rows with the first level active and the deeper one an explicit `"active": false`, and in a slicer's Field with every level active — and it accepts Blueprint's own shape in both, unchanged. |
 
-Two have run: `pie-donut-options/` as **probe 37** (`scripts/probe_pie_donut_options.py`,
-evidence `docs/probes/37-pie-donut-options.diff`) and `scatter-map-options/` as **probe 38**
-(`scripts/probe_scatter_map_options.py`, `docs/probes/38-scatter-map-options.diff`). Between them
-the chart types' options are settled: pie and donut take `labels` and `legend`, scatter and map
-take `legend` only — Desktop deletes a `labels` object on those two. After the one left, every
-well that takes a category takes a hierarchy, and this folder should be empty.
+The contracts are **not** changed by any of them: each is the candidate half, and the second half
+is an acceptance probe built entirely by `bp apply` (as 33 followed 32). Until that is decided,
+`matrix` and `slicer` still refuse a hierarchy and the four chart types still take no options.
 
 ## Running one, when you are at a Windows machine with Desktop
 
@@ -39,8 +38,8 @@ Same as any probe in `scripts/` (CLAUDE.md, "Test data"):
 
 ```bash
 # from the repo, with the venv active
-python unverified-probes/hierarchy-matrix-slicer/probe.py \
-    /mnt/c/Users/<user>/blueprint-probes/39-hierarchy-matrix-slicer \
+python unverified-probes/<topic>/probe.py \
+    /mnt/c/Users/<user>/blueprint-probes/40-<topic> \
     /mnt/c/Users/<user>/blueprint-probes/_cache/demo-cache.abf
 ```
 
@@ -49,7 +48,7 @@ without a refresh; `scripts/demo.sh` documents which one. Then open the `.pbip`,
 probe's `STEPS.md`, and `bash snap.sh "<step>"` after each save.
 
 Numbering: each script has `PROBE = "NN"` at the top — set it to the next free probe number
-(39 after probes 37 and 38 ran) before you run it, so `STEPS.md` names the right folder.
+(40 after probe 39 ran) before you run it, so `STEPS.md` names the right folder.
 
 ## When a probe has run
 
