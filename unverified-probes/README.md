@@ -16,19 +16,20 @@ They are written up front for one reason: the prediction has to exist **before**
 or the probe just confirms whatever we see. Writing them while the evidence is out of reach is
 the one part of the loop that doesn't need Desktop.
 
-## What is here, and why these three
+## What is here, and why these
 
 Each probe is a folder with one `probe.py`, isolated: no shared state, no imports between them,
-and either can be run without the other. They all close an **unevenness in a fact the core
+and any can be run without the others. They all close an **unevenness in a fact the core
 already relies on** — not new surface. That is the whole list; see "Deliberately not probed".
 
 | Folder | Settles | Why it is core |
 |---|---|---|
 | `scatter-map-options/` | `labels` and `legend` (positions and `off`) on `scatterChart` and `map`, and what each shows by default | The two newest types (probes 34, 36) have **no options at all**, while the other seven chart types all take these two. Both sample reports position or hide a legend on them. |
-| `pie-donut-options/` | the same two options on `pieChart` and `donutChart` | The last two chart types in the core with no options. Probe 35 evened these cells up across the area and stacked charts before promoting them; pie and donut were promoted for their bindings and never got the same pass. |
 | `hierarchy-matrix-slicer/` | the shape Desktop writes for a **model hierarchy** in a matrix's Rows and a slicer's Field, and whether it accepts Blueprint's | Hierarchy binding is already core (probes 16-19) on `column`, `bar`, `line`, `pie` and `table`. `matrix` and `slicer` refuse it **only because no probe covered it**, and both contracts say so. A matrix and a slicer are where reports put a hierarchy. |
 
-After all three, every chart type in the core takes the same two options, and every well that
+`pie-donut-options/` has run: it is **probe 37** (`scripts/probe_pie_donut_options.py`,
+evidence `docs/probes/37-pie-donut-options.diff`), and pie and donut are no longer owed options.
+After the two left, every chart type in the core takes the same two options, and every well that
 takes a category takes a hierarchy. That is the point at which this folder should be empty.
 
 ## Running one, when you are at a Windows machine with Desktop
@@ -38,7 +39,7 @@ Same as any probe in `scripts/` (CLAUDE.md, "Test data"):
 ```bash
 # from the repo, with the venv active
 python unverified-probes/scatter-map-options/probe.py \
-    /mnt/c/Users/<user>/blueprint-probes/37-scatter-map-options \
+    /mnt/c/Users/<user>/blueprint-probes/38-scatter-map-options \
     /mnt/c/Users/<user>/blueprint-probes/_cache/demo-cache.abf
 ```
 
@@ -47,7 +48,7 @@ without a refresh; `scripts/demo.sh` documents which one. Then open the `.pbip`,
 probe's `STEPS.md`, and `bash snap.sh "<step>"` after each save.
 
 Numbering: each script has `PROBE = "NN"` at the top — set it to the next free probe number
-(37 when this folder was written) before you run it, so `STEPS.md` names the right folder.
+(38 after probe 37 ran) before you run it, so `STEPS.md` names the right folder.
 
 ## When a probe has run
 

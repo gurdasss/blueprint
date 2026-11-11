@@ -70,7 +70,7 @@ from _probe import git, make_probe
 from blueprint.cli import main as bp
 from blueprint.pbir import jsonfmt
 
-PROBE = "NN"  # set to the next free probe number when this is run
+PROBE = "37"
 GUIDE = ROOT / "guidelines" / "example.yaml"
 SLOTS = '{category: "Sales[Country]", value: "[Total Amount]"}'
 

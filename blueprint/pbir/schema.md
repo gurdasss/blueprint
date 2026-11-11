@@ -560,6 +560,37 @@ content, so Blueprint's theme file matches Desktop's format exactly.
   well's menu set every level `active` (expand) and **did not switch to the plain column**.
   Probe 14 settled how Blueprint binds a date: `Table[Column]` as a plain `Column`, which Desktop draws
   and keeps as written.
+
+**Verified 2026-11-11, probe 37** (`scripts/probe_pie_donut_options.py`; evidence
+`docs/probes/37-pie-donut-options.diff`). `pie` and `donut` were the last two core chart types
+with no options at all: they were promoted (probes 08, 11, 22-24) for their *bindings*, and the
+parity pass probe 35 made before promoting the area and stacked charts never covered them. The
+bindings were written by `bp apply` from the shipped contracts, so only the option objects were
+candidates; a control with no `objects` on each page settles the type's default. Predictions
+P1-P8 are in the script.
+
+- **`objects.labels[0].properties.show` controls the detail labels on `pieChart` and
+  `donutChart`**, the same object name the cartesian charts use. P5 (that these types might keep
+  them under another object, since Desktop's pane calls them "Detail labels") **failed**, which
+  was the point of writing it.
+- **Their default is labels _on_**, unlike every charted type probed before: the control showed
+  `200 (40%)` / `300 (60%)` on its slices, `show = false` removed them, and `show = true` was
+  indistinguishable from the control. So a `labels` option on these two types needs **both**
+  values (`"on": "true"` and `"off": "false"`), where `column` ships only `"on"` (probe 23).
+- **`objects.legend[0].properties.position = 'Top'` moves the legend above both types**, and
+  **`show = false` leaves no legend**, as on the core's other seven chart types (probes 23, 32,
+  35).
+- **Their default legend sits at the _right_**, not at the theme's bottom that probe 35's area
+  control showed. So `position = 'Right'` is indistinguishable from the default on these two, and
+  the default position is per type, not a single theme-wide one.
+- **`pieChart` and `donutChart` behaved identically in every cell**, as probe 22 found for their
+  bindings: the two differ only in `visualType`.
+- **The save rewrote no `visual.json` at all.** Every candidate is still on disk byte for byte,
+  without the `$schema` 2.13.0 -> 2.14.0 bump or the condition-less auto `filterConfig` that
+  probe 35 saw on its active page; only `pages.json` `activePageName` changed. P7 predicted that
+  bump and filter and was wrong in this direction: what Desktop rewrites on a save is narrower
+  than "the active page", so neither is owed on a save that touches nothing.
+
 **Verified 2026-11-11, probe 36** (`scripts/probe_apply_scatter_card_map.py`; evidence
 `docs/probes/36-apply-scatter-card-map.diff`). The acceptance probe for probe 34's three types:
 every visual built by `bp apply` from a spec, nothing patched. All four predictions held.
