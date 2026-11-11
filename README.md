@@ -231,7 +231,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: gurdasss/blueprint@v0.7.0        # a release tag (or commit SHA) pins Blueprint
+      - uses: gurdasss/blueprint@v0.8.0        # a release tag (or commit SHA) pins Blueprint
         with:
           reports: |                           # one per line: .Report folder, .pbip, its folder, or a glob
             reports/Sales.Report
@@ -358,8 +358,9 @@ The core ships every type a Desktop probe has verified: `header`, `card`, `multi
 
 > **`map` needs turning on.** Power BI Desktop disables map visuals by default (File > Options
 > and settings > Options > Global > Security). Where that is off, Desktop shows a message in
-> place of the visual, whoever wrote the file. A spec naming anything else is refused, listing the types
-that are loaded.
+> place of the visual, whoever wrote the file.
+
+A spec naming anything else is refused, listing the types that are loaded.
 
 **Your own types.** A contract is a YAML file, so you can add types Blueprint doesn't ship —
 per run, or for good in your guidelines:
@@ -427,7 +428,7 @@ Desktop does. Column, bar, pie and line chart categories and the table's columns
 confusing result in Desktop.
 
 ```yaml
-# blueprint/visuals/archive/pie.yaml  (slot contract, not the template; probes 08 and 11)
+# blueprint/visuals/pie.yaml  (slot contract, not the template; probes 08 and 11)
 type: pie
 visual_type: pieChart
 region: main
@@ -555,7 +556,7 @@ extensions:
     callout:    { font: Segoe UI Light, size: 32 }
     card_label: { font: Segoe UI, size: 12 }
   custom_visuals:
-    search_path: ["../blueprint/visuals/archive"]   # see "Core types, and the archive"
+    search_path: ["my-visuals"]          # contracts of your own; see "Visual types, and your own"
 ```
 
 **Upgrading from v0.5.x.** The old keys are refused, never ignored, and the error names the
@@ -589,7 +590,7 @@ every change, and `bp manifest` rebuilds it from the report at any time.
 
 ```json
 {
-  "blueprint_version": "0.7.0",
+  "blueprint_version": "0.8.0",
   "guidelines": { "name": "Example Corp Reporting Standard", "version": 1 },
   "pbir_schema": { "page": ["2.1.0"], "visualContainer": ["2.13.0"] },
   "generated_at": "2026-11-09T04:00:00Z",
@@ -844,12 +845,15 @@ on clustered charts, `legend: off` and table `totals` (done).
 `--set KEY=VALUE` replaces `--grid` on every command that reads guidelines, and per-type PBIR
 facts live in the visual contracts rather than in core code (done).
 
-**Next, each needing a Desktop probe first:** axis titles, conditional formatting; and the visual
-types real reports use that no contract covers (`map`, `scatter`, `multiRowCard`).
+**v0.8 — every probed type is core.** The archive is gone: all 18 probe-verified types ship in
+the core with no opt-in, the chart types take the same `labels`/`legend` options, and `scatter`,
+`multi-row-card` and `map` are new (done).
 
-**Later, in no particular order.** Bookmarks. Relative layout positioning. Promoting archived
-visual types into the core. A `bp new` scaffold. Theme file generation (done: `bp theme`). CI
-action for `bp check` (done: [In CI](#in-ci)).
+**Next, each needing a Desktop probe first:** axis titles, conditional formatting, and legend
+positions on `scatter` and `map` (the sample reports use them; no probe covers them yet).
+
+**Later, in no particular order.** Bookmarks. Relative layout positioning. A `bp new` scaffold.
+Theme file generation (done: `bp theme`). CI action for `bp check` (done: [In CI](#in-ci)).
 
 **Deliberately unscheduled:** an interactive wizard. The declarative spec is the primary
 interface; a prompt-driven shell on top is a convenience, and conveniences come after the

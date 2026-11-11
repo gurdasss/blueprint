@@ -119,11 +119,9 @@ layouts:
 #     subtitle:   { font: Segoe UI, size: 12 }
 #     callout:    { font: Segoe UI Light, size: 32 }
 #     card_label: { font: Segoe UI, size: 12 }
-#   custom_visuals:                   # visual types beyond the core seven (header, card,
-#     search_path:                    # kpi, column, line, bar, table). Relative entries
-#       - "../blueprint/visuals/archive"   # resolve against this file. The archive holds
-#       - "my-visuals"                     # pie, donut, slicer, matrix, area and the
-#                                          # stacked charts, all probe-verified.
+#   custom_visuals:                   # visual contracts of your own, beyond the 18
+#     search_path:                    # probe-verified types the core ships. Relative
+#       - "my-visuals"                # entries resolve against this file.
 #
 # Anything else here is passed through untouched, for extension
 # validators to read. Sketches of what comes next:

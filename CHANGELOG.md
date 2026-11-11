@@ -4,7 +4,10 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
-## Unreleased
+## v0.8.0 (2026-11-11)
+
+Every visual type a Desktop probe has verified is now core. **Breaking:**
+`blueprint/visuals/archive/` is gone, so a guidelines file that opts into it fails (see below).
 
 - **Three new visual types**: `scatter` (`category`, `x`, `y`, `size`, `legend`),
   `multi-row-card` (one `fields` well taking columns and measures mixed — a column makes one row

@@ -50,7 +50,7 @@ extensions:
     callout:    {font: Segoe UI Light, size: 32}   # a card's value (probe 07)
     card_label: {font: Segoe UI, size: 12}         # the new card's label (probe 15)
   custom_visuals:                     # visual types beyond the core
-    search_path: ["my-visuals", "../blueprint/visuals/archive"]
+    search_path: ["my-visuals"]       # contracts of your own
 ```
 
 **What further extensions add here:**
@@ -63,11 +63,10 @@ extensions:
 
 ### 2. Visual definitions
 
-**Implemented.** The core loads the seven contracts in `blueprint/visuals/`
-automatically — `header`, `card`, `kpi`, `column`, `line`, `bar`, `table`.
-Extensions add more by declaring a directory, which is also how the eight
-archived contracts (`blueprint/visuals/archive/`: `pie`, `donut`, `slicer`,
-`matrix`, `area` and the stacked charts) come back:
+**Implemented.** The core loads every contract in `blueprint/visuals/`
+automatically — all 18 probe-verified types, from `header` and `card` to
+`scatter`, `multi-row-card` and `map`. Extensions add types of your **own** by
+declaring a directory (there is no archive to opt into any more):
 
 ```yaml
 # in guidelines.yaml
