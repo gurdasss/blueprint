@@ -231,7 +231,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: gurdasss/blueprint@v0.8.1        # a release tag (or commit SHA) pins Blueprint
+      - uses: gurdasss/blueprint@v0.9.0        # a release tag (or commit SHA) pins Blueprint
         with:
           reports: |                           # one per line: .Report folder, .pbip, its folder, or a glob
             reports/Sales.Report
