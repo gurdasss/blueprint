@@ -350,6 +350,9 @@ def _build(raw: dict[str, Any], sources: tuple[str, ...],
     if not isinstance(ext, dict):
         raise GuidelinesError("extensions must be a mapping")
 
+    declared = _visuals(ext)
+    extra = tuple(_contract_dir(d, "--visuals") for d in extra_visuals)
+
     policy = _get(raw, "page.density_policy")
     if not isinstance(policy, str) or policy not in DENSITY:
         raise GuidelinesError(
@@ -371,7 +374,7 @@ def _build(raw: dict[str, Any], sources: tuple[str, ...],
         typography=_typography(raw, ext),
         layouts=_layouts(raw),
         check=CheckRules(severity=_severity(ext), decorative_types=_decorative(ext)),
-        visuals=_visuals(ext) + tuple(d for d in extra_visuals if d not in _visuals(ext)),
+        visuals=declared + tuple(d for d in extra if d not in declared),
         max_resize=_max_resize(ext),
         sources=sources,
         raw=raw,
@@ -455,9 +458,18 @@ def _decorative(ext: dict[str, Any]) -> tuple[str, ...]:
     return tuple(value)
 
 
+def _contract_dir(entry: str | Path, label: str) -> Path:
+    """A directory of visual contracts, from guidelines or from ``--visuals``. A missing one is
+    refused here rather than later as a confusing "unknown type" (or, for ``--visuals``, as
+    nothing happening at all)."""
+    path = Path(entry)
+    if not path.is_dir():
+        raise GuidelinesError(f"{label}: {entry} is not a directory")
+    return path
+
+
 def _visuals(ext: dict[str, Any]) -> tuple[Path, ...]:
-    """extensions.custom_visuals.search_path: directories holding further visual contracts.
-    A missing directory is refused here rather than later as a confusing "unknown type"."""
+    """extensions.custom_visuals.search_path: directories holding further visual contracts."""
     section = ext.get("custom_visuals")
     if section is None:
         return ()
@@ -470,14 +482,8 @@ def _visuals(ext: dict[str, Any]) -> tuple[Path, ...]:
     search = section.get("search_path", [])
     if not isinstance(search, list) or not all(isinstance(p, str) and p for p in search):
         raise GuidelinesError("extensions.custom_visuals.search_path must be a list of directories")
-    out = []
-    for entry in search:
-        path = Path(entry)
-        if not path.is_dir():
-            raise GuidelinesError(
-                f"extensions.custom_visuals.search_path: {entry} is not a directory")
-        out.append(path)
-    return tuple(out)
+    return tuple(_contract_dir(entry, "extensions.custom_visuals.search_path")
+                 for entry in search)
 
 
 def _max_resize(ext: dict[str, Any]) -> float | None:

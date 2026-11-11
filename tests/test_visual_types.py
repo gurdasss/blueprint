@@ -405,3 +405,22 @@ def test_the_flag_adds_to_the_guidelines_opt_in_instead_of_replacing_it(tmp_path
     rules = guidelines.load(g, visuals=[mine])
     assert set(rules.visuals) == {theirs, mine}
     assert {"gauge", "ring"} <= set(contracts(rules.visuals))  # both reachable
+
+
+def test_a_visuals_directory_that_does_not_exist_is_refused_by_either_route(tmp_path: Path,
+                                                                           capsys):
+    """Both ways in are checked the same way. `--visuals` used to load nothing and exit 0, so a
+    path that had gone away (`blueprint/visuals/archive`, removed in v0.8.0) looked like it
+    worked — a test in this repo carried one for a release before anyone noticed."""
+    gone = tmp_path / "gone"
+    with pytest.raises(guidelines.GuidelinesError, match="--visuals: .*gone is not a directory"):
+        guidelines.load(GUIDE, visuals=[gone])
+
+    g = tmp_path / "g.yaml"
+    g.write_text(f'extensions:\n  custom_visuals:\n    search_path: ["{gone}"]\n')
+    with pytest.raises(guidelines.GuidelinesError,
+                       match="search_path: .*gone is not a directory"):
+        guidelines.load(g)
+
+    assert main(["describe", "--guidelines", str(GUIDE), "--visuals", str(gone)]) == 2
+    assert "is not a directory" in capsys.readouterr().err

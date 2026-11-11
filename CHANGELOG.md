@@ -4,6 +4,13 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
+## Unreleased
+
+- `--visuals DIR` refuses a directory that doesn't exist, naming the flag, the way
+  `extensions.custom_visuals.search_path` already did. It used to load nothing and exit 0, so a
+  path that had gone away — `blueprint/visuals/archive`, removed in v0.8.0 — looked like it
+  still worked.
+
 ## v0.8.0 (2026-11-11)
 
 Every visual type a Desktop probe has verified is now core. **Breaking:**
