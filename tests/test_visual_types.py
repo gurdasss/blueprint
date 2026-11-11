@@ -1,7 +1,4 @@
-"""Pie, table and KPI (probe 08): `bp apply` writes the query shapes Desktop wrote for them.
-
-pie is archived out of the core seven, so these tests opt it back in the way a client would.
-"""
+"""Pie, table and KPI (probe 08): `bp apply` writes the query shapes Desktop wrote for them."""
 
 import json
 import shutil

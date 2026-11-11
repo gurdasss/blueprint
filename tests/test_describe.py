@@ -21,7 +21,7 @@ def _describe(capsys, *args) -> dict:
 
 def test_types_layouts_and_limits_without_a_report(capsys):
     d = _describe(capsys)
-    # describe shows what a spec may use: the core seven, until the client opts the archive in
+    # describe shows what a spec may use: the core, plus any contracts of the client's own
     assert sorted(d["types"]) == sorted(CORE_TYPES)  # the core, whatever it holds today
     assert d["types"]["kpi"] == {"visual_type": "kpi", "region": "kpi-row", "options": {}, "slots": {
         "value": {"accepts": ["measure"], "required": True, "list": False, "list_excludes": []},

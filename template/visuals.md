@@ -8,8 +8,8 @@
 
 A visual definition is a YAML file that says what a visual type **is** —
 its Power BI type string, what data slots it has, and what formatting
-options it supports. Blueprint already ships 15 of these in
-`blueprint/visuals/`.
+options it supports. Blueprint ships 18 of these in `blueprint/visuals/`,
+one per probe-verified type.
 
 At startup, Blueprint loads every visual YAML into memory as a dict of
 in-memory objects. When `bp apply` runs, it combines each visual's
@@ -208,9 +208,11 @@ The engine combines them into **PBIR JSON** (what Power BI reads).
 
 ---
 
-## Core 20% visual types
+## The core types
 
-These 7 types cover every standard report pattern:
+All 18 are core and load automatically — there is no opt-in and no archive
+(that split was a v0.6 refactor holding pen, removed in v0.8.0). The ones a
+standard report is built from come first:
 
 | Type | What it shows | Slots |
 |------|--------------|-------|
@@ -218,20 +220,20 @@ These 7 types cover every standard report pattern:
 | **card** | Single KPI number | value |
 | **kpi** | Value + trend + target | value, trend, target |
 | **column** | Categories vs values | category, value, legend |
-| *(area, pie, donut, matrix, slicer, the stacked charts)* | promoted into the core 2026-11-11 | see each contract |
-| **line** | Trends over time | category, value, legend |
 | **bar** | Horizontal categories | inherits column |
+| **line** | Trends over time | category, value, legend |
 | **table** | Rows and columns | columns (mixed types) |
+| **matrix** | Rows x columns x measures | rows, columns, values |
+| **slicer** | A filter the reader drives | field |
+| **pie**, **donut** | Share of a total | category, value, details |
+| **area**, **stacked-column**, **stacked-column-100**, **stacked-bar** | Composition over a category | category, value, legend |
+| **scatter** | Two measures per category | category, x, y, size, legend |
+| **multi-row-card** | A row per value, fields side by side | fields (columns and measures) |
+| **map** | Bubbles per location | category, size, legend |
 
-### Deferred (ship via extension or client-added visuals)
+Each contract cites the probe that verified its PBIR shape, and a type with
+no probe behind it doesn't ship. `map` also needs Desktop's "Map and filled
+map visuals" security setting on, which is off by default.
 
-| Type | Status |
-|------|--------|
-| pie, donut | Slot structure exists, verified by probes |
-| area, stacked-column, stacked-bar, stacked-column-100 | Inherit from column |
-| matrix | Inherits from table |
-| slicer | Unique slot structure |
-
-These already have definitions in `blueprint/visuals/` and are loaded
-automatically. They're deferred from core only because a client doesn't
-need them to build a functional report — not because they're unavailable.
+Types of your **own** still load from a directory you declare
+(`extensions.custom_visuals.search_path`, or `--visuals DIR` for one run).

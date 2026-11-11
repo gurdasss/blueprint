@@ -1,4 +1,4 @@
-"""A visual's sort, and the chart options the core seven share (probe 31).
+"""A visual's sort, and the chart options the core's chart types share (probe 31).
 
 Probe 31 settled two things in Desktop: the clustered bar and the line take the column chart's
 `labels`/`legend` options, and a sort the *user* chooses carries no `isDefaultSort` — that flag

@@ -279,9 +279,10 @@ lives only in a comment in six layout files.
 > **Reversed 2026-11-11.** The archive turned out to be a holding pen for this refactor, not a
 > permanent split: the user's call was that a type Desktop ships and a probe has verified belongs
 > in the core. All eight archived types were promoted in batches (slicer/matrix, pie/donut, then
-> area and the three stacked charts), `blueprint/visuals/archive/` is gone, and the core is the
-> 15 probe-verified types. Probe 35 ran first so the four stacked/area charts carried the same
-> `labels` and `legend` options as the core's charts instead of importing the gap. What step 4
+> area and the three stacked charts), `blueprint/visuals/archive/` is gone, and the core was the
+> 15 probe-verified types — 18 once probes 34 and 36 added `scatter`, `multi-row-card` and
+> `map`. Probe 35 ran first so the four stacked/area charts carried the same `labels` and
+> `legend` options as the core's charts instead of importing the gap. What step 4
 > actually bought, and what stands: `inherits:`, one contract per type as data, and the opt-in
 > mechanism — which now serves its real purpose, a client's own contracts.
 

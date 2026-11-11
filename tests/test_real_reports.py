@@ -66,9 +66,7 @@ def test_a_spec_of_its_own_fields_applies_checks_clean_and_reapplies_as_a_no_op(
         f"  - {{type: slicer, region: kpi-row, options: {{style: dropdown}}, slots: {{field: \"{col_a}\"}}}}\n"
         f"  - {{type: card, title: Card, slots: {{value: \"{measure}\"}}}}\n"
         f"  - {{type: table, title: Table, slots: {{columns: [\"{col_a}\", \"{col_b}\", \"{measure}\"]}}}}\n")
-    # the slicer is archived out of the core seven; opt in as a client would
-    args = ["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE),
-            "--visuals", str(ROOT / "blueprint" / "visuals" / "archive")]
+    args = ["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]
     assert main(args) == 0, capsys.readouterr().err
     report = read_report(proj)
     [page] = [p for p in report.pages if p.spec]

@@ -46,10 +46,9 @@ ROOT = Path(__file__).resolve().parent.parent
 PROBES = ROOT / "docs" / "probes"
 FIXTURE = ROOT / "fixtures" / "02-card-and-chart"
 GUIDE = ROOT / "guidelines" / "example.yaml"
-# Probes 11 and 20-24, 27-28 built pie, donut, slicer, matrix, area and the stacked charts, which
-# are archived out of the core seven. The replays are Desktop's evidence for those shapes, so they
-# opt the archive back in exactly as a client would (`--visuals`, or
-# extensions.custom_visuals.search_path in guidelines).
+# Every type a probe used is in the core (the archive went away in v0.8.0), so a replay loads the
+# guidelines as they ship. Probes 9/14/17/19 predate later layout and example changes, so those
+# replays read `tests/pinned-layouts/` and `tests/pinned-specs/` instead.
 
 
 def _rules(path=GUIDE):
@@ -331,8 +330,8 @@ def _pinned_guide(tmp_path: Path) -> Path:
 
 
 @pytest.mark.parametrize(("probe", "specs"), [
-    # the spec probe 9 was built from, pinned: the shipped example moved off the archived
-    # pie type (tests/pinned-specs/README.md)
+    # the spec probe 9 was built from, pinned: the shipped example moved off `pie` and on to
+    # `bar` after the probe ran (tests/pinned-specs/README.md)
     (9, [Path(__file__).resolve().parent / "pinned-specs" / "sales-mix.yaml"]),
     (14, ["specs/dates-and-bars.yaml", "specs/pies-and-lines.yaml"]),
     (17, ["specs/geography.yaml"]),

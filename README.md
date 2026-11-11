@@ -693,6 +693,7 @@ blueprint/
 │
 ├── docs/probes/                # raw Desktop diffs: the evidence behind schema.md
 ├── scripts/                    # probe builders (probe_*.py), demo.sh, desktop.sh, ci_check.sh
+├── unverified-probes/          # probes written but never opened in Desktop: not evidence
 ├── template/                   # the client-first design notes and plan for v0.6
 │
 └── tests/                      # includes golden/, pinned-layouts/, pinned-specs/ and
@@ -722,9 +723,11 @@ and the code relies only on facts recorded as verified. The method is a **probe*
 5. **Only then ship it.** A visual contract, option or spec key cites its probe. Open items in
    `schema.md` are not used by the code.
 
-Probes 01 to 31 cover pages and the registry, annotations, formatting and themes, fonts, every
+Probes 01 to 36 cover pages and the registry, annotations, formatting and themes, fonts, every
 shipped visual type and its bindings, drill-downs, hierarchies, chart options, aggregations and
-formats, and sorts.
+formats, sorts, a Legend column on clustered charts, table totals, and the scatter, multi-row card
+and map. Probes written but **not yet run** live in `unverified-probes/`, where nothing counts as
+evidence.
 
 ### The first questions
 

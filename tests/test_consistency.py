@@ -136,8 +136,9 @@ def test_the_core_contract_set_matches_its_constant():
 
 
 def test_every_yaml_blueprint_loads_at_runtime_is_packaged():
-    """package-data globs don't recurse: a nested directory of YAML would need its own.yaml`,
-    so an archived contract would be missing from a pip install (the repo checkout hides it)."""
+    """package-data globs don't recurse, so YAML in a nested directory would need a glob of its
+    own or go missing from a pip install, which a repo checkout hides (that is how the archived
+    contracts went unpackaged in v0.6)."""
     data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     globs = data["tool"]["setuptools"]["package-data"]["blueprint"]
     pkg = ROOT / "blueprint"
