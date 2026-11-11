@@ -560,6 +560,36 @@ content, so Blueprint's theme file matches Desktop's format exactly.
   well's menu set every level `active` (expand) and **did not switch to the plain column**.
   Probe 14 settled how Blueprint binds a date: `Table[Column]` as a plain `Column`, which Desktop draws
   and keeps as written.
+**Verified 2026-11-11, probe 34** (`scripts/probe_map_scatter_card.py`; evidence
+`docs/probes/34-map-scatter-card.diff`). The three types real reports use that no contract covers,
+written as candidates and drawn by Desktop, then kept through a refresh and save. A survey of the
+three sample reports (counts only) is what picked them: `multiRowCard` 6, `map` 4, `scatterChart`
+3. Predictions P1-P7 are in the script.
+
+- **`multiRowCard`**: role `Values`, no `active`, no objects. One measure draws one value; **two
+  measures draw both, side by side in one row**; a **column beside a measure draws one row per
+  value** (FR 200, UK 300) — grouping, which is what the type is for. The samples only ever
+  showed one field, so all three were open.
+- **`scatterChart`**: `Category` (column, `"active": true`, and a drill list works), `Series`
+  (column, no `active`), `Size` (measure), `X` (measure), `Y` (measure). Roles alphabetical.
+- **Desktop adds `"active": true` to the scatter chart's `X` projection.** It was written without
+  one and the save added it to all three scatters — and both sample files carry it, so it is
+  Desktop's convention for that well, not drill view state. A `scatter` contract therefore needs
+  `active: true` on **both** `category` and `x` (`slots.Slot.active`).
+- **`map`**: `Category` (column, `"active": true`), `Series` (column), `Size` (measure). Desktop
+  geocoded `FR`/`UK` from the **column name alone** — the fixture's `Country` has no
+  `dataCategory` in TMDL — and drew a bubble per country sized by the measure, the `Series`
+  variant splitting each bubble into segments with a legend.
+- **Map visuals are off by default in Desktop** ("Map and filled map visuals are disabled. To
+  enable them, go to File > Options and settings > Options > Global > Security"). Until that is
+  switched on, Desktop never reads the shape, and after a data refresh the message came back
+  although the setting was still on (it appears to need a restart). So a map Blueprint writes
+  draws only where that setting is on: the contract has to say so, and a probe on a map needs it
+  enabled first.
+- The save also wrote `settings.customMemoryLimit`, `customTimeoutLimit` and `queryLimitOption`
+  into `report.json` — from opening the Options dialog, not from anything Blueprint wrote. The
+  writer patches documents in place, so properties like these survive untouched.
+
 **Verified 2026-11-11, probe 33** (`scripts/probe_apply_legend_totals.py`; evidence
 `docs/probes/33-apply-legend-totals.diff`, the demo's model on fixture 02). The acceptance probe
 for probe 32's shapes: **everything was written by `bp apply`**, nothing patched by hand, then
