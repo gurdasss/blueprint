@@ -219,7 +219,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: gurdasss/blueprint@v0.5.1        # a release tag (or commit SHA) pins Blueprint
+      - uses: gurdasss/blueprint@v0.6.0        # a release tag (or commit SHA) pins Blueprint
         with:
           reports: |                           # one per line: .Report folder, .pbip, its folder, or a glob
             reports/Sales.Report
@@ -287,6 +287,34 @@ them). Leaving one out keeps Desktop's default:
     options: { labels: on, legend: right }   # data labels on, legend on the right (probe 23)
     slots: { category: "Calendar[Month]", value: ["[Total Sales]", "[Sales Target]"] }
 ```
+
+A slot entry can say more than a field name. The long form is `{field, aggregate, format}`;
+`"X"` is shorthand for `{field: X}`. `aggregate` summarises a **column** in the visual
+(`sum`, `average`, `min`, `max`, `count`, `distinctcount`) and is allowed only in a slot that
+takes a measure. `format` is a Power BI format string, written as given (probes 29 and 30):
+
+```yaml
+page: Sales Detail
+layout: two-up
+
+visuals:
+  - type: column
+    title: Average amount by country
+    slots:
+      category: "Sales[Country]"
+      value: { field: "Sales[Amount]", aggregate: average, format: "#,0.00" }
+    sort: { by: "Sales[Country]", direction: ascending }
+
+  - type: table
+    title: Orders
+    slots:
+      columns: ["Sales[Country]", { field: "Sales[Amount]", aggregate: sum, format: "$#,0" }]
+```
+
+A visual's `sort: {by, direction}` writes the visual's own sort (probe 31). `by` must be a field
+the visual binds, because Desktop ignores any other. A spec with no `sort` leaves Desktop's sort,
+or the one a user set, alone. `labels` and `legend` options are available on `column`, `bar` and
+`line`.
 
 ### Core types, and the archive
 
@@ -472,6 +500,35 @@ layouts:
   default: standard-4-up
 ```
 
+### Core keys and extensions
+
+The core file is small on purpose: `version`, `name`, `canvas` (width and height), `spacing`
+(`grid`, `margin`, `gutter`), `page`, `palette`, `typography` (`page_title`, `visual_title`,
+`body`) and `layouts`. Rule severities are fixed in code. Everything else is opt-in under
+`extensions:`:
+
+```yaml
+extensions:
+  severity: { grid: warning }          # override a rule's severity: error | warning | off
+  decorative_types: [image, shape]     # may contain visuals; exempt from margin and gutter
+  max_resize: 0.25                     # bp fmt skips a visual it would resize by more
+  typography:                          # further text roles, checked like the core ones
+    subtitle:   { font: Segoe UI, size: 12 }
+    callout:    { font: Segoe UI Light, size: 32 }
+    card_label: { font: Segoe UI, size: 12 }
+  custom_visuals:
+    search_path: ["../blueprint/visuals/archive"]   # see "Core types, and the archive"
+```
+
+**Upgrading from v0.5.x.** The old keys are refused, never ignored, and the error names the
+replacement: `grid.size` is `spacing.grid`; `canvas.margin` and `canvas.gutter` are
+`spacing.margin` and `spacing.gutter`; `grid.max_resize`, `check.severity` and
+`check.decorative_types` moved under `extensions`; `grid.snap` is gone (`bp fmt` always snaps);
+typography roles `header`, `title` and `textbox` are `page_title`, `visual_title` and `body`;
+`subtitle`, `callout` and `card_label` moved to `extensions.typography`. The `bold` setting is
+gone: a weight is part of the face name (`Segoe UI Semibold`). The one check this drops is a
+textbox run's own `fontWeight`.
+
 ### Multi-tenant notes
 
 - The tool is generic; **guideline files are the tenant-specific part.** Keep yours out of
@@ -494,7 +551,7 @@ every change, and `bp manifest` rebuilds it from the report at any time.
 
 ```json
 {
-  "blueprint_version": "0.5.1",
+  "blueprint_version": "0.6.0",
   "guidelines": { "name": "Example Corp Reporting Standard", "version": 1 },
   "pbir_schema": { "page": ["2.1.0"], "visualContainer": ["2.13.0"] },
   "generated_at": "2026-11-09T04:00:00Z",
@@ -547,57 +604,60 @@ It is **generated, never hand-edited**.
 ```
 blueprint/
 ├── README.md
+├── CHANGELOG.md
 ├── pyproject.toml
+├── action.yml                  # composite GitHub Action: bp check over reports
 ├── blueprint/
 │   ├── __init__.py
-│   ├── cli.py                  # argparse entry points: inspect/check/fmt/apply/manifest
+│   ├── cli.py                  # argparse entry points; one module per command in commands/
 │   ├── defaults.yaml           # built-in guideline defaults (layer 1)
 │   │
+│   ├── commands/               # inspect, check, fmt, apply, describe, manifest, theme
+│   │
 │   ├── pbir/                   # everything that knows the on-disk format
-│   │   ├── __init__.py
 │   │   ├── reader.py           # report dir -> in-memory model
 │   │   ├── writer.py           # in-memory model -> report dir (atomic)
-│   │   ├── registry.py         # the page/visual registry files (see note below)
-│   │   ├── ids.py              # id generation, matching the format Desktop uses
-│   │   └── schema.md           # NOTES on the real format. Filled by the diff study.
+│   │   ├── jsonfmt.py          # the only JSON reader/writer: Desktop's bytes, exactly
+│   │   ├── schemas.py          # validation against the vendored Microsoft schemas
+│   │   ├── schemas/            # the vendored schemas (scripts/vendor_schemas.py)
+│   │   ├── render.py           # minimal PBIR documents for new pages and visuals
+│   │   ├── registry.py         # the only code that changes pages.json pageOrder
+│   │   ├── ids.py              # deterministic ids in the format Desktop uses
+│   │   ├── semantic.py         # read-only TMDL model: tables, columns, measures, hierarchies
+│   │   ├── formatting.py       # colours and fonts found by shape
+│   │   ├── theme.py            # the guidelines theme file
+│   │   └── schema.md           # verified format facts, each with its evidence
 │   │
-│   ├── model.py                # Report / Page / Visual / Slot dataclasses
+│   ├── model.py                # Report / Page / Visual dataclasses
 │   ├── spec.py                 # page spec parsing + validation
-│   ├── guidelines.py           # layered config resolution
+│   ├── guidelines.py           # layered config resolution; retired keys refused by name
 │   ├── layouts.py              # named layout -> regions
-│   ├── slots.py                # slot contracts per visual type
-│   ├── render.py               # template + params -> files
-│   ├── validate.py             # guideline checks (used by `check` and after `apply`)
+│   ├── slots.py                # visual contracts (blueprint/visuals/*.yaml), inherits:
+│   ├── grid.py                 # the one definition of "on grid"
+│   ├── plan.py                 # planned file writes and warnings (--dry-run)
+│   ├── validate.py             # guideline rules (used by `check`)
 │   ├── policies.py             # named policies the config selects (e.g. density)
-│   └── manifest.py
-│
-├── templates/                  # harvested, parameterised PBIR fragments
-│   ├── page/
-│   └── visuals/
-│       ├── card/
-│       ├── pie/
-│       ├── column/
-│       └── table/
+│   ├── manifest.py
+│   └── visuals/                # slot contracts: the core seven, archive/ for the rest
 │
 ├── guidelines/
 │   ├── example.yaml            # invented; committed so the tool is runnable
 │   ├── layouts/
 │   └── .gitignore              # ignore everything except example.yaml + layouts/
 │
-├── examples/
-│   └── sales-overview.yaml
+├── examples/                   # runnable specs, and demo/ (the end-to-end demo's pages)
 │
 ├── fixtures/                   # synthetic PBIP reports, built from scratch
 │   ├── 01-blank-report/
 │   ├── 02-card-and-chart/
 │   └── README.md               # how each was made, so they can be rebuilt
 │
-└── tests/
-    ├── test_reader.py
-    ├── test_idempotence.py     # fmt twice == fmt once
-    ├── test_validate.py
-    ├── test_apply_golden.py    # golden-file comparison per fixture
-    └── test_spec_errors.py
+├── docs/probes/                # raw Desktop diffs: the evidence behind schema.md
+├── scripts/                    # probe builders (probe_*.py), demo.sh, desktop.sh, ci_check.sh
+├── template/                   # the client-first design notes and plan for v0.6
+│
+└── tests/                      # includes golden/, pinned-layouts/, pinned-specs/ and
+                                # test_probe_replay.py (every probe replayed against Blueprint)
 ```
 
 **`pbir/` is the only package that knows the file format.** Everything above it works on
@@ -744,9 +804,18 @@ four visual types. Manifest emitted. No field bindings yet.
 **v0.4 — bind.** Typed slots, measures and columns, drill-down paths. This is where the
 tool becomes genuinely end-to-end with the Modeling MCP.
 
-**Later, in no particular order.** Conditional formatting. Bookmarks. More visual types.
-Theme file generation (done: `bp theme`). A `bp new` scaffold. CI action for `bp check`
-(done: [In CI](#in-ci)).
+**v0.5 — breadth.** Drill-downs and legends on line and area, more chart options (done).
+
+**v0.6 — the template rewrite.** Client-first input files: a small core guidelines schema with
+opt-in `extensions:`, a core of seven visual types, `inherits:` for visual contracts, per-field
+`aggregate` and `format`, `labels`/`legend` on all three chart types, and `sort` (done).
+
+**Next, each needing a Desktop probe first:** a legend binding on column and bar, table totals,
+axis titles, conditional formatting.
+
+**Later, in no particular order.** Bookmarks. Relative layout positioning. Promoting archived
+visual types into the core. A `bp new` scaffold. Theme file generation (done: `bp theme`). CI
+action for `bp check` (done: [In CI](#in-ci)).
 
 **Deliberately unscheduled:** an interactive wizard. The declarative spec is the primary
 interface; a prompt-driven shell on top is a convenience, and conveniences come after the
