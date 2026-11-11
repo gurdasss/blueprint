@@ -48,6 +48,11 @@ class Slot:
     # carry the shape of a type it doesn't ship, and a custom visual can declare it without a
     # code change.
     active: bool = False
+    # Where a hierarchy's levels go, how many of them Desktop marks active. "first" is what it
+    # wrote for a matrix's Rows and every chart's Category (probes 16, 39): the first level
+    # `true` and each deeper one an explicit `false`. "all" is the slicer's Field, where every
+    # level is `true` (probe 39). Another per-well fact, so it lives in the contract too.
+    active_levels: str = "first"
 
 
 @dataclass(frozen=True)
@@ -85,6 +90,11 @@ class Contract:
     def active_roles(self) -> frozenset[str]:
         """The query roles whose column projections carry ``"active": true`` (see ``Slot.active``)."""
         return frozenset(s.role for s in self.slots.values() if s.active)
+
+    @property
+    def all_level_roles(self) -> frozenset[str]:
+        """The active roles where *every* level of a hierarchy is active (``Slot.active_levels``)."""
+        return frozenset(s.role for s in self.slots.values() if s.active and s.active_levels == "all")
 
 
 def _read(path: Path) -> dict:
@@ -144,9 +154,12 @@ def _contract(data: dict, where: str, stem: str) -> Contract:
             accepts = (accepts,) if isinstance(accepts, str) else tuple(accepts)
             if not accepts or any(a not in KINDS for a in accepts):
                 raise ContractError(f"{where}: slot {name}: accepts must be from {KINDS}")
+            levels = str(spec.get("active_levels", "first"))
+            if levels not in ("first", "all"):
+                raise ContractError(f"{where}: slot {name}: active_levels must be first or all")
             slots[name] = Slot(name, spec["role"], accepts, bool(spec.get("required", False)),
                                bool(spec.get("ordered", False)), tuple(spec.get("list_excludes", ())),
-                               bool(spec.get("active", False)))
+                               bool(spec.get("active", False)), levels)
         options = {}
         for name, spec in (data.get("options") or {}).items():
             if not all(isinstance(k, str) for k in spec["values"]):
