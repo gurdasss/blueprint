@@ -14,18 +14,24 @@ code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, eviden
 - **Every probe-verified visual type is core**, so a spec uses all 18 with no opt-in and
   `bp describe` lists them: `area`, `bar`, `card`, `column`, `donut`, `header`, `kpi`, `line`,
   `map`, `matrix`, `multi-row-card`, `pie`, `scatter`, `slicer`, `stacked-bar`, `stacked-column`,
-  `stacked-column-100`, `table`.
-  `blueprint/visuals/archive/` is gone; `--visuals DIR` and
-  `extensions.custom_visuals.search_path` stay, for contracts of your own.
+  `stacked-column-100`, `table`. The archive was a holding pen for the v0.6 refactor, not a
+  permanent split: its eight types were promoted in batches as their Desktop evidence was
+  confirmed (slicer and matrix: probes 20-21; pie and donut: 08, 11, 22-24; area and the stacked
+  charts: 22-24 and 35).
 - `area`, `stacked-column`, `stacked-column-100` and `stacked-bar` gained the `labels` and
   `legend` options (positions and `off`) the core's charts already had, so all seven chart types
-  behave alike (probe 35). The archive was a holding pen for the v0.6 refactor, not a permanent split: types
-  move into the core in batches as their Desktop evidence is confirmed (these two: probe 20 for
-  the shapes, probe 21 for Desktop accepting what `bp apply` writes; probes 08 and 11 for the pie
-  and its Legend drill-down, 22-24 for the donut, the area and the stacked charts and Desktop's
-  save of them).
-- A report whose guidelines still opt into `blueprint/visuals/archive` keeps working; hand-built
-  visuals are unaffected (the manifest has always named those by PBIR type and query role).
+  behave alike (probe 35).
+- Hand-built visuals are unaffected: the manifest has always named those by PBIR type and query
+  role, whatever contracts are loaded.
+
+### Breaking: `blueprint/visuals/archive/` is gone
+
+Every type it held is core, so nothing needs the opt-in any more. `--visuals DIR` and
+`extensions.custom_visuals.search_path` stay — they are for contracts of **your own** now.
+
+**Upgrading:** a guidelines file or `.blueprint.yaml` that still points a `search_path` at
+`blueprint/visuals/archive` now fails with `... is not a directory`. Delete that
+`custom_visuals` entry; the types it used to load are in the core.
 
 ## v0.7.0 (2026-11-11)
 
