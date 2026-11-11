@@ -316,6 +316,28 @@ the visual binds, because Desktop ignores any other. A spec with no `sort` leave
 or the one a user set, alone. `labels` and `legend` options are available on `column`, `bar` and
 `line`.
 
+`column`, `bar` and `line` also take a **Legend column** (`legend: "Sales[Region]"`, one column,
+beside a drill-down if you like). Desktop refuses it together with several measures or a second
+Legend column, so Blueprint does too (probe 32). `legend: off` hides the legend, and the
+positions (`top`, `bottom`, `left`, `right`) show it: one option, one state. A table takes
+`totals: "off"` to remove its Total row (`"on"` is Desktop's default):
+
+```yaml
+page: Sales Split
+layout: two-up
+
+visuals:
+  - type: column
+    title: Sales by country, by region
+    options: { legend: bottom }
+    slots: { category: "Sales[Country]", value: "[Total Sales]", legend: "Sales[Region]" }
+
+  - type: table
+    title: Orders
+    options: { totals: "off" }
+    slots: { columns: ["Sales[Country]", "Sales[Region]", "[Total Sales]"] }
+```
+
 ### Core types, and the archive
 
 The core ships seven types: `header`, `card`, `kpi`, `column`, `line`, `bar`, `table`.
@@ -798,10 +820,11 @@ tool becomes genuinely end-to-end with the Modeling MCP.
 
 **v0.6 — the template rewrite.** Client-first input files: a small core guidelines schema with
 opt-in `extensions:`, a core of seven visual types, `inherits:` for visual contracts, per-field
-`aggregate` and `format`, `labels`/`legend` on all three chart types, and `sort` (done).
+`aggregate` and `format`, `labels`/`legend` on all three chart types, `sort`, a Legend column
+on clustered charts, `legend: off` and table `totals` (done).
 
-**Next, each needing a Desktop probe first:** a legend binding on column and bar, table totals,
-axis titles, conditional formatting.
+**Next, each needing a Desktop probe first:** axis titles, conditional formatting; and the visual
+types real reports use that no contract covers (`map`, `scatter`, `multiRowCard`).
 
 **Later, in no particular order.** Bookmarks. Relative layout positioning. Promoting archived
 visual types into the core. A `bp new` scaffold. Theme file generation (done: `bp theme`). CI

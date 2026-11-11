@@ -114,7 +114,8 @@ adds — exactly the case `extensions.custom_visuals.search_path` serves.
 column  ← bar, stacked-column, stacked-bar, stacked-column-100, area
            (all: category + value, same roles)
 
-line    ← (extends column, adds legend slot)
+line    ← (the column's slots, restated: its own legend slot excludes a measure list; probe 32
+           gave column and bar the same legend slot, so this is no longer "adds legend")
 
 card    ← standalone (single value)
 
@@ -216,7 +217,7 @@ These 7 types cover every standard report pattern:
 | **header** | Page title text | (none — textbox) |
 | **card** | Single KPI number | value |
 | **kpi** | Value + trend + target | value, trend, target |
-| **column** | Categories vs values | category, value |
+| **column** | Categories vs values | category, value, legend |
 | **line** | Trends over time | category, value, legend |
 | **bar** | Horizontal categories | inherits column |
 | **table** | Rows and columns | columns (mixed types) |

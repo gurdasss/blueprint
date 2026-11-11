@@ -471,8 +471,25 @@ Probe 31 fixed both halves of that:
   no `sort` leaves whatever is there, which also fixes a quiet bug: a sort set in Desktop used to
   be discarded whenever a rebind changed the fields.
 
-Deliberately left out of this version, as not "basic": table totals, a legend binding on
-column/bar, axis titles, conditional formatting.
+Probe 32 reversed part of that. A survey of two real reports (48 visuals, counts only) found a
+Legend column on 3 of 6 clustered column/bar charts, `legend.show = false` on 5 of 18 legends
+and `total.totals` set on 2 of 2 tables, and none of it had a probe. The core could not draw
+"sales by region, split by category" at all (only the archived stacked charts could), so the
+earlier "not basic" call was wrong for the legend binding, and it follows the same
+one-unit-per-thing rule as `category`: one column in one well, nothing derived. Now core:
+
+- **A Legend column on `column` and `bar`** (`legend` slot, role `Series`, no `active`), one
+  column, with `value` excluding a list beside it, exactly as `line` has had since probes 27/28.
+  Desktop refused several measures with a Legend, and two Legend columns, on the clustered
+  charts too.
+- **`legend: off`** (`legend.show = false`) on column, bar and line. One option is one state:
+  choosing `off` removes `position` and choosing a position removes `show`, so a legend moved from
+  `off` to `top` isn't left hidden.
+- **`totals: on|off`** on `table` (`total.totals`). Desktop's default is on.
+
+Still left out, as not "basic": axis titles (zero uses in the survey, and no `valueAxis` at all),
+conditional formatting (zero shapes), and the `map`, `scatter` and `multiRowCard` types, which
+real reports use and neither the core nor the archive covers.
 
 ---
 

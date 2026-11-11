@@ -41,6 +41,12 @@ guidelines schema changed, and the old keys are refused with the replacement nam
   without `sort` leaves Desktop's or the user's sort alone; before, a user's sort was discarded
   when a re-apply changed the fields.
 - `labels` and `legend` options now work on `bar` and `line` as well as `column` (probe 31).
+- A Legend column on `column` and `bar` (`legend: "Sales[Region]"`), one column, with a
+  drill-down allowed beside it. Several measures with it, or a second Legend column, are
+  refused, as Desktop does (probe 32).
+- `legend: off` on `column`, `bar` and `line` (`legend.show = false`). One option is one state:
+  choosing it removes `position`, and choosing a position removes `show`.
+- `totals: on|off` on `table` (`total.totals`; Desktop's default is on).
 
 ### Under the hood
 
