@@ -352,9 +352,13 @@ visuals:
 
 ### Visual types, and your own
 
-The core ships every type a Desktop probe has verified: `header`, `card`, `kpi`, `column`,
-`bar`, `line`, `area`, `table`, `matrix`, `slicer`, `pie`, `donut`, `stacked-column`,
-`stacked-column-100` and `stacked-bar`. A spec naming anything else is refused, listing the types
+The core ships every type a Desktop probe has verified: `header`, `card`, `multi-row-card`,
+`kpi`, `column`, `bar`, `line`, `area`, `scatter`, `table`, `matrix`, `slicer`, `pie`, `donut`,
+`map`, `stacked-column`, `stacked-column-100` and `stacked-bar`.
+
+> **`map` needs turning on.** Power BI Desktop disables map visuals by default (File > Options
+> and settings > Options > Global > Security). Where that is off, Desktop shows a message in
+> place of the visual, whoever wrote the file. A spec naming anything else is refused, listing the types
 that are loaded.
 
 **Your own types.** A contract is a YAML file, so you can add types Blueprint doesn't ship —

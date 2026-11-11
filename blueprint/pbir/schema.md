@@ -560,6 +560,21 @@ content, so Blueprint's theme file matches Desktop's format exactly.
   well's menu set every level `active` (expand) and **did not switch to the plain column**.
   Probe 14 settled how Blueprint binds a date: `Table[Column]` as a plain `Column`, which Desktop draws
   and keeps as written.
+**Verified 2026-11-11, probe 36** (`scripts/probe_apply_scatter_card_map.py`; evidence
+`docs/probes/36-apply-scatter-card-map.diff`). The acceptance probe for probe 34's three types:
+every visual built by `bp apply` from a spec, nothing patched. All four predictions held.
+
+- **Desktop draws and keeps Blueprint's own `scatterChart`, `multiRowCard` and `map`.** The save
+  rewrote only the three scatters; the two cards and the two maps it did not touch.
+- **Desktop adds `"active": true` to a scatter's `X` projection itself**, on all three, and
+  changed nothing else. Blueprint leaves it out on purpose (`active` marks a column's drill
+  state and `X` takes a measure), so the flag is Desktop's, like a Category list's drill state.
+- **Re-applying the same specs on the saved report changed nothing at all** — not even the
+  manifest — so the `active` Desktop added is not fought over.
+- `bp check` reports no `format` findings on the result.
+- The maps drew without the security setting being touched again, so it had stuck across a
+  Desktop restart (probe 34 saw the message return after a refresh).
+
 **Verified 2026-11-11, probe 35** (`scripts/probe_even_chart_options.py`; evidence
 `docs/probes/35-even-chart-options.diff`). `labels` and `legend` were verified unevenly across the
 charts still in the archive, by which probe happened to cover which type — area had no options at

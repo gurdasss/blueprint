@@ -6,9 +6,15 @@ code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, eviden
 
 ## Unreleased
 
-- **Every probe-verified visual type is core**, so a spec uses all 15 with no opt-in and
+- **Three new visual types**: `scatter` (`category`, `x`, `y`, `size`, `legend`),
+  `multi-row-card` (one `fields` well taking columns and measures mixed — a column makes one row
+  per value) and `map` (`category`, `size`, `legend`). Verified in probe 34 and accepted from
+  `bp apply` in probe 36. **`map` draws only where Desktop's "Map and filled map visuals"
+  security setting is on**, which is off by default.
+- **Every probe-verified visual type is core**, so a spec uses all 18 with no opt-in and
   `bp describe` lists them: `area`, `bar`, `card`, `column`, `donut`, `header`, `kpi`, `line`,
-  `matrix`, `pie`, `slicer`, `stacked-bar`, `stacked-column`, `stacked-column-100`, `table`.
+  `map`, `matrix`, `multi-row-card`, `pie`, `scatter`, `slicer`, `stacked-bar`, `stacked-column`,
+  `stacked-column-100`, `table`.
   `blueprint/visuals/archive/` is gone; `--visuals DIR` and
   `extensions.custom_visuals.search_path` stay, for contracts of your own.
 - `area`, `stacked-column`, `stacked-column-100` and `stacked-bar` gained the `labels` and

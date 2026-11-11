@@ -55,9 +55,9 @@ GUIDE = ROOT / "guidelines" / "example.yaml"
 def _rules(path=GUIDE):
     """``path`` loaded (every type a probe used is in the core)."""
     return guidelines.load(path)
-REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]
+REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36]
 # Probes whose report Blueprint built and Desktop then opened and saved.
-ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24, 26, 27, 28, 30, 31, 32, 33, 34, 35]
+ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24, 26, 27, 28, 30, 31, 32, 33, 34, 35, 36]
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git to apply the evidence")
 
@@ -341,6 +341,7 @@ def _pinned_guide(tmp_path: Path) -> Path:
     (24, ["specs/saved-variants-1.yaml", "specs/saved-variants-2.yaml"]),
     (26, ["specs/slicer-matrix.yaml"]),
     (33, ["specs/legend-binding.yaml", "specs/legend-show.yaml", "specs/table-totals.yaml"]),
+    (36, ["specs/scatter-card.yaml", "specs/map.yaml"]),
 ])
 def test_reapply_after_desktop_saved_changes_nothing(replays, probe, specs, tmp_path, capsys):
     """Nothing but the manifest: Desktop's save can raise files' $schema versions, which the
