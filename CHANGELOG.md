@@ -4,12 +4,19 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
-## Unreleased
+## v0.8.1 (2026-11-11)
+
+A fix and a documentation pass. The fix changes behaviour, so it is worth a line even though
+nothing it refuses was ever doing anything: a wrong `--visuals` path now says so.
 
 - `--visuals DIR` refuses a directory that doesn't exist, naming the flag, the way
   `extensions.custom_visuals.search_path` already did. It used to load nothing and exit 0, so a
   path that had gone away — `blueprint/visuals/archive`, removed in v0.8.0 — looked like it
   still worked.
+- The docs caught up to v0.8.0, where the archive's removal and the three new types had left
+  claims that were no longer true: `template/visuals.md` described a core of seven with the rest
+  "deferred", the README's probe range stopped at 31, and `blueprint/defaults.yaml` offered
+  `custom_visuals` as a way to reach types that are core now.
 
 ## v0.8.0 (2026-11-11)
 
