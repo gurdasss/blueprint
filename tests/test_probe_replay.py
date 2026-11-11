@@ -55,9 +55,9 @@ def _rules(path=GUIDE):
     """``path`` loaded (every type a probe used is in the core)."""
     return guidelines.load(path)
 REPLAYED = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30,
-            31, 32, 33, 34, 35, 36, 37]
+            31, 32, 33, 34, 35, 36, 37, 38]
 # Probes whose report Blueprint built and Desktop then opened and saved.
-ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24, 26, 27, 28, 30, 31, 32, 33, 34, 35, 36, 37]
+ACCEPTANCE = [5, 6, 9, 14, 17, 19, 21, 22, 23, 24, 26, 27, 28, 30, 31, 32, 33, 34, 35, 36, 37, 38]
 
 pytestmark = pytest.mark.skipif(shutil.which("git") is None, reason="needs git to apply the evidence")
 

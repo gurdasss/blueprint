@@ -24,13 +24,14 @@ already relies on** — not new surface. That is the whole list; see "Deliberate
 
 | Folder | Settles | Why it is core |
 |---|---|---|
-| `scatter-map-options/` | `labels` and `legend` (positions and `off`) on `scatterChart` and `map`, and what each shows by default | The two newest types (probes 34, 36) have **no options at all**, while the other seven chart types all take these two. Both sample reports position or hide a legend on them. |
 | `hierarchy-matrix-slicer/` | the shape Desktop writes for a **model hierarchy** in a matrix's Rows and a slicer's Field, and whether it accepts Blueprint's | Hierarchy binding is already core (probes 16-19) on `column`, `bar`, `line`, `pie` and `table`. `matrix` and `slicer` refuse it **only because no probe covered it**, and both contracts say so. A matrix and a slicer are where reports put a hierarchy. |
 
-`pie-donut-options/` has run: it is **probe 37** (`scripts/probe_pie_donut_options.py`,
-evidence `docs/probes/37-pie-donut-options.diff`), and pie and donut are no longer owed options.
-After the two left, every chart type in the core takes the same two options, and every well that
-takes a category takes a hierarchy. That is the point at which this folder should be empty.
+Two have run: `pie-donut-options/` as **probe 37** (`scripts/probe_pie_donut_options.py`,
+evidence `docs/probes/37-pie-donut-options.diff`) and `scatter-map-options/` as **probe 38**
+(`scripts/probe_scatter_map_options.py`, `docs/probes/38-scatter-map-options.diff`). Between them
+the chart types' options are settled: pie and donut take `labels` and `legend`, scatter and map
+take `legend` only — Desktop deletes a `labels` object on those two. After the one left, every
+well that takes a category takes a hierarchy, and this folder should be empty.
 
 ## Running one, when you are at a Windows machine with Desktop
 
@@ -38,8 +39,8 @@ Same as any probe in `scripts/` (CLAUDE.md, "Test data"):
 
 ```bash
 # from the repo, with the venv active
-python unverified-probes/scatter-map-options/probe.py \
-    /mnt/c/Users/<user>/blueprint-probes/38-scatter-map-options \
+python unverified-probes/hierarchy-matrix-slicer/probe.py \
+    /mnt/c/Users/<user>/blueprint-probes/39-hierarchy-matrix-slicer \
     /mnt/c/Users/<user>/blueprint-probes/_cache/demo-cache.abf
 ```
 
@@ -48,7 +49,7 @@ without a refresh; `scripts/demo.sh` documents which one. Then open the `.pbip`,
 probe's `STEPS.md`, and `bash snap.sh "<step>"` after each save.
 
 Numbering: each script has `PROBE = "NN"` at the top — set it to the next free probe number
-(38 after probe 37 ran) before you run it, so `STEPS.md` names the right folder.
+(39 after probes 37 and 38 ran) before you run it, so `STEPS.md` names the right folder.
 
 ## When a probe has run
 

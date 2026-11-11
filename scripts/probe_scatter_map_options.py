@@ -73,7 +73,7 @@ from _probe import git, make_probe
 from blueprint.cli import main as bp
 from blueprint.pbir import jsonfmt
 
-PROBE = "NN"  # set to the next free probe number when this is run
+PROBE = "38"
 GUIDE = ROOT / "guidelines" / "example.yaml"
 MEASURE = ("\tmeasure 'Target Amount' = 600\r\n\t\tformatString: 0\r\n"  # as scripts/demo.sh
            "\t\tlineageTag: 9ab090f9-bd7f-43c4-82be-86470a46784b\r\n\r\n")

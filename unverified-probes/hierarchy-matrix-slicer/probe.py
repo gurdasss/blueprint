@@ -81,7 +81,7 @@ from _probe import git, make_probe
 from blueprint.cli import main as bp
 from blueprint.pbir import jsonfmt
 
-PROBE = "NN"  # set to the next free probe number when this is run
+PROBE = "39"
 GUIDE = ROOT / "guidelines" / "example.yaml"
 
 # `hierarchy Geography` as Desktop wrote it in probe 16 (docs/probes/16-user-hierarchy.diff),

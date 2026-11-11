@@ -561,6 +561,39 @@ content, so Blueprint's theme file matches Desktop's format exactly.
   Probe 14 settled how Blueprint binds a date: `Table[Column]` as a plain `Column`, which Desktop draws
   and keeps as written.
 
+**Verified 2026-11-11, probe 38** (`scripts/probe_scatter_map_options.py`; evidence
+`docs/probes/38-scatter-map-options.diff`). `scatter` and `map` came into the core with probes 34
+and 36 carrying **no options at all**, while the other seven chart types take `labels` and
+`legend`. The bindings were written by `bp apply` from the shipped contracts; only the option
+objects were candidates, and a control with no `objects` on each page settles the default.
+Predictions P1-P8 are in the script.
+
+- **`objects.legend[0].properties.position` moves the legend on `scatterChart` _and_ on `map`**
+  (`'Right'`, `'Top'`), and **`show = false` leaves no legend** on either. The map was P4, the
+  least sure prediction of the three probes: it renders through a different control, so it might
+  have had its own property names or no formatting object at all. It takes the same one.
+- **`objects.labels` is not an object these two types have, and Desktop _deletes_ it.** It
+  changed nothing visible on either, and the save removed the object from all four visuals that
+  carried it — on the active scatter page and on the map page alike, the latter otherwise
+  untouched. P3 (data labels on a scatter) **failed**; P5 (a no-op on the map) held and is
+  stronger than predicted: writing `labels` there is not ignored, it is undone. So neither
+  contract gets `labels`. Which object *does* carry a scatter's point labels is open: the script
+  named `categoryLabels` as its candidate, and nothing here probed it.
+- **Both default to a legend at the bottom and no labels.** Pie and donut default to a legend at
+  the **right** (probe 37), so the default legend position is per type, not one theme-wide value.
+- **Desktop re-added `"active": true` to each scatter's `X` projection**, as probes 34 and 36
+  found; Blueprint still leaves that flag to Desktop.
+- **What a save rewrites is still open.** Here Desktop rewrote all six visuals on the active
+  scatter page and, on the map page, only the two carrying the rejected object; the three map
+  legend visuals it left alone, so their objects are on disk byte for byte. That does *not*
+  settle a rule: all six scatters also had a change Desktop had to make (the `active` flag), so
+  "the active page" and "only what must change" both fit this probe. Probe 37's save rewrote **no
+  visual at all** although `activePageName` moved to a candidate page, which rules the first one
+  out; probe 35 rewrote two visuals whose only change was the `$schema` bump and an auto
+  `filterConfig`, which the second doesn't explain. No `filterConfig` appeared here. Treat each
+  probe's observation as a fact and the rule as unsettled.
+
+
 **Verified 2026-11-11, probe 37** (`scripts/probe_pie_donut_options.py`; evidence
 `docs/probes/37-pie-donut-options.diff`). `pie` and `donut` were the last two core chart types
 with no options at all: they were promoted (probes 08, 11, 22-24) for their *bindings*, and the

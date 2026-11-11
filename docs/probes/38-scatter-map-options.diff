@@ -1,0 +1,2810 @@
+# Probe 38 (scripts/probe_scatter_map_options.py): the labels and legend options scatter and map were never probed for, the two newest core types, which had none.
+# Seen (bridge captures of both pages, then a real Home > Refresh + Ctrl+S): the legend object works on both types — 'Right' and 'Top' moved the legend and show = false left none, on the scatterChart and, the least sure prediction, on the map too. objects.labels did nothing visible on either type, and the save then settled it outright: Desktop DELETED the labels object from all four visuals carrying it, on the active scatter page and on the map page alike, while keeping every legend object exactly as written. Both types default to a legend at the BOTTOM and no labels, unlike pie and donut's right-hand legend in probe 37, so the default position is per type. The save also re-added "active": true to each scatter's X projection (probes 34, 36) and bumped $schema 2.13.0 -> 2.14.0 on the files it rewrote: all six on the active scatter page, but on the map page only the two it had to change, leaving the three map legend visuals untouched byte for byte. No auto filterConfig this time. The maps drew, so this install has "Map and filled map visuals" on. All content invented.
+
+######## model: add measure Target Amount (as Desktop wrote it in probe 20)
+
+diff --git a/Fixture.SemanticModel/definition/tables/Sales.tmdl b/Fixture.SemanticModel/definition/tables/Sales.tmdl
+index 4b3c8d8..5235df2 100644
+--- a/Fixture.SemanticModel/definition/tables/Sales.tmdl
++++ b/Fixture.SemanticModel/definition/tables/Sales.tmdl
+@@ -5,6 +5,10 @@ table Sales
+ 		formatString: 0
+ 		lineageTag: e6eb2d64-b4c3-497b-941e-816943dec7e2
+ 
++	measure 'Target Amount' = 600
++		formatString: 0
++		lineageTag: 9ab090f9-bd7f-43c4-82be-86470a46784b
++
+ 	column Country
+ 		dataType: string
+ 		lineageTag: bbedb577-9e73-424a-a819-f7141ced9761
+
+######## blueprint: apply specs/ (six scatters, six maps)
+
+diff --git a/Fixture.Report/.blueprint.manifest.json b/Fixture.Report/.blueprint.manifest.json
+new file mode 100644
+index 0000000..48589d3
+--- /dev/null
++++ b/Fixture.Report/.blueprint.manifest.json
+@@ -0,0 +1,380 @@
++{
++  "blueprint_version": "0.8.1",
++  "guidelines": {
++    "name": "Example Corp Reporting Standard",
++    "version": 1
++  },
++  "pbir_schema": {
++    "page": [
++      "2.1.0"
++    ],
++    "pagesMetadata": [
++      "1.1.0"
++    ],
++    "report": [
++      "3.3.0"
++    ],
++    "versionMetadata": [
++      "1.0.0"
++    ],
++    "visualContainer": [
++      "2.13.0",
++      "2.14.0 (validated as 2.13.0)"
++    ]
++  },
++  "generated_at": "2026-11-11T12:57:59Z",
++  "pages": [
++    {
++      "id": "6a692d13619c1d4c0146",
++      "name": "Overview",
++      "size": {
++        "w": 1920,
++        "h": 1080
++      },
++      "visuals": [
++        {
++          "id": "c62803c0b4a8a11ac705",
++          "type": "cardVisual",
++          "visual_type": "cardVisual",
++          "title": "Total",
++          "managed": false,
++          "position": {
++            "x": 10.29,
++            "y": 0,
++            "w": 695.71,
++            "h": 741
++          },
++          "slots": {
++            "Data": "[Total Amount]"
++          }
++        },
++        {
++          "id": "ca909884eb63347a3230",
++          "type": "clusteredColumnChart",
++          "visual_type": "clusteredColumnChart",
++          "title": null,
++          "managed": false,
++          "position": {
++            "x": 903.61,
++            "y": 236.71,
++            "w": 696,
++            "h": 329
++          },
++          "slots": {
++            "Category": [
++              "Sales[Country]",
++              "Sales[Region]"
++            ],
++            "Y": "[Total Amount]"
++          }
++        }
++      ]
++    },
++    {
++      "id": "05513eeb9282db1d474f",
++      "name": "Map Options",
++      "spec": "map-options",
++      "spec_page": "Map Options",
++      "layout": "grid-2x3",
++      "built_with": "Example Corp Reporting Standard@1",
++      "size": {
++        "w": 1280,
++        "h": 720
++      },
++      "visuals": [
++        {
++          "id": "fa87d3b9212618ac3f32",
++          "type": "header",
++          "visual_type": "textbox",
++          "title": "Map: legend and labels candidates (needs map visuals enabled)",
++          "managed": true,
++          "spec_id": "header-1",
++          "region": "header#1",
++          "position": {
++            "x": 16,
++            "y": 16,
++            "w": 1248,
++            "h": 64
++          },
++          "slots": {}
++        },
++        {
++          "id": "b9813439f8519d4b9193",
++          "type": "map",
++          "visual_type": "map",
++          "title": "Control: no objects",
++          "managed": true,
++          "spec_id": "map-control",
++          "region": "main#1",
++          "position": {
++            "x": 16,
++            "y": 96,
++            "w": 400,
++            "h": 296
++          },
++          "slots": {
++            "category": "Sales[Country]",
++            "legend": "Sales[Region]",
++            "size": "[Total Amount]"
++          }
++        },
++        {
++          "id": "a366d8a442e3502b066b",
++          "type": "map",
++          "visual_type": "map",
++          "title": "labels show = true",
++          "managed": true,
++          "spec_id": "map-labels-on",
++          "region": "main#2",
++          "position": {
++            "x": 440,
++            "y": 96,
++            "w": 400,
++            "h": 296
++          },
++          "slots": {
++            "category": "Sales[Country]",
++            "legend": "Sales[Region]",
++            "size": "[Total Amount]"
++          }
++        },
++        {
++          "id": "0daad9b4a3a261dc13af",
++          "type": "map",
++          "visual_type": "map",
++          "title": "labels show = false",
++          "managed": true,
++          "spec_id": "map-labels-off",
++          "region": "main#3",
++          "position": {
++            "x": 864,
++            "y": 96,
++            "w": 400,
++            "h": 296
++          },
++          "slots": {
++            "category": "Sales[Country]",
++            "legend": "Sales[Region]",
++            "size": "[Total Amount]"
++          }
++        },
++        {
++          "id": "95f7415eaf68bcd7c6c6",
++          "type": "map",
++          "visual_type": "map",
++          "title": "legend position = Right",
++          "managed": true,
++          "spec_id": "map-legend-right",
++          "region": "main#4",
++          "position": {
++            "x": 16,
++            "y": 408,
++            "w": 400,
++            "h": 296
++          },
++          "slots": {
++            "category": "Sales[Country]",
++            "legend": "Sales[Region]",
++            "size": "[Total Amount]"
++          }
++        },
++        {
++          "id": "18b079aafa02e7f9944e",
++          "type": "map",
++          "visual_type": "map",
++          "title": "legend position = Top",
++          "managed": true,
++          "spec_id": "map-legend-top",
++          "region": "main#5",
++          "position": {
++            "x": 440,
++            "y": 408,
++            "w": 400,
++            "h": 296
++          },
++          "slots": {
++            "category": "Sales[Country]",
++            "legend": "Sales[Region]",
++            "size": "[Total Amount]"
++          }
++        },
++        {
++          "id": "2be17cae05b329dcdfb0",
++          "type": "map",
++          "visual_type": "map",
++          "title": "legend show = false",
++          "managed": true,
++          "spec_id": "map-legend-off",
++          "region": "main#6",
++          "position": {
++            "x": 864,
++            "y": 408,
++            "w": 400,
++            "h": 296
++          },
++          "slots": {
++            "category": "Sales[Country]",
++            "legend": "Sales[Region]",
++            "size": "[Total Amount]"
++          }
++        }
++      ]
++    },
++    {
++      "id": "e184b3e406c8b69e0c7e",
++      "name": "Scatter Options",
++      "spec": "scatter-options",
++      "spec_page": "Scatter Options",
++      "layout": "grid-2x3",
++      "built_with": "Example Corp Reporting Standard@1",
++      "size": {
++        "w": 1280,
++        "h": 720
++      },
++      "visuals": [
++        {
++          "id": "ce85c68cff9bbc114a49",
++          "type": "header",
++          "visual_type": "textbox",
++          "title": "Scatter: legend and labels candidates",
++          "managed": true,
++          "spec_id": "header-1",
++          "region": "header#1",
++          "position": {
++            "x": 16,
++            "y": 16,
++            "w": 1248,
++            "h": 64
++          },
++          "slots": {}
++        },
++        {
++          "id": "5e61b6339932660d4357",
++          "type": "scatter",
++          "visual_type": "scatterChart",
++          "title": "Control: no objects",
++          "managed": true,
++          "spec_id": "sc-control",
++          "region": "main#1",
++          "position": {
++            "x": 16,
++            "y": 96,
++            "w": 400,
++            "h": 296
++          },
++          "slots": {
++            "category": "Sales[Country]",
++            "legend": "Sales[Region]",
++            "x": "[Total Amount]",
++            "y": "[Target Amount]"
++          }
++        },
++        {
++          "id": "29580183d045d9c0f01e",
++          "type": "scatter",
++          "visual_type": "scatterChart",
++          "title": "labels show = true",
++          "managed": true,
++          "spec_id": "sc-labels-on",
++          "region": "main#2",
++          "position": {
++            "x": 440,
++            "y": 96,
++            "w": 400,
++            "h": 296
++          },
++          "slots": {
++            "category": "Sales[Country]",
++            "legend": "Sales[Region]",
++            "x": "[Total Amount]",
++            "y": "[Target Amount]"
++          }
++        },
++        {
++          "id": "a80e3231876fcc61f3b1",
++          "type": "scatter",
++          "visual_type": "scatterChart",
++          "title": "labels show = false",
++          "managed": true,
++          "spec_id": "sc-labels-off",
++          "region": "main#3",
++          "position": {
++            "x": 864,
++            "y": 96,
++            "w": 400,
++            "h": 296
++          },
++          "slots": {
++            "category": "Sales[Country]",
++            "legend": "Sales[Region]",
++            "x": "[Total Amount]",
++            "y": "[Target Amount]"
++          }
++        },
++        {
++          "id": "81b9b142de7dbb7150ad",
++          "type": "scatter",
++          "visual_type": "scatterChart",
++          "title": "legend position = Right",
++          "managed": true,
++          "spec_id": "sc-legend-right",
++          "region": "main#4",
++          "position": {
++            "x": 16,
++            "y": 408,
++            "w": 400,
++            "h": 296
++          },
++          "slots": {
++            "category": "Sales[Country]",
++            "legend": "Sales[Region]",
++            "x": "[Total Amount]",
++            "y": "[Target Amount]"
++          }
++        },
++        {
++          "id": "1f8bd71a460dea8f5dc1",
++          "type": "scatter",
++          "visual_type": "scatterChart",
++          "title": "legend position = Top",
++          "managed": true,
++          "spec_id": "sc-legend-top",
++          "region": "main#5",
++          "position": {
++            "x": 440,
++            "y": 408,
++            "w": 400,
++            "h": 296
++          },
++          "slots": {
++            "category": "Sales[Country]",
++            "legend": "Sales[Region]",
++            "x": "[Total Amount]",
++            "y": "[Target Amount]"
++          }
++        },
++        {
++          "id": "ac146f24e2bbfcaba612",
++          "type": "scatter",
++          "visual_type": "scatterChart",
++          "title": "legend show = false",
++          "managed": true,
++          "spec_id": "sc-legend-off",
++          "region": "main#6",
++          "position": {
++            "x": 864,
++            "y": 408,
++            "w": 400,
++            "h": 296
++          },
++          "slots": {
++            "category": "Sales[Country]",
++            "legend": "Sales[Region]",
++            "x": "[Total Amount]",
++            "y": "[Target Amount]"
++          }
++        }
++      ]
++    }
++  ]
++}
+diff --git a/Fixture.Report/definition/pages/05513eeb9282db1d474f/page.json b/Fixture.Report/definition/pages/05513eeb9282db1d474f/page.json
+new file mode 100644
+index 0000000..80f71ba
+--- /dev/null
++++ b/Fixture.Report/definition/pages/05513eeb9282db1d474f/page.json
+@@ -0,0 +1,26 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
++  "name": "05513eeb9282db1d474f",
++  "displayName": "Map Options",
++  "displayOption": "FitToPage",
++  "height": 720,
++  "width": 1280,
++  "annotations": [
++    {
++      "name": "blueprint.page",
++      "value": "Map Options"
++    },
++    {
++      "name": "blueprint.spec",
++      "value": "map-options"
++    },
++    {
++      "name": "blueprint.layout",
++      "value": "grid-2x3"
++    },
++    {
++      "name": "blueprint.guidelines",
++      "value": "Example Corp Reporting Standard@1"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/0daad9b4a3a261dc13af/visual.json b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/0daad9b4a3a261dc13af/visual.json
+new file mode 100644
+index 0000000..48e8fe8
+--- /dev/null
++++ b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/0daad9b4a3a261dc13af/visual.json
+@@ -0,0 +1,110 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "0daad9b4a3a261dc13af",
++  "position": {
++    "x": 864,
++    "y": 96,
++    "z": 3000,
++    "height": 296,
++    "width": 400,
++    "tabOrder": 3000
++  },
++  "visual": {
++    "visualType": "map",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Series": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region"
++            }
++          ]
++        },
++        "Size": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      }
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'labels show = false'"
++                }
++              }
++            }
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "map-labels-off"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#3"
++    },
++    {
++      "name": "blueprint.bindings",
++      "value": "e6e448c3e2779f85"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/18b079aafa02e7f9944e/visual.json b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/18b079aafa02e7f9944e/visual.json
+new file mode 100644
+index 0000000..183bfec
+--- /dev/null
++++ b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/18b079aafa02e7f9944e/visual.json
+@@ -0,0 +1,110 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "18b079aafa02e7f9944e",
++  "position": {
++    "x": 440,
++    "y": 408,
++    "z": 5000,
++    "height": 296,
++    "width": 400,
++    "tabOrder": 5000
++  },
++  "visual": {
++    "visualType": "map",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Series": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region"
++            }
++          ]
++        },
++        "Size": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      }
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'legend position = Top'"
++                }
++              }
++            }
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "map-legend-top"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#5"
++    },
++    {
++      "name": "blueprint.bindings",
++      "value": "e6e448c3e2779f85"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/2be17cae05b329dcdfb0/visual.json b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/2be17cae05b329dcdfb0/visual.json
+new file mode 100644
+index 0000000..e092d67
+--- /dev/null
++++ b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/2be17cae05b329dcdfb0/visual.json
+@@ -0,0 +1,110 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "2be17cae05b329dcdfb0",
++  "position": {
++    "x": 864,
++    "y": 408,
++    "z": 6000,
++    "height": 296,
++    "width": 400,
++    "tabOrder": 6000
++  },
++  "visual": {
++    "visualType": "map",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Series": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region"
++            }
++          ]
++        },
++        "Size": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      }
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'legend show = false'"
++                }
++              }
++            }
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "map-legend-off"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#6"
++    },
++    {
++      "name": "blueprint.bindings",
++      "value": "e6e448c3e2779f85"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/95f7415eaf68bcd7c6c6/visual.json b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/95f7415eaf68bcd7c6c6/visual.json
+new file mode 100644
+index 0000000..755a346
+--- /dev/null
++++ b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/95f7415eaf68bcd7c6c6/visual.json
+@@ -0,0 +1,110 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "95f7415eaf68bcd7c6c6",
++  "position": {
++    "x": 16,
++    "y": 408,
++    "z": 4000,
++    "height": 296,
++    "width": 400,
++    "tabOrder": 4000
++  },
++  "visual": {
++    "visualType": "map",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Series": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region"
++            }
++          ]
++        },
++        "Size": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      }
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'legend position = Right'"
++                }
++              }
++            }
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "map-legend-right"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#4"
++    },
++    {
++      "name": "blueprint.bindings",
++      "value": "e6e448c3e2779f85"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/a366d8a442e3502b066b/visual.json b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/a366d8a442e3502b066b/visual.json
+new file mode 100644
+index 0000000..a6a1d52
+--- /dev/null
++++ b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/a366d8a442e3502b066b/visual.json
+@@ -0,0 +1,110 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "a366d8a442e3502b066b",
++  "position": {
++    "x": 440,
++    "y": 96,
++    "z": 2000,
++    "height": 296,
++    "width": 400,
++    "tabOrder": 2000
++  },
++  "visual": {
++    "visualType": "map",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Series": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region"
++            }
++          ]
++        },
++        "Size": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      }
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'labels show = true'"
++                }
++              }
++            }
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "map-labels-on"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#2"
++    },
++    {
++      "name": "blueprint.bindings",
++      "value": "e6e448c3e2779f85"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/b9813439f8519d4b9193/visual.json b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/b9813439f8519d4b9193/visual.json
+new file mode 100644
+index 0000000..2b46bcd
+--- /dev/null
++++ b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/b9813439f8519d4b9193/visual.json
+@@ -0,0 +1,110 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "b9813439f8519d4b9193",
++  "position": {
++    "x": 16,
++    "y": 96,
++    "z": 1000,
++    "height": 296,
++    "width": 400,
++    "tabOrder": 1000
++  },
++  "visual": {
++    "visualType": "map",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Series": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region"
++            }
++          ]
++        },
++        "Size": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        }
++      }
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'Control: no objects'"
++                }
++              }
++            }
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "map-control"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#1"
++    },
++    {
++      "name": "blueprint.bindings",
++      "value": "e6e448c3e2779f85"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/fa87d3b9212618ac3f32/visual.json b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/fa87d3b9212618ac3f32/visual.json
+new file mode 100644
+index 0000000..0d6ade4
+--- /dev/null
++++ b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/fa87d3b9212618ac3f32/visual.json
+@@ -0,0 +1,46 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "fa87d3b9212618ac3f32",
++  "position": {
++    "x": 16,
++    "y": 16,
++    "z": 0,
++    "height": 64,
++    "width": 1248,
++    "tabOrder": 0
++  },
++  "visual": {
++    "visualType": "textbox",
++    "objects": {
++      "general": [
++        {
++          "properties": {
++            "paragraphs": [
++              {
++                "textRuns": [
++                  {
++                    "value": "Map: legend and labels candidates (needs map visuals enabled)",
++                    "textStyle": {
++                      "fontFamily": "Segoe UI Semibold",
++                      "fontSize": "20pt"
++                    }
++                  }
++                ]
++              }
++            ]
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "header-1"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "header#1"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/page.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/page.json
+new file mode 100644
+index 0000000..624943d
+--- /dev/null
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/page.json
+@@ -0,0 +1,26 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
++  "name": "e184b3e406c8b69e0c7e",
++  "displayName": "Scatter Options",
++  "displayOption": "FitToPage",
++  "height": 720,
++  "width": 1280,
++  "annotations": [
++    {
++      "name": "blueprint.page",
++      "value": "Scatter Options"
++    },
++    {
++      "name": "blueprint.spec",
++      "value": "scatter-options"
++    },
++    {
++      "name": "blueprint.layout",
++      "value": "grid-2x3"
++    },
++    {
++      "name": "blueprint.guidelines",
++      "value": "Example Corp Reporting Standard@1"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/1f8bd71a460dea8f5dc1/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/1f8bd71a460dea8f5dc1/visual.json
+new file mode 100644
+index 0000000..dc46917
+--- /dev/null
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/1f8bd71a460dea8f5dc1/visual.json
+@@ -0,0 +1,128 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "1f8bd71a460dea8f5dc1",
++  "position": {
++    "x": 440,
++    "y": 408,
++    "z": 5000,
++    "height": 296,
++    "width": 400,
++    "tabOrder": 5000
++  },
++  "visual": {
++    "visualType": "scatterChart",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Series": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region"
++            }
++          ]
++        },
++        "X": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        },
++        "Y": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Target Amount"
++                }
++              },
++              "queryRef": "Sales.Target Amount",
++              "nativeQueryRef": "Target Amount"
++            }
++          ]
++        }
++      }
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'legend position = Top'"
++                }
++              }
++            }
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "sc-legend-top"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#5"
++    },
++    {
++      "name": "blueprint.bindings",
++      "value": "50bdd8fa8888d7f3"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/29580183d045d9c0f01e/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/29580183d045d9c0f01e/visual.json
+new file mode 100644
+index 0000000..0d30faf
+--- /dev/null
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/29580183d045d9c0f01e/visual.json
+@@ -0,0 +1,128 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "29580183d045d9c0f01e",
++  "position": {
++    "x": 440,
++    "y": 96,
++    "z": 2000,
++    "height": 296,
++    "width": 400,
++    "tabOrder": 2000
++  },
++  "visual": {
++    "visualType": "scatterChart",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Series": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region"
++            }
++          ]
++        },
++        "X": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        },
++        "Y": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Target Amount"
++                }
++              },
++              "queryRef": "Sales.Target Amount",
++              "nativeQueryRef": "Target Amount"
++            }
++          ]
++        }
++      }
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'labels show = true'"
++                }
++              }
++            }
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "sc-labels-on"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#2"
++    },
++    {
++      "name": "blueprint.bindings",
++      "value": "50bdd8fa8888d7f3"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/5e61b6339932660d4357/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/5e61b6339932660d4357/visual.json
+new file mode 100644
+index 0000000..ba08043
+--- /dev/null
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/5e61b6339932660d4357/visual.json
+@@ -0,0 +1,128 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "5e61b6339932660d4357",
++  "position": {
++    "x": 16,
++    "y": 96,
++    "z": 1000,
++    "height": 296,
++    "width": 400,
++    "tabOrder": 1000
++  },
++  "visual": {
++    "visualType": "scatterChart",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Series": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region"
++            }
++          ]
++        },
++        "X": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        },
++        "Y": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Target Amount"
++                }
++              },
++              "queryRef": "Sales.Target Amount",
++              "nativeQueryRef": "Target Amount"
++            }
++          ]
++        }
++      }
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'Control: no objects'"
++                }
++              }
++            }
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "sc-control"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#1"
++    },
++    {
++      "name": "blueprint.bindings",
++      "value": "50bdd8fa8888d7f3"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/81b9b142de7dbb7150ad/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/81b9b142de7dbb7150ad/visual.json
+new file mode 100644
+index 0000000..bbf17d6
+--- /dev/null
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/81b9b142de7dbb7150ad/visual.json
+@@ -0,0 +1,128 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "81b9b142de7dbb7150ad",
++  "position": {
++    "x": 16,
++    "y": 408,
++    "z": 4000,
++    "height": 296,
++    "width": 400,
++    "tabOrder": 4000
++  },
++  "visual": {
++    "visualType": "scatterChart",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Series": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region"
++            }
++          ]
++        },
++        "X": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        },
++        "Y": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Target Amount"
++                }
++              },
++              "queryRef": "Sales.Target Amount",
++              "nativeQueryRef": "Target Amount"
++            }
++          ]
++        }
++      }
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'legend position = Right'"
++                }
++              }
++            }
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "sc-legend-right"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#4"
++    },
++    {
++      "name": "blueprint.bindings",
++      "value": "50bdd8fa8888d7f3"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/a80e3231876fcc61f3b1/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/a80e3231876fcc61f3b1/visual.json
+new file mode 100644
+index 0000000..39c0518
+--- /dev/null
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/a80e3231876fcc61f3b1/visual.json
+@@ -0,0 +1,128 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "a80e3231876fcc61f3b1",
++  "position": {
++    "x": 864,
++    "y": 96,
++    "z": 3000,
++    "height": 296,
++    "width": 400,
++    "tabOrder": 3000
++  },
++  "visual": {
++    "visualType": "scatterChart",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Series": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region"
++            }
++          ]
++        },
++        "X": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        },
++        "Y": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Target Amount"
++                }
++              },
++              "queryRef": "Sales.Target Amount",
++              "nativeQueryRef": "Target Amount"
++            }
++          ]
++        }
++      }
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'labels show = false'"
++                }
++              }
++            }
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "sc-labels-off"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#3"
++    },
++    {
++      "name": "blueprint.bindings",
++      "value": "50bdd8fa8888d7f3"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/ac146f24e2bbfcaba612/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/ac146f24e2bbfcaba612/visual.json
+new file mode 100644
+index 0000000..f5de909
+--- /dev/null
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/ac146f24e2bbfcaba612/visual.json
+@@ -0,0 +1,128 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "ac146f24e2bbfcaba612",
++  "position": {
++    "x": 864,
++    "y": 408,
++    "z": 6000,
++    "height": 296,
++    "width": 400,
++    "tabOrder": 6000
++  },
++  "visual": {
++    "visualType": "scatterChart",
++    "query": {
++      "queryState": {
++        "Category": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Country"
++                }
++              },
++              "queryRef": "Sales.Country",
++              "nativeQueryRef": "Country",
++              "active": true
++            }
++          ]
++        },
++        "Series": {
++          "projections": [
++            {
++              "field": {
++                "Column": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Region"
++                }
++              },
++              "queryRef": "Sales.Region",
++              "nativeQueryRef": "Region"
++            }
++          ]
++        },
++        "X": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Total Amount"
++                }
++              },
++              "queryRef": "Sales.Total Amount",
++              "nativeQueryRef": "Total Amount"
++            }
++          ]
++        },
++        "Y": {
++          "projections": [
++            {
++              "field": {
++                "Measure": {
++                  "Expression": {
++                    "SourceRef": {
++                      "Entity": "Sales"
++                    }
++                  },
++                  "Property": "Target Amount"
++                }
++              },
++              "queryRef": "Sales.Target Amount",
++              "nativeQueryRef": "Target Amount"
++            }
++          ]
++        }
++      }
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'legend show = false'"
++                }
++              }
++            }
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "sc-legend-off"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "main#6"
++    },
++    {
++      "name": "blueprint.bindings",
++      "value": "50bdd8fa8888d7f3"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/ce85c68cff9bbc114a49/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/ce85c68cff9bbc114a49/visual.json
+new file mode 100644
+index 0000000..6d57634
+--- /dev/null
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/ce85c68cff9bbc114a49/visual.json
+@@ -0,0 +1,46 @@
++{
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "name": "ce85c68cff9bbc114a49",
++  "position": {
++    "x": 16,
++    "y": 16,
++    "z": 0,
++    "height": 64,
++    "width": 1248,
++    "tabOrder": 0
++  },
++  "visual": {
++    "visualType": "textbox",
++    "objects": {
++      "general": [
++        {
++          "properties": {
++            "paragraphs": [
++              {
++                "textRuns": [
++                  {
++                    "value": "Scatter: legend and labels candidates",
++                    "textStyle": {
++                      "fontFamily": "Segoe UI Semibold",
++                      "fontSize": "20pt"
++                    }
++                  }
++                ]
++              }
++            ]
++          }
++        }
++      ]
++    }
++  },
++  "annotations": [
++    {
++      "name": "blueprint.visual",
++      "value": "header-1"
++    },
++    {
++      "name": "blueprint.region",
++      "value": "header#1"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/Fixture.Report/definition/pages/pages.json b/Fixture.Report/definition/pages/pages.json
+index e28de5a..b98e7b4 100644
+--- a/Fixture.Report/definition/pages/pages.json
++++ b/Fixture.Report/definition/pages/pages.json
+@@ -1,7 +1,9 @@
+ {
+   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.1.0/schema.json",
+   "pageOrder": [
+-    "6a692d13619c1d4c0146"
++    "6a692d13619c1d4c0146",
++    "05513eeb9282db1d474f",
++    "e184b3e406c8b69e0c7e"
+   ],
+   "activePageName": "6a692d13619c1d4c0146"
+ }
+\ No newline at end of file
+diff --git a/specs/map-options.yaml b/specs/map-options.yaml
+new file mode 100644
+index 0000000..0e9a7bb
+--- /dev/null
++++ b/specs/map-options.yaml
+@@ -0,0 +1,10 @@
++page: Map Options
++layout: grid-2x3
++visuals:
++  - {type: header, title: "Map: legend and labels candidates (needs map visuals enabled)"}
++  - {type: map, id: map-control, title: "Control: no objects", slots: {category: "Sales[Country]", legend: "Sales[Region]", size: "[Total Amount]"}}
++  - {type: map, id: map-labels-on, title: "labels show = true", slots: {category: "Sales[Country]", legend: "Sales[Region]", size: "[Total Amount]"}}
++  - {type: map, id: map-labels-off, title: "labels show = false", slots: {category: "Sales[Country]", legend: "Sales[Region]", size: "[Total Amount]"}}
++  - {type: map, id: map-legend-right, title: "legend position = Right", slots: {category: "Sales[Country]", legend: "Sales[Region]", size: "[Total Amount]"}}
++  - {type: map, id: map-legend-top, title: "legend position = Top", slots: {category: "Sales[Country]", legend: "Sales[Region]", size: "[Total Amount]"}}
++  - {type: map, id: map-legend-off, title: "legend show = false", slots: {category: "Sales[Country]", legend: "Sales[Region]", size: "[Total Amount]"}}
+diff --git a/specs/scatter-options.yaml b/specs/scatter-options.yaml
+new file mode 100644
+index 0000000..c0c89f5
+--- /dev/null
++++ b/specs/scatter-options.yaml
+@@ -0,0 +1,10 @@
++page: Scatter Options
++layout: grid-2x3
++visuals:
++  - {type: header, title: "Scatter: legend and labels candidates"}
++  - {type: scatter, id: sc-control, title: "Control: no objects", slots: {category: "Sales[Country]", legend: "Sales[Region]", x: "[Total Amount]", y: "[Target Amount]"}}
++  - {type: scatter, id: sc-labels-on, title: "labels show = true", slots: {category: "Sales[Country]", legend: "Sales[Region]", x: "[Total Amount]", y: "[Target Amount]"}}
++  - {type: scatter, id: sc-labels-off, title: "labels show = false", slots: {category: "Sales[Country]", legend: "Sales[Region]", x: "[Total Amount]", y: "[Target Amount]"}}
++  - {type: scatter, id: sc-legend-right, title: "legend position = Right", slots: {category: "Sales[Country]", legend: "Sales[Region]", x: "[Total Amount]", y: "[Target Amount]"}}
++  - {type: scatter, id: sc-legend-top, title: "legend position = Top", slots: {category: "Sales[Country]", legend: "Sales[Region]", x: "[Total Amount]", y: "[Target Amount]"}}
++  - {type: scatter, id: sc-legend-off, title: "legend show = false", slots: {category: "Sales[Country]", legend: "Sales[Region]", x: "[Total Amount]", y: "[Target Amount]"}}
+
+######## probe: candidate labels and legend objects on both types
+
+diff --git a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/0daad9b4a3a261dc13af/visual.json b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/0daad9b4a3a261dc13af/visual.json
+index 48e8fe8..5318675 100644
+--- a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/0daad9b4a3a261dc13af/visual.json
++++ b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/0daad9b4a3a261dc13af/visual.json
+@@ -91,6 +91,21 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "labels": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "false"
++                }
++              }
++            }
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/18b079aafa02e7f9944e/visual.json b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/18b079aafa02e7f9944e/visual.json
+index 183bfec..dd4111e 100644
+--- a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/18b079aafa02e7f9944e/visual.json
++++ b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/18b079aafa02e7f9944e/visual.json
+@@ -91,6 +91,21 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "legend": [
++        {
++          "properties": {
++            "position": {
++              "expr": {
++                "Literal": {
++                  "Value": "'Top'"
++                }
++              }
++            }
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/2be17cae05b329dcdfb0/visual.json b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/2be17cae05b329dcdfb0/visual.json
+index e092d67..caf9a07 100644
+--- a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/2be17cae05b329dcdfb0/visual.json
++++ b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/2be17cae05b329dcdfb0/visual.json
+@@ -91,6 +91,21 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "legend": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "false"
++                }
++              }
++            }
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/95f7415eaf68bcd7c6c6/visual.json b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/95f7415eaf68bcd7c6c6/visual.json
+index 755a346..98c6855 100644
+--- a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/95f7415eaf68bcd7c6c6/visual.json
++++ b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/95f7415eaf68bcd7c6c6/visual.json
+@@ -91,6 +91,21 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "legend": [
++        {
++          "properties": {
++            "position": {
++              "expr": {
++                "Literal": {
++                  "Value": "'Right'"
++                }
++              }
++            }
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/a366d8a442e3502b066b/visual.json b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/a366d8a442e3502b066b/visual.json
+index a6a1d52..afeb0af 100644
+--- a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/a366d8a442e3502b066b/visual.json
++++ b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/a366d8a442e3502b066b/visual.json
+@@ -91,6 +91,21 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "labels": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            }
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/1f8bd71a460dea8f5dc1/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/1f8bd71a460dea8f5dc1/visual.json
+index dc46917..d06ac87 100644
+--- a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/1f8bd71a460dea8f5dc1/visual.json
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/1f8bd71a460dea8f5dc1/visual.json
+@@ -109,6 +109,21 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "legend": [
++        {
++          "properties": {
++            "position": {
++              "expr": {
++                "Literal": {
++                  "Value": "'Top'"
++                }
++              }
++            }
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/29580183d045d9c0f01e/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/29580183d045d9c0f01e/visual.json
+index 0d30faf..c034366 100644
+--- a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/29580183d045d9c0f01e/visual.json
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/29580183d045d9c0f01e/visual.json
+@@ -109,6 +109,21 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "labels": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            }
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/81b9b142de7dbb7150ad/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/81b9b142de7dbb7150ad/visual.json
+index bbf17d6..53c3533 100644
+--- a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/81b9b142de7dbb7150ad/visual.json
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/81b9b142de7dbb7150ad/visual.json
+@@ -109,6 +109,21 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "legend": [
++        {
++          "properties": {
++            "position": {
++              "expr": {
++                "Literal": {
++                  "Value": "'Right'"
++                }
++              }
++            }
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/a80e3231876fcc61f3b1/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/a80e3231876fcc61f3b1/visual.json
+index 39c0518..7d4b4c8 100644
+--- a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/a80e3231876fcc61f3b1/visual.json
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/a80e3231876fcc61f3b1/visual.json
+@@ -109,6 +109,21 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "labels": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "false"
++                }
++              }
++            }
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/ac146f24e2bbfcaba612/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/ac146f24e2bbfcaba612/visual.json
+index f5de909..e717b7d 100644
+--- a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/ac146f24e2bbfcaba612/visual.json
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/ac146f24e2bbfcaba612/visual.json
+@@ -109,6 +109,21 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "legend": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "false"
++                }
++              }
++            }
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+
+######## 01 refresh and save
+
+diff --git a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/0daad9b4a3a261dc13af/visual.json b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/0daad9b4a3a261dc13af/visual.json
+index 5318675..a6b46f0 100644
+--- a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/0daad9b4a3a261dc13af/visual.json
++++ b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/0daad9b4a3a261dc13af/visual.json
+@@ -1,5 +1,5 @@
+ {
+-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+   "name": "0daad9b4a3a261dc13af",
+   "position": {
+     "x": 864,
+@@ -91,21 +91,6 @@
+           }
+         }
+       ]
+-    },
+-    "objects": {
+-      "labels": [
+-        {
+-          "properties": {
+-            "show": {
+-              "expr": {
+-                "Literal": {
+-                  "Value": "false"
+-                }
+-              }
+-            }
+-          }
+-        }
+-      ]
+     }
+   },
+   "annotations": [
+diff --git a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/a366d8a442e3502b066b/visual.json b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/a366d8a442e3502b066b/visual.json
+index afeb0af..769f420 100644
+--- a/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/a366d8a442e3502b066b/visual.json
++++ b/Fixture.Report/definition/pages/05513eeb9282db1d474f/visuals/a366d8a442e3502b066b/visual.json
+@@ -1,5 +1,5 @@
+ {
+-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+   "name": "a366d8a442e3502b066b",
+   "position": {
+     "x": 440,
+@@ -91,21 +91,6 @@
+           }
+         }
+       ]
+-    },
+-    "objects": {
+-      "labels": [
+-        {
+-          "properties": {
+-            "show": {
+-              "expr": {
+-                "Literal": {
+-                  "Value": "true"
+-                }
+-              }
+-            }
+-          }
+-        }
+-      ]
+     }
+   },
+   "annotations": [
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/1f8bd71a460dea8f5dc1/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/1f8bd71a460dea8f5dc1/visual.json
+index d06ac87..270ce35 100644
+--- a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/1f8bd71a460dea8f5dc1/visual.json
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/1f8bd71a460dea8f5dc1/visual.json
+@@ -1,5 +1,5 @@
+ {
+-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+   "name": "1f8bd71a460dea8f5dc1",
+   "position": {
+     "x": 440,
+@@ -64,7 +64,8 @@
+                 }
+               },
+               "queryRef": "Sales.Total Amount",
+-              "nativeQueryRef": "Total Amount"
++              "nativeQueryRef": "Total Amount",
++              "active": true
+             }
+           ]
+         },
+@@ -88,21 +89,14 @@
+         }
+       }
+     },
+-    "visualContainerObjects": {
+-      "title": [
++    "objects": {
++      "legend": [
+         {
+           "properties": {
+-            "show": {
+-              "expr": {
+-                "Literal": {
+-                  "Value": "true"
+-                }
+-              }
+-            },
+-            "text": {
++            "position": {
+               "expr": {
+                 "Literal": {
+-                  "Value": "'legend position = Top'"
++                  "Value": "'Top'"
+                 }
+               }
+             }
+@@ -110,14 +104,21 @@
+         }
+       ]
+     },
+-    "objects": {
+-      "legend": [
++    "visualContainerObjects": {
++      "title": [
+         {
+           "properties": {
+-            "position": {
++            "show": {
+               "expr": {
+                 "Literal": {
+-                  "Value": "'Top'"
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'legend position = Top'"
+                 }
+               }
+             }
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/29580183d045d9c0f01e/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/29580183d045d9c0f01e/visual.json
+index c034366..9daf3bd 100644
+--- a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/29580183d045d9c0f01e/visual.json
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/29580183d045d9c0f01e/visual.json
+@@ -1,5 +1,5 @@
+ {
+-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+   "name": "29580183d045d9c0f01e",
+   "position": {
+     "x": 440,
+@@ -64,7 +64,8 @@
+                 }
+               },
+               "queryRef": "Sales.Total Amount",
+-              "nativeQueryRef": "Total Amount"
++              "nativeQueryRef": "Total Amount",
++              "active": true
+             }
+           ]
+         },
+@@ -109,21 +110,6 @@
+           }
+         }
+       ]
+-    },
+-    "objects": {
+-      "labels": [
+-        {
+-          "properties": {
+-            "show": {
+-              "expr": {
+-                "Literal": {
+-                  "Value": "true"
+-                }
+-              }
+-            }
+-          }
+-        }
+-      ]
+     }
+   },
+   "annotations": [
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/5e61b6339932660d4357/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/5e61b6339932660d4357/visual.json
+index ba08043..aa8e44b 100644
+--- a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/5e61b6339932660d4357/visual.json
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/5e61b6339932660d4357/visual.json
+@@ -1,5 +1,5 @@
+ {
+-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+   "name": "5e61b6339932660d4357",
+   "position": {
+     "x": 16,
+@@ -64,7 +64,8 @@
+                 }
+               },
+               "queryRef": "Sales.Total Amount",
+-              "nativeQueryRef": "Total Amount"
++              "nativeQueryRef": "Total Amount",
++              "active": true
+             }
+           ]
+         },
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/81b9b142de7dbb7150ad/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/81b9b142de7dbb7150ad/visual.json
+index 53c3533..fbe88db 100644
+--- a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/81b9b142de7dbb7150ad/visual.json
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/81b9b142de7dbb7150ad/visual.json
+@@ -1,5 +1,5 @@
+ {
+-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+   "name": "81b9b142de7dbb7150ad",
+   "position": {
+     "x": 16,
+@@ -64,7 +64,8 @@
+                 }
+               },
+               "queryRef": "Sales.Total Amount",
+-              "nativeQueryRef": "Total Amount"
++              "nativeQueryRef": "Total Amount",
++              "active": true
+             }
+           ]
+         },
+@@ -88,21 +89,14 @@
+         }
+       }
+     },
+-    "visualContainerObjects": {
+-      "title": [
++    "objects": {
++      "legend": [
+         {
+           "properties": {
+-            "show": {
+-              "expr": {
+-                "Literal": {
+-                  "Value": "true"
+-                }
+-              }
+-            },
+-            "text": {
++            "position": {
+               "expr": {
+                 "Literal": {
+-                  "Value": "'legend position = Right'"
++                  "Value": "'Right'"
+                 }
+               }
+             }
+@@ -110,14 +104,21 @@
+         }
+       ]
+     },
+-    "objects": {
+-      "legend": [
++    "visualContainerObjects": {
++      "title": [
+         {
+           "properties": {
+-            "position": {
++            "show": {
+               "expr": {
+                 "Literal": {
+-                  "Value": "'Right'"
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'legend position = Right'"
+                 }
+               }
+             }
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/a80e3231876fcc61f3b1/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/a80e3231876fcc61f3b1/visual.json
+index 7d4b4c8..4fa2390 100644
+--- a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/a80e3231876fcc61f3b1/visual.json
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/a80e3231876fcc61f3b1/visual.json
+@@ -1,5 +1,5 @@
+ {
+-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+   "name": "a80e3231876fcc61f3b1",
+   "position": {
+     "x": 864,
+@@ -64,7 +64,8 @@
+                 }
+               },
+               "queryRef": "Sales.Total Amount",
+-              "nativeQueryRef": "Total Amount"
++              "nativeQueryRef": "Total Amount",
++              "active": true
+             }
+           ]
+         },
+@@ -109,21 +110,6 @@
+           }
+         }
+       ]
+-    },
+-    "objects": {
+-      "labels": [
+-        {
+-          "properties": {
+-            "show": {
+-              "expr": {
+-                "Literal": {
+-                  "Value": "false"
+-                }
+-              }
+-            }
+-          }
+-        }
+-      ]
+     }
+   },
+   "annotations": [
+diff --git a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/ac146f24e2bbfcaba612/visual.json b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/ac146f24e2bbfcaba612/visual.json
+index e717b7d..0099539 100644
+--- a/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/ac146f24e2bbfcaba612/visual.json
++++ b/Fixture.Report/definition/pages/e184b3e406c8b69e0c7e/visuals/ac146f24e2bbfcaba612/visual.json
+@@ -1,5 +1,5 @@
+ {
+-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+   "name": "ac146f24e2bbfcaba612",
+   "position": {
+     "x": 864,
+@@ -64,7 +64,8 @@
+                 }
+               },
+               "queryRef": "Sales.Total Amount",
+-              "nativeQueryRef": "Total Amount"
++              "nativeQueryRef": "Total Amount",
++              "active": true
+             }
+           ]
+         },
+@@ -88,21 +89,14 @@
+         }
+       }
+     },
+-    "visualContainerObjects": {
+-      "title": [
++    "objects": {
++      "legend": [
+         {
+           "properties": {
+             "show": {
+               "expr": {
+                 "Literal": {
+-                  "Value": "true"
+-                }
+-              }
+-            },
+-            "text": {
+-              "expr": {
+-                "Literal": {
+-                  "Value": "'legend show = false'"
++                  "Value": "false"
+                 }
+               }
+             }
+@@ -110,14 +104,21 @@
+         }
+       ]
+     },
+-    "objects": {
+-      "legend": [
++    "visualContainerObjects": {
++      "title": [
+         {
+           "properties": {
+             "show": {
+               "expr": {
+                 "Literal": {
+-                  "Value": "false"
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'legend show = false'"
+                 }
+               }
+             }
+diff --git a/Fixture.Report/definition/pages/pages.json b/Fixture.Report/definition/pages/pages.json
+index b98e7b4..9a95534 100644
+--- a/Fixture.Report/definition/pages/pages.json
++++ b/Fixture.Report/definition/pages/pages.json
+@@ -5,5 +5,5 @@
+     "05513eeb9282db1d474f",
+     "e184b3e406c8b69e0c7e"
+   ],
+-  "activePageName": "6a692d13619c1d4c0146"
++  "activePageName": "e184b3e406c8b69e0c7e"
+ }
+\ No newline at end of file
+
