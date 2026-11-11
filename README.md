@@ -231,7 +231,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: gurdasss/blueprint@v0.6.0        # a release tag (or commit SHA) pins Blueprint
+      - uses: gurdasss/blueprint@v0.7.0        # a release tag (or commit SHA) pins Blueprint
         with:
           reports: |                           # one per line: .Report folder, .pbip, its folder, or a glob
             reports/Sales.Report
@@ -584,7 +584,7 @@ every change, and `bp manifest` rebuilds it from the report at any time.
 
 ```json
 {
-  "blueprint_version": "0.6.0",
+  "blueprint_version": "0.7.0",
   "guidelines": { "name": "Example Corp Reporting Standard", "version": 1 },
   "pbir_schema": { "page": ["2.1.0"], "visualContainer": ["2.13.0"] },
   "generated_at": "2026-11-09T04:00:00Z",
@@ -834,6 +834,10 @@ tool becomes genuinely end-to-end with the Modeling MCP.
 opt-in `extensions:`, a core of seven visual types, `inherits:` for visual contracts, per-field
 `aggregate` and `format`, `labels`/`legend` on all three chart types, `sort`, a Legend column
 on clustered charts, `legend: off` and table `totals` (done).
+
+**v0.7 — the core-20% audit.** A guidelines key outside the core is refused instead of ignored,
+`--set KEY=VALUE` replaces `--grid` on every command that reads guidelines, and per-type PBIR
+facts live in the visual contracts rather than in core code (done).
 
 **Next, each needing a Desktop probe first:** axis titles, conditional formatting; and the visual
 types real reports use that no contract covers (`map`, `scatter`, `multiRowCard`).

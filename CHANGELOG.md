@@ -4,7 +4,10 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
-## Unreleased
+## v0.7.0 (2026-11-11)
+
+What a core-20% audit of the codebase found and fixed. **Breaking twice:** a guidelines file with
+a key Blueprint doesn't implement is now refused instead of loading, and `--grid` is gone.
 
 - **Guidelines: a key outside the core is refused, not ignored.** `spacing: {margn: 16}` used to
   load with the default margin, so the file said one thing and `bp check` did another. Unknown
@@ -17,7 +20,16 @@ code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, eviden
   manifest they rebuild afterwards, which silently used the un-overridden guidelines.
 - Which query well carries Desktop's `"active"` flag is declared by each visual contract
   (`active: true` on the slot) instead of a table of visual-type names in core code. No output
-  changes; a custom visual can now declare it without a code change.
+  changes; a custom visual can now declare it without a code change, and core code no longer
+  carries the shape of the archived types a client never opted into.
+- `template/guidelines.template.yaml`, the annotated file a client starts from, was missing two
+  implemented core keys (`page.title_region`, `palette.extra`).
+
+### Upgrading from v0.6.x
+
+- Run `bp check` once against each guidelines file you keep. A key Blueprint doesn't implement
+  now fails with the closest real key named, where before it loaded and quietly did nothing.
+- Replace `--grid N` with `--set spacing.grid=N`. It is refused by name, so nothing fails silently.
 
 ## v0.6.0 (2026-11-11)
 
