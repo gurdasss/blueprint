@@ -325,8 +325,11 @@ visuals:
 
 A visual's `sort: {by, direction}` writes the visual's own sort (probe 31). `by` must be a field
 the visual binds, because Desktop ignores any other. A spec with no `sort` leaves Desktop's sort,
-or the one a user set, alone. `labels` and `legend` options are available on `column`, `bar` and
-`line`.
+or the one a user set, alone. `labels` and `legend` options are available on every chart type:
+`column`, `bar`, `line`, `area` and the stacked charts, and since v0.9.0 `pie` and `donut` too.
+`scatter` and `map` take `legend` but **not** `labels` — Desktop deletes that object on those two
+(probe 38). On `pie` and `donut`, `labels` takes `"off"` as well as `"on"`, because detail labels
+are on by Desktop's default there.
 
 `column`, `bar` and `line` also take a **Legend column** (`legend: "Sales[Region]"`, one column,
 beside a drill-down if you like). Desktop refuses it together with several measures or a second
@@ -423,7 +426,9 @@ Re-running `bp apply` with an edited spec updates the visuals it built, in place
 Each visual type declares the slots it accepts and what each slot takes — a dimension
 column, a measure, or an ordered list for drill-down. A hierarchy built in the model is written
 like a column (`category: "Sales[Geography]"`) and binds all its levels, as dragging it in
-Desktop does. Column, bar, pie and line chart categories and the table's columns take one. Blueprint validates bindings
+Desktop does. Column, bar, pie and line chart categories, the table's columns, a matrix's rows
+and a slicer's field take one (probes 16-19, 39 and 40); a matrix's columns doesn't, because no
+probe has put a hierarchy there. Blueprint validates bindings
 *before* writing anything, so a measure in a category slot is an error from `bp`, not a
 confusing result in Desktop.
 
@@ -852,8 +857,12 @@ facts live in the visual contracts rather than in core code (done).
 the core with no opt-in, the chart types take the same `labels`/`legend` options, and `scatter`,
 `multi-row-card` and `map` are new (done).
 
-**Next, each needing a Desktop probe first:** axis titles, conditional formatting, and legend
-positions on `scatter` and `map` (the sample reports use them; no probe covers them yet).
+**v0.9 — the options and wells the core still lacked.** `labels` and `legend` on `pie` and
+`donut`, `legend` on `scatter` and `map`, and a model hierarchy in a matrix's rows and a slicer's
+field. Verified as candidates in probes 37-39 and accepted from `bp apply` in probe 40 (done).
+
+**Next, each needing a Desktop probe first:** axis titles, conditional formatting, a matrix's
+subtotals, and a hierarchy in a matrix's *columns*.
 
 **Later, in no particular order.** Bookmarks. Relative layout positioning. A `bp new` scaffold.
 Theme file generation (done: `bp theme`). CI action for `bp check` (done: [In CI](#in-ci)).

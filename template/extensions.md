@@ -140,10 +140,8 @@ it is `sort: {by, direction}` on the visual, where Desktop keeps it.
   needed when something beside the field is being said
 
 **What extensions add here:**
-- Sort order per slot
 - Conditional formatting
 - Display units and decimal places
-- Custom aggregation beyond the pipe syntax
 
 ### 4. Page spec — visual options
 
@@ -152,7 +150,7 @@ options it finds. An extension adds options by adding lines to the
 visual definition:
 
 ```yaml
-# visuals/column.yaml (with extension options)
+# visuals/column.yaml (with an extension option)
 type: column
 visual_type: clusteredColumnChart
 region: main
@@ -160,19 +158,22 @@ slots: ...
 options:
   labels: { object: labels, property: show, values: { "on": "true" } }
   legend: { object: legend, property: position, values: { ... } }
-  # Extension options — same format, same engine path:
-  sort: { object: sort, property: orderBy, values: { ... } }
+  # An extension option — same format, same engine path:
   tooltip: { object: tooltip, property: show, values: { "on": "true" } }
 ```
+
+An option is one `objects` entry, so only something Desktop keeps *there*
+fits this shape. Sorting does not: Desktop writes it as
+`query.sortDefinition` (probe 31), which is why `sort` is a visual key in a
+spec and not an option.
 
 **How it works:**
 - The engine already writes any option declared in the visual YAML
 - Adding an option = adding a line to the YAML
 - No engine code change — the render path is generic
-- The page spec references it: `options: { sort: "descending" }`
+- The page spec references it: `options: { tooltip: "on" }`
 
 **What extensions add here:**
-- Sort controls
 - Tooltip configuration
 - Drill-through page settings
 - Reference lines
@@ -180,7 +181,11 @@ options:
 
 ### 5. Layout regions — and relative positioning later
 
-A layout region is a dict, so extensions add keys to it:
+A layout region needs `role`, `x`, `y`, `w` and `h`. Anything else in the
+dict is **ignored, not refused** (`layouts.py`), so an extension can carry
+its own keys there — but nothing in the core will read them, and a typo in
+one of them is silent. Of the two examples below, Blueprint today reads
+neither:
 
 ```yaml
 # Core (today): the client states every pixel
@@ -327,6 +332,13 @@ Modified YAML:
 Client writes:
   options: { labels: "off", legend: "top" }
 ```
+
+For a contract **the core ships**, that is not the whole cost: the shape has
+to be verified in Desktop first — a candidate probe for what Desktop writes
+and an acceptance probe for what Blueprint writes (here 37 and 40), which is
+this repo's first rule, not a formality. For a client's **own** contract,
+under `extensions.custom_visuals.search_path`, the YAML edit really is all
+of it: they are describing a visual they already know.
 
 The engine writes whatever a contract declares, so an option really is a
 YAML edit. What is *not* free is anything the core has to recognise: a new
