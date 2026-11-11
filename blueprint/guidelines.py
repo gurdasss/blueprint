@@ -20,6 +20,7 @@ ignored: ignoring them would silently change what is checked.
 
 from __future__ import annotations
 
+import difflib
 import os
 import re
 from collections.abc import Sequence
@@ -213,6 +214,7 @@ def load(
 
     for name, layer in layers:
         _refuse_retired_keys(layer, name)
+        _refuse_unknown_keys(layer, name)
 
     raw: dict[str, Any] = {}
     for _, layer in layers:
@@ -232,6 +234,50 @@ RETIRED: tuple[tuple[str, str], ...] = (
     ("check.severity", "extensions.severity"),
     ("check.decorative_types", "extensions.decorative_types"),
 )
+
+
+# The whole core file: section -> its sub-keys (``()``: the section is a scalar). This is the
+# "core 20%" in one place, and the loader refuses anything else so a typo can't pass silently:
+# `spacing: {margn: 16}` used to load with the default margin and check nothing. `typography`'s
+# roles are checked in _refuse_retired_keys (they map to internal roles), and `extensions:` is a
+# pass-through for keys the core doesn't know.
+CORE_KEYS: dict[str, tuple[str, ...]] = {
+    "version": (),
+    "name": (),
+    "canvas": ("width", "height"),
+    "spacing": ("grid", "margin", "gutter"),
+    "page": ("max_visuals", "density_policy", "require_title", "title_region"),
+    "palette": ("categorical", "background", "text", "extra", "enforce"),
+    "typography": tuple(CORE_ROLES),
+    "layouts": ("search_path", "default"),
+}
+PASS_THROUGH = "extensions"
+
+
+def _unknown(name: str, known: Sequence[str], where: str, source: str) -> GuidelinesError:
+    pool = sorted(known)
+    same = [k for k in pool if k.lower() == name.lower()]
+    close = same or difflib.get_close_matches(name, pool, n=2, cutoff=0.7)
+    hint = f" (did you mean {' or '.join(close)}?)" if close else ""
+    return GuidelinesError(f"{source}: unknown key {where}{name}{hint}. "
+                           f"Known here: {', '.join(pool)}. Anything else goes under extensions:")
+
+
+def _refuse_unknown_keys(layer: dict[str, Any], source: str) -> None:
+    """Refuse a key the core doesn't implement, naming the closest one it does.
+
+    Only `extensions:` is open: the core reads five sub-keys there and passes the rest through
+    untouched (template/extensions.md), so an extension's own keys must not be refused here."""
+    for key, value in layer.items():
+        if key == PASS_THROUGH:
+            continue
+        if key not in CORE_KEYS:
+            raise _unknown(str(key), [*CORE_KEYS, PASS_THROUGH], "", source)
+        sub_keys = CORE_KEYS[key]
+        if sub_keys and isinstance(value, dict):
+            for inner in value:
+                if inner not in sub_keys:
+                    raise _unknown(str(inner), sub_keys, f"{key}.", source)
 
 
 def _refuse_retired_keys(layer: dict[str, Any], source: str) -> None:

@@ -4,6 +4,16 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
+## Unreleased
+
+- **Guidelines: a key outside the core is refused, not ignored.** `spacing: {margn: 16}` used to
+  load with the default margin, so the file said one thing and `bp check` did another. Unknown
+  keys and sub-keys are now an error naming the closest real key (`did you mean margin?`).
+  `extensions:` stays open, so an extension's own keys still pass through untouched.
+- Which query well carries Desktop's `"active"` flag is declared by each visual contract
+  (`active: true` on the slot) instead of a table of visual-type names in core code. No output
+  changes; a custom visual can now declare it without a code change.
+
 ## v0.6.0 (2026-11-11)
 
 The template rewrite: Blueprint's input files redone from the client's side. **Breaking:** the

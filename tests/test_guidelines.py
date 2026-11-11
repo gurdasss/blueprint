@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import yaml
 
 from blueprint import guidelines
 
@@ -157,3 +158,47 @@ def test_a_core_role_under_extensions_is_refused(tmp_path: Path):
     with pytest.raises(guidelines.GuidelinesError,
                        match="extensions.typography.page_title: unknown role"):
         guidelines.load(f)
+
+
+# --- the core 20%: a key outside it is refused, never silently ignored ----------------------
+
+
+def _write(tmp_path: Path, body: str) -> Path:
+    path = tmp_path / "g.yaml"
+    path.write_text("version: 1\nname: T\n" + body, encoding="utf-8")
+    return path
+
+
+@pytest.mark.parametrize(("body", "names"), [
+    ("spacing: {grid: 8, margn: 16}", ("spacing.margn", "margin")),       # a typo in a core sub-key
+    ("palette: {categoricals: ['#FFFFFF']}", ("palette.categoricals", "categorical")),
+    ("page: {max_visual: 6}", ("page.max_visual", "max_visuals")),
+    ("spacingg: {grid: 8}", ("spacingg", "spacing")),                      # a typo in a section
+    ("canvas: {width: 8, bleed: 4}", ("canvas.bleed", "")),                # a key the core doesn't have
+])
+def test_a_key_outside_the_core_is_refused_with_the_closest_one_named(tmp_path, body, names):
+    """It used to load: `spacing: {margn: 16}` left margin at its default and checked nothing, so
+    the client's file said one thing and `bp check` did another. "Refuse rather than surprise"."""
+    key, suggestion = names
+    with pytest.raises(guidelines.GuidelinesError) as err:
+        guidelines.load(_write(tmp_path, body))
+    assert key in str(err.value)
+    if suggestion:
+        assert f"did you mean {suggestion}" in str(err.value)
+
+
+def test_extensions_stay_open_so_an_extension_can_add_its_own_keys(tmp_path):
+    """`extensions:` is the pass-through (template/extensions.md): the core reads five sub-keys
+    and must not refuse the rest, or no extension could ship without a core change."""
+    rules = guidelines.load(_write(tmp_path, "extensions:\n  conditional_formatting: {rules: []}\n"))
+    assert rules.raw["extensions"]["conditional_formatting"] == {"rules": []}
+
+
+def test_core_keys_lists_exactly_what_defaults_yaml_ships():
+    """CORE_KEYS is what the loader accepts and defaults.yaml is what ships: a key in one and not
+    the other means a client can write something the defaults never mention, or the reverse."""
+    defaults = yaml.safe_load(guidelines.DEFAULTS.read_text(encoding="utf-8"))
+    for section, value in defaults.items():
+        assert section in guidelines.CORE_KEYS, f"defaults.yaml ships {section}, CORE_KEYS doesn't"
+        if isinstance(value, dict):
+            assert set(value) <= set(guidelines.CORE_KEYS[section]), section
