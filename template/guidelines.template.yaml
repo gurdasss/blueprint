@@ -123,8 +123,8 @@ layouts:
 #     search_path:                    # probe-verified types the core ships. Relative
 #       - "my-visuals"                # entries resolve against this file.
 #
-# Anything else here is passed through untouched, for extension
-# validators to read. Sketches of what comes next:
+# Anything else here is passed through untouched, for an extension's
+# own code to read (there is no registry). Sketches of what comes next:
 #
 # extensions:
 #   four_sided_margin:

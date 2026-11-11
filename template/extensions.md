@@ -8,10 +8,16 @@
 ## Principle
 
 Every extension follows one pattern: **add, never modify.** The core
-structure at every layer is a dict (or list of dicts). Extensions add
-keys to those dicts. Core code validates what it knows and ignores
-what it doesn't. An extension registers its own validator for its own
-keys.
+structure at every layer is a dict (or list of dicts), and extensions add
+keys to those dicts — **in the places the core leaves open**.
+
+Which places those are is exact, and it is narrower than "anywhere a dict
+is". Since v0.7 the core **refuses** a key it doesn't implement in every
+section it owns, naming the closest real key, so that a typo can't load with
+a default silently (`spacing: {margn: 16}` used to). The one open section is
+`extensions:`. There is **no registry**: nothing registers a validator, and
+the core never calls extension code. An extension is code that reads its own
+sub-key out of the loaded rules.
 
 ---
 
@@ -22,8 +28,8 @@ keys.
 The core guidelines file has a reserved top-level key:
 
 ```yaml
-# extensions: is reserved. Core validator ignores it.
-# Extensions read their own keys from this block.
+# extensions: is the one open section. The core reads the five
+# sub-keys below and passes everything else through untouched.
 extensions:
   conditional_formatting:
     rules: [...]
@@ -33,7 +39,11 @@ extensions:
 
 **How it works:**
 - The core reads only the sub-keys listed below; it passes the rest through
-- Each extension registers a validator that reads its own sub-key
+- An extension reads its own sub-key off the loaded rules — no registration,
+  no hook, and nothing in the core knows the extension exists
+- A name the core doesn't know is **not** warned about, because the core can't
+  tell an extension's key from a typo in one. Inside `extensions:` that is the
+  trade for being open
 - Extensions can also read core keys (e.g. palette) but never write them
 - A guidelines file without `extensions:` is complete — nothing is missing
 
@@ -53,11 +63,15 @@ extensions:
     search_path: ["my-visuals"]       # contracts of your own
 ```
 
-**What further extensions add here:**
-- Four-sided margins (`spacing.margin: { top: 16, bottom: 16, ... }`)
-- Two-axis gutters (`spacing.gutter: { horizontal: 16, vertical: 24 }`)
+**What further extensions add here**, as their own `extensions:` sub-keys:
 - Canvas background colour
 - Approved visual type / layout allowlists
+- Four-sided margins and two-axis gutters — but **not** by widening
+  `spacing.margin` to `{top: …}` or `spacing.gutter` to `{horizontal: …}`.
+  Those are core keys the loader refuses as anything but an integer, and
+  changing their type is modifying the core, not adding to it. They go in
+  as `extensions.four_sided_margin` and the like, which is how
+  `template/guidelines.template.yaml` sketches them.
 - Visual container styling (border, shadow, corner radius)
 - Further typography roles (kpi_value, data_label)
 
@@ -90,33 +104,40 @@ extensions:
 
 ### 3. Page spec — slot long form
 
-The short/long form slot pattern is the main extension seam in
-page specs. The long form is a dict, and extensions add keys:
+A slot entry may be a field name or a dict, and the dict is where anything
+further about that field is said:
 
 ```yaml
 # Core (today):
 slots:
   value:
-    field: "[Total Revenue]"
-    format: currency
+    field: "Sales[Amount]"
+    aggregate: sum        # summarise a column in the visual (probe 29)
+    format: "#,0.00"      # a Power BI format string, written verbatim
 
-# With extensions (future):
+# What an extension would want to add:
 slots:
   value:
-    field: "[Total Revenue]"
-    format: currency
-    sort: descending               # ← extension key
+    field: "Sales[Amount]"
     conditional_format: red_green  # ← extension key
     display_units: thousands       # ← extension key
     decimal_places: 1              # ← extension key
 ```
 
+There is no `currency` alias and there won't be one: Desktop writes the
+*locale's* symbol, so an alias would have Blueprint invent a symbol the
+model never agreed to (`template/plan.md`). Sorting is not here either —
+it is `sort: {by, direction}` on the visual, where Desktop keeps it.
+
 **How it works:**
-- Core validates `field` and `format` — the keys it owns
-- Unknown keys in the long form are passed through, not rejected
-- Each extension registers a validator for its own keys
-- The short form (`value: "[Revenue]"`) still works — extensions
-  only activate when the long form is used
+- The core owns `field`, `aggregate` and `format`, and **refuses any other
+  key**, naming the three it takes. A page spec is not an open dict: a
+  misspelt `fromat` has to be an error, or it silently does nothing
+- So an extension key here is the one extension point in this document that
+  needs a core change — a small one (the key goes in `spec._SLOT_KEYS` and is
+  carried on `FieldRef`), but it is not free the way an `extensions:` sub-key is
+- The short form (`value: "[Revenue]"`) still works — the long form is only
+  needed when something beside the field is being said
 
 **What extensions add here:**
 - Sort order per slot
@@ -230,9 +251,11 @@ def check_conditional_format(page, guidelines, ext_config) -> list[Finding]: ...
 **How it works:**
 - Core runs its rules: grid, margin, gutter, bounds, overlap,
   density, palette, typography, title
-- Each extension registers additional rules
 - Rules are independent — adding one never changes existing ones
-- Extension rules can have their own severity (error/warning/off)
+- An extension's rule runs in the extension's own command or pass; `bp check`
+  has no plug-in point, and `extensions.severity` only accepts the core rule
+  ids (`guidelines.RULES`), so an extension rule carries its own severity
+  until someone adds one
 
 **What extensions add here:**
 - Conditional format consistency checks
@@ -248,18 +271,16 @@ Extensions are always opt-in. The flow:
 
 ```
 1. Client adds extensions: block to guidelines.yaml
-2. Blueprint loads core as usual
-3. Blueprint scans extensions: for known extension names
-4. Each recognised extension:
-   a. Reads its config from the extensions: block
-   b. Registers its validator(s)
-   c. Registers its render logic (if any)
-5. Unknown extension names → warning (not error)
-6. Core proceeds as normal, with extensions active
+2. Blueprint loads the core as usual, reading the five sub-keys it knows
+   and passing the rest of extensions: through untouched
+3. The extension's own code reads its sub-key off the loaded rules
+4. Unknown names are neither read nor warned about — the core cannot tell
+   an extension's key from a typo in one
 ```
 
-A guidelines file with no `extensions:` key runs the core only.
-No performance cost. No unexpected behaviour.
+The core does not scan for extensions, recognise them or call them: step 3
+is the extension doing the work, not Blueprint. A guidelines file with no
+`extensions:` key runs the core only. No performance cost.
 
 ---
 
@@ -267,8 +288,9 @@ No performance cost. No unexpected behaviour.
 
 Three properties of the core design make extensions easy:
 
-1. **YAML dicts are open.** A dict accepts new keys without schema
-   changes. Core validates what it knows, ignores what it doesn't.
+1. **One section is open by design.** `extensions:` accepts new keys
+   without a schema change, while every core section refuses what it
+   doesn't implement — so openness is a place, not a habit.
 
 2. **Visual definitions are data.** The engine reads whatever YAML
    declares — slots, options, type string. Adding a visual or an
@@ -285,23 +307,29 @@ rules.
 
 ---
 
-## Concrete example: adding "sort" later
+## Concrete example: what adding an option actually cost
 
-When a client asks for visual sorting, the full change is:
+Sorting was this document's example of a future extension. It shipped in
+v0.6 **as core** instead — `sort: {by, direction}` on a visual, verified in
+probe 31 — because a spec that can't say what a chart is sorted by was
+missing something the core 20% needs, not something a client extends.
+
+The part the example got right is the shape of an option. Adding `labels`
+and `legend` to `pie` and `donut` in v0.9.0 was:
 
 ```
 Core code changes:         zero
 
-New files:
-  extensions/sort.py       validation + render logic (~50 lines)
-
 Modified YAML:
-  blueprint/visuals/column.yaml   add sort option declaration (1 line)
-  blueprint/visuals/bar.yaml      same (1 line)
-  blueprint/visuals/table.yaml    same (1 line)
+  blueprint/visuals/pie.yaml      the two option declarations
+  blueprint/visuals/donut.yaml    the same
 
 Client writes:
-  options: { sort: "Revenue descending" }
-
-That's it. Core engine, core validation, core guidelines — untouched.
+  options: { labels: "off", legend: "top" }
 ```
+
+The engine writes whatever a contract declares, so an option really is a
+YAML edit. What is *not* free is anything the core has to recognise: a new
+slot long-form key, a new rule in `bp check`, or a guidelines key outside
+`extensions:`. Those are core changes, and this document says so above
+rather than promising a hook that doesn't exist.
