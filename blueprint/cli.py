@@ -24,9 +24,9 @@ from blueprint.pbir.writer import WriteError
 from blueprint.spec import SpecError
 
 REPORT_HELP = "a .Report folder, a .pbip file, or a folder containing one .Report"
-VISUALS_HELP = ("try a directory of extra visual contracts for this run, e.g. "
-                "blueprint/visuals/archive (repeatable; added to "
-                "extensions.custom_visuals.search_path, which is where a lasting opt-in belongs)")
+VISUALS_HELP = ("try a directory of your own visual contracts for this run, e.g. ./my-visuals "
+                "(repeatable; added to extensions.custom_visuals.search_path, which is where a "
+                "lasting opt-in belongs)")
 SET_HELP = ("override one guidelines key for this run, e.g. --set spacing.grid=8 "
             "(repeatable; the key is a dotted path, the value is read as YAML)")
 

@@ -350,32 +350,33 @@ visuals:
     slots: { columns: ["Sales[Country]", "Sales[Region]", "[Total Sales]"] }
 ```
 
-### Core types, and the archive
+### Visual types, and your own
 
-The core ships `header`, `card`, `kpi`, `column`, `line`, `bar`, `table`, `slicer`, `matrix`,
-`pie` and `donut`. Types move into the core as their Desktop evidence is confirmed; the rest are
-probe-verified but still need an opt-in: `area`, `stacked-column`, `stacked-column-100` and
-`stacked-bar` (in `blueprint/visuals/archive/`). A spec naming one is refused, listing the
-types that are loaded, until you opt in — per run, or in your guidelines:
+The core ships every type a Desktop probe has verified: `header`, `card`, `kpi`, `column`,
+`bar`, `line`, `area`, `table`, `matrix`, `slicer`, `pie`, `donut`, `stacked-column`,
+`stacked-column-100` and `stacked-bar`. A spec naming anything else is refused, listing the types
+that are loaded.
+
+**Your own types.** A contract is a YAML file, so you can add types Blueprint doesn't ship —
+per run, or for good in your guidelines:
 
 ```bash
-bp apply spec.yaml --report <report> --visuals blueprint/visuals/archive
+bp apply spec.yaml --report <report> --visuals ./my-visuals
 ```
 
 ```yaml
 # guidelines.yaml — relative to this file, like layouts.search_path
 extensions:
   custom_visuals:
-    search_path: ["../blueprint/visuals/archive"]
+    search_path: ["my-visuals"]
 ```
 
-`--visuals` is for trying a type in one run. A report that **keeps** archived visuals should
-opt in through its guidelines (or its own `.blueprint.yaml`), because the manifest is built
-from the contracts: a later `bp fmt` or `bp manifest` without the opt-in rewrites those
-entries with the PBIR type and raw query roles (`pieChart`, `Category`/`Y`) instead of the
-spec type and slot names.
+`--visuals` is for trying a type in one run. A report that **keeps** visuals of your own type
+should opt in through its guidelines (or its own `.blueprint.yaml`), because the manifest is
+built from the contracts: a later `bp fmt` or `bp manifest` without the opt-in rewrites those
+entries with the PBIR type and raw query roles instead of the spec type and slot names.
 
-With the opt-in, archived types behave exactly as before, options included:
+Every core type takes its own options, e.g.:
 
 ```yaml
   - type: slicer
@@ -671,7 +672,7 @@ blueprint/
 │   ├── validate.py             # guideline rules (used by `check`)
 │   ├── policies.py             # named policies the config selects (e.g. density)
 │   ├── manifest.py
-│   └── visuals/                # slot contracts: the core, archive/ for what needs an opt-in
+│   └── visuals/                # one slot contract per visual type
 │
 ├── guidelines/
 │   ├── example.yaml            # invented; committed so the tool is runnable

@@ -6,12 +6,18 @@ code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, eviden
 
 ## Unreleased
 
-- **`slicer`, `matrix`, `pie` and `donut` are core types**, so a spec uses them with no opt-in and
-  `bp describe` lists them. The archive was a holding pen for the v0.6 refactor, not a permanent split: types
+- **Every probe-verified visual type is core**, so a spec uses all 15 with no opt-in and
+  `bp describe` lists them: `area`, `bar`, `card`, `column`, `donut`, `header`, `kpi`, `line`,
+  `matrix`, `pie`, `slicer`, `stacked-bar`, `stacked-column`, `stacked-column-100`, `table`.
+  `blueprint/visuals/archive/` is gone; `--visuals DIR` and
+  `extensions.custom_visuals.search_path` stay, for contracts of your own.
+- `area`, `stacked-column`, `stacked-column-100` and `stacked-bar` gained the `labels` and
+  `legend` options (positions and `off`) the core's charts already had, so all seven chart types
+  behave alike (probe 35). The archive was a holding pen for the v0.6 refactor, not a permanent split: types
   move into the core in batches as their Desktop evidence is confirmed (these two: probe 20 for
   the shapes, probe 21 for Desktop accepting what `bp apply` writes; probes 08 and 11 for the pie
-  and its Legend drill-down, 22-24 for the donut and Desktop's save). Still opt-in: `area`,
-  `stacked-column`, `stacked-column-100`, `stacked-bar`.
+  and its Legend drill-down, 22-24 for the donut, the area and the stacked charts and Desktop's
+  save of them).
 - A report whose guidelines still opt into `blueprint/visuals/archive` keeps working; hand-built
   visuals are unaffected (the manifest has always named those by PBIR type and query role).
 

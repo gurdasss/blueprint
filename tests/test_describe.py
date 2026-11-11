@@ -93,13 +93,21 @@ def test_text_output(capsys, tmp_path: Path):
     shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
     assert main(["describe", "--report", str(tmp_path / "proj"), "--guidelines", str(GUIDE)]) == 0
     out = capsys.readouterr().out
-    assert "  kpi    region kpi-row  value*: measure, trend*: column, target: measure\n" in out
-    assert "  area" not in out  # still archived: a spec sees it only after an opt-in
-    # with the opt-in, what is still archived is listed too
-    assert main(["describe", "--report", str(tmp_path / "proj"), "--guidelines", str(GUIDE),
-                 "--visuals", str(ROOT / "blueprint" / "visuals" / "archive")]) == 0
+    assert ("  kpi                region kpi-row  value*: measure, trend*: column, "
+            "target: measure\n") in out
+    # every probe-verified type is core, so a plain run lists them all
     assert ("  area               region main     category*[]: column, value*[]: measure"
-            in capsys.readouterr().out)
+            in out)
+    # a client's own type needs an opt-in, and then it is listed too
+    mine = tmp_path / "my-visuals"
+    mine.mkdir()
+    (mine / "gauge.yaml").write_text(
+        "type: gauge\nvisual_type: gaugeChart\nregion: main\n"
+        "slots:\n  value: { role: Y, accepts: measure, required: true }\n")
+    assert "  gauge" not in out
+    assert main(["describe", "--report", str(tmp_path / "proj"), "--guidelines", str(GUIDE),
+                 "--visuals", str(mine)]) == 0
+    assert "  gauge              region main     value*: measure" in capsys.readouterr().out
     assert "  standard-4-up (default): 1280x720; 1 header, 1 kpi-row, 2 main" in out
     assert "    measures: [Total Amount]" in out
     assert "  Overview  (1920x1080; not built by a spec)" in out

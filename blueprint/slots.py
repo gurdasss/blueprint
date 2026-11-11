@@ -6,7 +6,7 @@ ordered). Only types whose PBIR shape has been verified in Desktop ship here; th
 cite the probe that verified them.
 
 The core ships seven types: header, card, kpi, column, line, bar, table. Further verified
-contracts live in ``visuals/archive/`` and load only when a guidelines file puts a directory
+contracts beyond the core load only when a guidelines file puts a directory
 on the visuals search path (``extensions.custom_visuals.search_path``), which `contracts()`
 takes as ``extra``. Loading is deterministic: the core directory first, then each extra in
 the order given, each sorted by file name.
@@ -21,9 +21,8 @@ from pathlib import Path
 import yaml
 
 VISUALS_DIR = Path(__file__).resolve().parent / "visuals"
-ARCHIVE_DIR = VISUALS_DIR / "archive"
-CORE_TYPES = ("bar", "card", "column", "donut", "header", "kpi", "line", "matrix", "pie",
-               "slicer", "table")
+CORE_TYPES = ("area", "bar", "card", "column", "donut", "header", "kpi", "line", "matrix",
+               "pie", "slicer", "stacked-bar", "stacked-column", "stacked-column-100", "table")
 # "hierarchy": a hierarchy built in the model, written like a column (Table[Hierarchy]). It's one
 # field, as in Desktop's wells, that binds all its levels in order (probes 16, 18). So a slot that
 # takes a single field can take one, without also allowing a list of columns there.

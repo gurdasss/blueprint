@@ -218,6 +218,7 @@ These 7 types cover every standard report pattern:
 | **card** | Single KPI number | value |
 | **kpi** | Value + trend + target | value, trend, target |
 | **column** | Categories vs values | category, value, legend |
+| *(area, pie, donut, matrix, slicer, the stacked charts)* | promoted into the core 2026-11-11 | see each contract |
 | **line** | Trends over time | category, value, legend |
 | **bar** | Horizontal categories | inherits column |
 | **table** | Rows and columns | columns (mixed types) |

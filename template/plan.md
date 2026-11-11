@@ -274,7 +274,16 @@ region is under 160px. That number is measured (bridge screenshots: at 120px
 Desktop clips a KPI's goal line and a titled card's label) and currently
 lives only in a comment in six layout files.
 
-### Step 4 (done): core seven visual types, and `inherits:`
+### Step 4 (done, and later reversed): core seven visual types, and `inherits:`
+
+> **Reversed 2026-11-11.** The archive turned out to be a holding pen for this refactor, not a
+> permanent split: the user's call was that a type Desktop ships and a probe has verified belongs
+> in the core. All eight archived types were promoted in batches (slicer/matrix, pie/donut, then
+> area and the three stacked charts), `blueprint/visuals/archive/` is gone, and the core is the
+> 15 probe-verified types. Probe 35 ran first so the four stacked/area charts carried the same
+> `labels` and `legend` options as the core's charts instead of importing the gap. What step 4
+> actually bought, and what stands: `inherits:`, one contract per type as data, and the opt-in
+> mechanism — which now serves its real purpose, a client's own contracts.
 
 **4a — the core ships seven types.** `header`, `card`, `kpi`, `column`, `line`,
 `bar`, `table`. The eight other probe-verified contracts (`pie`, `donut`,

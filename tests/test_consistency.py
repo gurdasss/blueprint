@@ -16,7 +16,7 @@ import yaml
 
 from blueprint import guidelines
 from blueprint.cli import build_parser
-from blueprint.slots import ARCHIVE_DIR, CORE_TYPES, VISUALS_DIR, contracts
+from blueprint.slots import CORE_TYPES, VISUALS_DIR, contracts
 
 ROOT = Path(__file__).resolve().parent.parent
 SHIPPED_YAML = sorted(
@@ -105,6 +105,9 @@ def test_extension_keys_lists_exactly_what_the_loader_reads():
 
 def test_the_documented_extension_keys_are_all_accepted(tmp_path: Path):
     """And the other direction: a key the docs show must load, not raise."""
+    mine = tmp_path / "my-visuals"
+    mine.mkdir()
+    (mine / "gauge.yaml").write_text("type: gauge\nvisual_type: gaugeChart\nregion: main\nslots:\n  value: { role: Y, accepts: measure, required: true }\n", encoding="utf-8")
     body = (
         "extensions:\n"
         "  severity: {grid: warning}\n"
@@ -115,7 +118,7 @@ def test_the_documented_extension_keys_are_all_accepted(tmp_path: Path):
         "    callout: {font: Segoe UI Light, size: 32}\n"
         "    card_label: {font: Arial, size: 14}\n"
         "  custom_visuals:\n"
-        f'    search_path: ["{ARCHIVE_DIR}"]\n'
+        f'    search_path: ["{mine}"]\n'
     )
     path = tmp_path / "extensions.yaml"
     path.write_text(body, encoding="utf-8")
@@ -124,7 +127,7 @@ def test_the_documented_extension_keys_are_all_accepted(tmp_path: Path):
     assert rules.check.decorative_types == ("image", "shape")
     assert rules.max_resize == 0.25
     assert {"subtitle", "callout", "card_label"} <= set(rules.typography)
-    assert rules.visuals == (ARCHIVE_DIR,)
+    assert rules.visuals == (mine,)
 
 
 def test_the_core_contract_set_matches_its_constant():
@@ -133,7 +136,7 @@ def test_the_core_contract_set_matches_its_constant():
 
 
 def test_every_yaml_blueprint_loads_at_runtime_is_packaged():
-    """package-data globs don't recurse: `visuals/*.yaml` does not ship `visuals/archive/*.yaml`,
+    """package-data globs don't recurse: a nested directory of YAML would need its own.yaml`,
     so an archived contract would be missing from a pip install (the repo checkout hides it)."""
     data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     globs = data["tool"]["setuptools"]["package-data"]["blueprint"]
@@ -210,17 +213,18 @@ def test_the_readme_quotes_flags_that_exist(subcommand: str):
     assert unknown == set(), f"bp {subcommand}: README uses {sorted(unknown)}"
 
 
-def test_no_core_module_knows_an_archived_visual_type():
-    """The core 20%: a client who never opts into the archive must not be carrying its shapes.
-    `render.ACTIVE_BY_TYPE` used to map "slicer" and "pivotTable" (the archived slicer and matrix)
-    to the roles Desktop marks `active`, so core code held the shape of two types it doesn't ship
-    and a custom visual couldn't declare the same fact without a code change. It is a `Slot`
-    field now (`slots.Contract.active_roles`). Only the write path is covered: `pbir/reader.py`,
-    `formatting.py` and `validate.py` read *any* report, including visuals no contract describes,
-    so they legitimately name PBIR types."""
-    archived = {name: c.visual_type for name, c in contracts((ARCHIVE_DIR,)).items()
-                if name not in CORE_TYPES}
-    assert archived, "no archived contracts to check"
+def test_no_core_write_path_module_names_a_pbir_visual_type():
+    """Per-type PBIR facts belong in the contract YAML, not in Python. `render.ACTIVE_BY_TYPE`
+    used to map "slicer" and "pivotTable" to the roles Desktop marks `active`, so core code held
+    the shape of two types and a custom visual couldn't declare the same fact without a code
+    change; it is a `Slot` field now (`slots.Contract.active_roles`). The write path builds every
+    visual from a contract, so it should never need a PBIR type name. Only the write path is
+    covered: `pbir/reader.py`, `formatting.py` and `validate.py` read *any* report, including
+    visuals no contract describes, so they legitimately name PBIR types."""
+    # Only PBIR names that aren't also a spec type: `kpi` and `slicer` are both, and
+    # `slots.CORE_TYPES` lists the spec types on purpose.
+    pbir_types = {c.visual_type for c in contracts().values()} - set(CORE_TYPES)
+    assert len(pbir_types) >= 10
     core_written = [ROOT / "blueprint" / "pbir" / "render.py", ROOT / "blueprint" / "slots.py",
                     ROOT / "blueprint" / "spec.py", ROOT / "blueprint" / "layouts.py",
                     ROOT / "blueprint" / "commands" / "apply.py"]
@@ -228,23 +232,23 @@ def test_no_core_module_knows_an_archived_visual_type():
     for path in core_written:
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
-            if isinstance(node, ast.Constant) and isinstance(node.value, str):
-                for spec_type, pbir_type in archived.items():
-                    if node.value in (spec_type, pbir_type):
-                        offenders.append(f"{path.relative_to(ROOT)}:{node.lineno}: {node.value!r}")
-    assert offenders == [], f"archived visual types named in core code: {offenders}"
+            if (isinstance(node, ast.Constant) and isinstance(node.value, str)
+                    and node.value in pbir_types):
+                offenders.append(f"{path.relative_to(ROOT)}:{node.lineno}: {node.value!r}")
+    assert offenders == [], f"PBIR visual types named in core write-path code: {offenders}"
 
 
 def test_which_well_carries_active_is_declared_by_each_contract():
     """Desktop marks a column projection `"active": true` in a chart's Category, the slicer's
     Values and the matrix's Rows/Columns, and nowhere else (probes 04, 08, 12, 20). That is a
     fact about one well of one type, so each contract declares it."""
-    c = contracts((ARCHIVE_DIR,))
+    c = contracts()
     assert {t: sorted(c[t].active_roles) for t in CORE_TYPES} == {
-        "bar": ["Category"], "card": [], "column": ["Category"], "donut": ["Category"],
-        "header": [], "kpi": [], "line": ["Category"], "matrix": ["Columns", "Rows"],
-        "pie": ["Category"], "slicer": ["Values"], "table": []}
-    assert sorted(c["area"].active_roles) == ["Category"]  # still archived
+        "area": ["Category"], "bar": ["Category"], "card": [], "column": ["Category"],
+        "donut": ["Category"], "header": [], "kpi": [], "line": ["Category"],
+        "matrix": ["Columns", "Rows"], "pie": ["Category"], "slicer": ["Values"],
+        "stacked-bar": ["Category"], "stacked-column": ["Category"],
+        "stacked-column-100": ["Category"], "table": []}
 
 
 def test_the_client_template_shows_every_core_guideline_key():

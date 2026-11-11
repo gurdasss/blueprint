@@ -19,8 +19,6 @@ from blueprint.validate import check_report
 
 ROOT = Path(__file__).resolve().parent.parent
 GUIDE = ROOT / "guidelines" / "example.yaml"
-ARCHIVE = ROOT / "blueprint" / "visuals" / "archive"
-VISUALS = ("--visuals", str(ARCHIVE))  # pie/slicer left the core seven; this is a client's opt-in
 
 # What examples/sales-mix.yaml held when pie was core: probe 08's three types on one page.
 SPEC_TEXT = """\
@@ -58,19 +56,18 @@ DESKTOP = {
 }
 
 
-def test_the_core_ships_the_promoted_types_and_the_archive_the_rest():
+def test_the_core_ships_every_probe_verified_type():
     """Types move into the core as their Desktop evidence is confirmed; what is left in the
     archive still needs an opt-in. `slicer` and `matrix` came first (probe 20 recorded the shapes,
     probe 21 showed Desktop accepts what `bp apply` writes), then `pie` and `donut` (probes 08 and
     11 for the shapes and the Legend drill-down, 22-24 for the rest and Desktop's save)."""
-    assert sorted(contracts()) == ["bar", "card", "column", "donut", "header", "kpi", "line",
-                                   "matrix", "pie", "slicer", "table"]
-    assert sorted(set(contracts((ARCHIVE,))) - set(contracts())) == [
-        "area", "stacked-bar", "stacked-column", "stacked-column-100"]
+    assert sorted(contracts()) == [
+        "area", "bar", "card", "column", "donut", "header", "kpi", "line", "matrix", "pie",
+        "slicer", "stacked-bar", "stacked-column", "stacked-column-100", "table"]
 
 
 def test_contracts_ship_the_probed_types():
-    c = contracts((ARCHIVE,))
+    c = contracts()
     assert (c["pie"].visual_type, c["table"].visual_type, c["kpi"].visual_type) == ("pieChart", "tableEx", "kpi")
     assert c["table"].slots["columns"].accepts == ("column", "measure", "hierarchy")
 
@@ -80,8 +77,7 @@ def test_apply_writes_desktops_query_shapes(tmp_path: Path):
     report = tmp_path / "proj" / "Fixture.Report"
     spec_path = tmp_path / "sales-mix.yaml"
     spec_path.write_text(SPEC_TEXT)
-    assert main(["apply", str(spec_path), "--report", str(report), "--guidelines", str(GUIDE),
-                 *VISUALS]) == 0
+    assert main(["apply", str(spec_path), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
 
     made = {}
     for f in report.glob("definition/pages/*/visuals/*/visual.json"):
@@ -126,7 +122,7 @@ def test_kpi_target_matches_probe_10(tmp_path: Path):
     spec = tmp_path / "kpi-target.yaml"
     spec.write_text('page: K\nlayout: standard-4-up\nvisuals:\n  - type: kpi\n    title: T\n'
                     '    slots: {value: "[Total Amount]", trend: "Sales[Country]", target: "[Target Amount]"}\n')
-    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE), *VISUALS]) == 0
+    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
     state = _made(report)["kpi"]["visual"]["query"]["queryState"]
     target = {**MEASURE, "field": {"Measure": {"Expression": {"SourceRef": {"Entity": "Sales"}},
                                                "Property": "Target Amount"}},
@@ -143,7 +139,7 @@ def test_roles_are_written_in_alphabetical_order_whatever_the_spec_order(tmp_pat
     spec = tmp_path / "order.yaml"
     spec.write_text('page: O\nlayout: standard-4-up\nvisuals:\n  - type: column\n    title: C\n'
                     '    slots: {value: "[Total Amount]", category: "Sales[Region]"}\n')
-    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE), *VISUALS]) == 0
+    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
     assert list(_made(report)["clusteredColumnChart"]["visual"]["query"]["queryState"]) == ["Category", "Y"]
 
 
@@ -199,7 +195,7 @@ def test_pie_drill_down_and_details_match_probe_11(tmp_path: Path):
                     '    slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}\n'
                     '  - type: pie\n    title: Split\n'
                     '    slots: {category: "Sales[Country]", details: "Sales[Region]", value: "[Total Amount]"}\n')
-    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE), *VISUALS]) == 0
+    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
     pies = {}
     for f in report.glob("definition/pages/*/visuals/*/visual.json"):
         doc = jsonfmt.load(f)
@@ -226,7 +222,7 @@ def test_line_and_bar_match_probe_12(tmp_path: Path):
                     '    slots: {category: "Sales[Country]", value: "[Total Amount]", legend: "Sales[Region]"}\n'
                     '  - type: bar\n    title: Bar\n'
                     '    slots: {category: ["Sales[Country]", "Sales[Region]"], value: "[Total Amount]"}\n')
-    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE), *VISUALS]) == 0
+    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
     made = _made(report)
     # probe 12 step 05 (line with Legend) and step 04 (bar drill-down), roles in Desktop's order
     assert list(made["lineChart"]["visual"]["query"]["queryState"].items()) == [
@@ -312,7 +308,7 @@ def test_inheriting_itself_is_refused(tmp_path: Path):
 
 def test_an_unknown_parent_names_what_is_loaded(tmp_path: Path):
     extra = _dir(tmp_path, odd="type: odd\nvisual_type: oddChart\ninherits: gauge\n")
-    with pytest.raises(ContractError, match="inherits unknown type 'gauge' .*loaded: bar"):
+    with pytest.raises(ContractError, match="inherits unknown type 'gauge' .*loaded: area"):
         contracts(extra)
 
 
@@ -330,11 +326,11 @@ def test_a_duplicate_type_name_is_refused(tmp_path: Path):
         contracts(extra)
 
 
-def test_an_archived_contract_can_be_a_parent(tmp_path: Path):
-    """A client's own type may inherit one of the archived contracts, with both on the path."""
-    extra = (*_dir(tmp_path, ring="type: ring\nvisual_type: ringChart\ninherits: donut\n"), ARCHIVE)
+def test_a_core_contract_can_be_a_parent_of_a_clients_own_type(tmp_path: Path):
+    """A client's own type, in its own directory, may inherit a core one."""
+    extra = _dir(tmp_path, ring="type: ring\nvisual_type: ringChart\ninherits: donut\n")
     c = contracts(extra)["ring"]
-    assert list(c.slots) == list(contracts((ARCHIVE,))["donut"].slots)
+    assert list(c.slots) == list(contracts()["donut"].slots)
 
 
 def test_bar_inherits_column_now_that_a_probe_covers_its_options():
@@ -380,27 +376,17 @@ def _report_with_a_pie(tmp_path: Path) -> Path:
     report = tmp_path / "proj" / "Fixture.Report"
     spec = tmp_path / "pie.yaml"
     spec.write_text(PIE_SPEC)
-    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE),
-                 *VISUALS]) == 0
+    assert main(["apply", str(spec), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
     assert _pie_entry(report)["type"] == "pie"
     return report
 
 
-def test_fmt_keeps_the_manifests_spec_types_when_the_report_opts_in(tmp_path: Path):
-    """The manifest is built from contracts: without the archived pie loaded, `bp fmt` would
-    rewrite the entry as its PBIR type with raw query roles ("pieChart", Category/Y) and
-    `bp check` would then call the manifest stale."""
+def test_fmt_keeps_the_manifests_spec_types(tmp_path: Path):
+    """The manifest is built from contracts: for a type no contract describes, `bp fmt` rewrites
+    the entry as its PBIR type with raw query roles ("pieChart", Category/Y) and `bp check` then
+    calls the manifest stale. Every probe-verified type is core now, so a plain run keeps them."""
     report = _report_with_a_pie(tmp_path)
-    (report / ".blueprint.yaml").write_text(
-        f'extensions:\n  custom_visuals:\n    search_path: ["{ARCHIVE}"]\n')
     assert main(["fmt", "--report", str(report), "--guidelines", str(GUIDE)]) == 0
-    entry = _pie_entry(report)
-    assert (entry["type"], list(entry["slots"])) == ("pie", ["category", "value"])
-
-
-def test_fmt_with_the_flag_keeps_them_too(tmp_path: Path):
-    report = _report_with_a_pie(tmp_path)
-    assert main(["fmt", "--report", str(report), "--guidelines", str(GUIDE), *VISUALS]) == 0
     entry = _pie_entry(report)
     assert (entry["type"], list(entry["slots"])) == ("pie", ["category", "value"])
 
@@ -411,8 +397,13 @@ def test_the_flag_adds_to_the_guidelines_opt_in_instead_of_replacing_it(tmp_path
     mine = tmp_path / "mine"
     mine.mkdir()
     (mine / "ring.yaml").write_text("type: ring\nvisual_type: ringChart\ninherits: donut\n")
+    theirs = tmp_path / "theirs"
+    theirs.mkdir()
+    (theirs / "gauge.yaml").write_text(
+        "type: gauge\nvisual_type: gaugeChart\nregion: main\n"
+        "slots:\n  value: { role: Y, accepts: measure, required: true }\n")
     g = tmp_path / "g.yaml"
-    g.write_text(f'extensions:\n  custom_visuals:\n    search_path: ["{ARCHIVE}"]\n')
+    g.write_text(f'extensions:\n  custom_visuals:\n    search_path: ["{theirs}"]\n')
     rules = guidelines.load(g, visuals=[mine])
-    assert set(rules.visuals) == {ARCHIVE, mine}
-    assert {"pie", "ring"} <= set(contracts(rules.visuals))  # both reachable
+    assert set(rules.visuals) == {theirs, mine}
+    assert {"gauge", "ring"} <= set(contracts(rules.visuals))  # both reachable
