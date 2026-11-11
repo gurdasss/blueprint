@@ -4,6 +4,27 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
+## Unreleased
+
+The options and hierarchy wells the core was still missing, each verified in Desktop as a
+candidate and then accepted from `bp apply` (probes 37-40).
+
+- **`pie` and `donut` take `labels` and `legend`.** Their `labels` carries **both** values
+  (`"on"` and `"off"`), because Desktop's default on these two types is labels *on* — every
+  other chart ships `"on"` alone. Probe 37.
+- **`scatter` and `map` take `legend`**, including on the map, which renders through a different
+  control and might have had its own properties. They deliberately take **no `labels`**: probe 38
+  wrote that object on both and Desktop's save *deleted* it.
+- **A matrix's `rows` and a slicer's `field` accept a model hierarchy** (`Table[Hierarchy]`),
+  which every chart's category already did. Probe 39 recorded Desktop's two shapes, which differ:
+  a matrix marks the first level active and writes an explicit `"active": false` below it, a
+  slicer marks every level. `matrix.columns` still refuses one — no probe has put a hierarchy
+  there. A contract says which it wants with `active_levels: first|all` on the slot.
+- **Probe 40 is the acceptance half**: five pages where every visual, option and hierarchy came
+  from a spec, with nothing patched. Desktop changed no option and no projection Blueprint wrote,
+  `bp check` found nothing, and a re-apply over its save changed nothing at all. Every legend
+  position drew on every type, including the cells the candidate probes never saw.
+
 ## v0.8.1 (2026-11-11)
 
 A fix and a documentation pass. The fix changes behaviour, so it is worth a line even though

@@ -561,6 +561,32 @@ content, so Blueprint's theme file matches Desktop's format exactly.
   Probe 14 settled how Blueprint binds a date: `Table[Column]` as a plain `Column`, which Desktop draws
   and keeps as written.
 
+**Verified 2026-11-11, probe 40** (`scripts/probe_accept_options_hierarchy.py`; evidence
+`docs/probes/40-accept-options-hierarchy.diff`). The acceptance half for probes 37-39: five pages
+where **every visual, every option and both hierarchies came from a spec** through the shipped
+contracts, with nothing patched onto the files. A candidate probe says Desktop takes a shape;
+this says Desktop takes what Blueprint writes. All seven predictions held.
+
+- **Every legend value drew on all four types** — `top`, `bottom`, `left`, `right` and `off` on
+  `pie`, `donut`, `scatterChart` and `map`. That includes the cells no earlier probe had seen:
+  `'Bottom'` and `'Left'` on pie and donut, `'Left'` on scatter and map. The contracts declare
+  the four positions from one property's literals, and this is the probe that tested them.
+- **`labels: "on"`/`"off"` showed and removed the detail labels on pie and donut**, the pair
+  probe 37 licensed, now written by `bp apply` rather than patched.
+- **A matrix with `rows: Sales[Geography]` and a slicer with `field: Sales[Geography]`, both from
+  a spec, drew as Desktop's own did** in probe 39: the matrix expandable from Country to Region
+  (FR 200 -> East 150, West 50; total 500), the slicer showing `Country, Region` with expanders.
+  `render` wrote the matrix's Rows first-level-active with an explicit `false` below, and the
+  slicer's Field with every level active (`active_levels: all`).
+- **The save changed no option object and no projection Blueprint wrote.** Only Desktop's own
+  additions appeared: `"active": true` on each scatter's `X` (probes 34, 36, 38), the matrix's
+  `Region` flipped active with `expansionStates` where the user expanded it, the `$schema` bump
+  on the files it rewrote, and `pages.json` `activePageName`.
+- **`bp check` reports no `format` findings**, and **re-applying the same specs over Desktop's
+  save changed nothing at all** — not even the manifest, so the bindings fingerprint survives
+  Desktop's flags and expansion state.
+
+
 **Verified 2026-11-11, probe 39** (`scripts/probe_hierarchy_matrix_slicer.py`; evidence
 `docs/probes/39-hierarchy-matrix-slicer.diff`). Binding a hierarchy built in the model has been
 core since probes 16-19, but `matrix` and `slicer` refused one for lack of a probe, and both
