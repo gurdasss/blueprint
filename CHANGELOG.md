@@ -4,6 +4,49 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
+## v0.6.0 (2026-11-11)
+
+The template rewrite: Blueprint's input files redone from the client's side. **Breaking:** the
+guidelines schema changed, and the old keys are refused with the replacement named.
+
+### Breaking: guidelines schema
+
+- Core keys are `version`, `name`, `canvas` (width, height), `spacing` (`grid`, `margin`,
+  `gutter`), `page`, `palette`, `typography` and `layouts`. Rule severities are baked into code.
+- Retired keys: `grid.size` → `spacing.grid`; `canvas.margin`/`canvas.gutter` →
+  `spacing.margin`/`spacing.gutter`; `grid.snap` (gone, `bp fmt` always snaps); `grid.max_resize`,
+  `check.severity`, `check.decorative_types` → `extensions.*`.
+- Typography roles are `page_title`, `visual_title` and `body`; `subtitle`, `callout` and
+  `card_label` live under `extensions.typography`. `bold` is gone (a weight is part of the face
+  name), which drops the check of a textbox run's own `fontWeight`.
+- Opt-in settings live under `extensions:` (`severity`, `decorative_types`, `max_resize`,
+  `typography`, `custom_visuals`). Findings and theme notes name the client's key.
+- `bp describe` reports `spacing: {grid, margin, gutter}`.
+
+### Visual types
+
+- The core ships seven types: `header`, `card`, `kpi`, `column`, `line`, `bar`, `table`. The
+  other eight (`pie`, `donut`, `slicer`, `matrix`, `area`, `stacked-column`,
+  `stacked-column-100`, `stacked-bar`) are archived in `blueprint/visuals/archive/` and load only
+  through `extensions.custom_visuals.search_path` or `--visuals DIR` on `apply`, `describe` and
+  `manifest`. Their behaviour is unchanged.
+- A visual contract can `inherits:` another; `bar` now inherits `column`.
+
+### Specs
+
+- A slot entry may be `{field, aggregate, format}`. `aggregate` (`sum`, `average`, `min`, `max`,
+  `count`, `distinctcount`) summarises a column in the visual; `format` is a Power BI format
+  string, written as given (probes 29 and 30).
+- `sort: {by, direction}` per visual (probe 31). `by` must be a field the visual binds. A spec
+  without `sort` leaves Desktop's or the user's sort alone; before, a user's sort was discarded
+  when a re-apply changed the fields.
+- `labels` and `legend` options now work on `bar` and `line` as well as `column` (probe 31).
+
+### Under the hood
+
+- Probe replays and tests extended through probe 31 (687 tests). Apply's golden output is
+  byte-identical to v0.5.1 apart from the version in the manifest.
+
 ## v0.5.1 (2026-11-10)
 
 Fixes from an audit (fresh installs, a real report, fuzzing, Windows-style input, Desktop checks):
