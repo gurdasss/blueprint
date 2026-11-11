@@ -352,9 +352,9 @@ visuals:
 
 ### Core types, and the archive
 
-The core ships `header`, `card`, `kpi`, `column`, `line`, `bar`, `table`, `slicer` and `matrix`.
-Types move into the core as their Desktop evidence is confirmed; the rest are probe-verified but
-still need an opt-in: `pie`, `donut`, `area`, `stacked-column`, `stacked-column-100` and
+The core ships `header`, `card`, `kpi`, `column`, `line`, `bar`, `table`, `slicer`, `matrix`,
+`pie` and `donut`. Types move into the core as their Desktop evidence is confirmed; the rest are
+probe-verified but still need an opt-in: `area`, `stacked-column`, `stacked-column-100` and
 `stacked-bar` (in `blueprint/visuals/archive/`). A spec naming one is refused, listing the
 types that are loaded, until you opt in — per run, or in your guidelines:
 

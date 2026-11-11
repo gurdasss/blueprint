@@ -6,11 +6,12 @@ code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, eviden
 
 ## Unreleased
 
-- **`slicer` and `matrix` are core types**, so a spec uses them with no opt-in and `bp describe`
-  lists them. The archive was a holding pen for the v0.6 refactor, not a permanent split: types
+- **`slicer`, `matrix`, `pie` and `donut` are core types**, so a spec uses them with no opt-in and
+  `bp describe` lists them. The archive was a holding pen for the v0.6 refactor, not a permanent split: types
   move into the core in batches as their Desktop evidence is confirmed (these two: probe 20 for
-  the shapes, probe 21 for Desktop accepting what `bp apply` writes). Still opt-in: `pie`,
-  `donut`, `area`, `stacked-column`, `stacked-column-100`, `stacked-bar`.
+  the shapes, probe 21 for Desktop accepting what `bp apply` writes; probes 08 and 11 for the pie
+  and its Legend drill-down, 22-24 for the donut and Desktop's save). Still opt-in: `area`,
+  `stacked-column`, `stacked-column-100`, `stacked-bar`.
 - A report whose guidelines still opt into `blueprint/visuals/archive` keeps working; hand-built
   visuals are unaffected (the manifest has always named those by PBIR type and query role).
 

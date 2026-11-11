@@ -7,6 +7,7 @@ from pathlib import Path
 from blueprint import guidelines, spec
 from blueprint.cli import main
 from blueprint.commands.describe import SPEC_SYNTAX, describe
+from blueprint.slots import CORE_TYPES
 from tests.builders import make_report
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -21,8 +22,7 @@ def _describe(capsys, *args) -> dict:
 def test_types_layouts_and_limits_without_a_report(capsys):
     d = _describe(capsys)
     # describe shows what a spec may use: the core seven, until the client opts the archive in
-    assert sorted(d["types"]) == ["bar", "card", "column", "header", "kpi", "line", "matrix",
-                                  "slicer", "table"]
+    assert sorted(d["types"]) == sorted(CORE_TYPES)  # the core, whatever it holds today
     assert d["types"]["kpi"] == {"visual_type": "kpi", "region": "kpi-row", "options": {}, "slots": {
         "value": {"accepts": ["measure"], "required": True, "list": False, "list_excludes": []},
         "trend": {"accepts": ["column"], "required": True, "list": False, "list_excludes": []},
@@ -94,11 +94,11 @@ def test_text_output(capsys, tmp_path: Path):
     assert main(["describe", "--report", str(tmp_path / "proj"), "--guidelines", str(GUIDE)]) == 0
     out = capsys.readouterr().out
     assert "  kpi    region kpi-row  value*: measure, trend*: column, target: measure\n" in out
-    assert "  pie" not in out  # still archived: a spec sees it only after an opt-in
+    assert "  area" not in out  # still archived: a spec sees it only after an opt-in
     # with the opt-in, what is still archived is listed too
     assert main(["describe", "--report", str(tmp_path / "proj"), "--guidelines", str(GUIDE),
                  "--visuals", str(ROOT / "blueprint" / "visuals" / "archive")]) == 0
-    assert ("  pie                region main     category*[]: column|hierarchy, value*: measure"
+    assert ("  area               region main     category*[]: column, value*[]: measure"
             in capsys.readouterr().out)
     assert "  standard-4-up (default): 1280x720; 1 header, 1 kpi-row, 2 main" in out
     assert "    measures: [Total Amount]" in out

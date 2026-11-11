@@ -241,10 +241,10 @@ def test_which_well_carries_active_is_declared_by_each_contract():
     fact about one well of one type, so each contract declares it."""
     c = contracts((ARCHIVE_DIR,))
     assert {t: sorted(c[t].active_roles) for t in CORE_TYPES} == {
-        "bar": ["Category"], "card": [], "column": ["Category"], "header": [],
-        "kpi": [], "line": ["Category"], "matrix": ["Columns", "Rows"], "slicer": ["Values"],
-        "table": []}
-    assert sorted(c["pie"].active_roles) == ["Category"]  # still archived
+        "bar": ["Category"], "card": [], "column": ["Category"], "donut": ["Category"],
+        "header": [], "kpi": [], "line": ["Category"], "matrix": ["Columns", "Rows"],
+        "pie": ["Category"], "slicer": ["Values"], "table": []}
+    assert sorted(c["area"].active_roles) == ["Category"]  # still archived
 
 
 def test_the_client_template_shows_every_core_guideline_key():

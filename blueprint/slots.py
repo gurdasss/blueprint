@@ -22,7 +22,8 @@ import yaml
 
 VISUALS_DIR = Path(__file__).resolve().parent / "visuals"
 ARCHIVE_DIR = VISUALS_DIR / "archive"
-CORE_TYPES = ("bar", "card", "column", "header", "kpi", "line", "matrix", "slicer", "table")
+CORE_TYPES = ("bar", "card", "column", "donut", "header", "kpi", "line", "matrix", "pie",
+               "slicer", "table")
 # "hierarchy": a hierarchy built in the model, written like a column (Table[Hierarchy]). It's one
 # field, as in Desktop's wells, that binds all its levels in order (probes 16, 18). So a slot that
 # takes a single field can take one, without also allowing a list of columns there.
