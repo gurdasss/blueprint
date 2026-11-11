@@ -10,8 +10,8 @@ no dragging, no nudging, no eyeballing.
 bp apply pages/sales-overview.yaml --report ./SalesReport.Report
 ```
 
-> **Status: pre-alpha.** Nothing here is stable. The PBIR schema sections below are
-> deliberately marked as unverified — see [Learning the PBIP format](#learning-the-pbip-format).
+> **Status: pre-alpha.** Nothing here is stable. Every Power BI format fact the code relies on
+> was verified in Desktop first — see [How the PBIP format is learned](#how-the-pbip-format-is-learned).
 > Do not point this at a report you care about. Work on copies, under version control.
 
 ---
@@ -27,7 +27,7 @@ bp apply pages/sales-overview.yaml --report ./SalesReport.Report
 - [Guidelines and layering](#guidelines-and-layering)
 - [The manifest](#the-manifest)
 - [Project structure](#project-structure)
-- [Learning the PBIP format](#learning-the-pbip-format)
+- [How the PBIP format is learned](#how-the-pbip-format-is-learned)
 - [Fixtures and testing](#fixtures-and-testing)
 - [Version compatibility](#version-compatibility)
 - [Roadmap](#roadmap)
@@ -398,9 +398,8 @@ slots:
   details:  { role: Series, accepts: column }                                  # "Details"
 ```
 
-> **Draft.** The slot vocabulary per visual type has to be harvested from real PBIR files,
-> one visual type at a time. See [Learning the PBIP format](#learning-the-pbip-format).
-> Expect this schema to change.
+Each contract cites the probe that verified its PBIR shape. A type with no probe behind it doesn't
+ship (see [How the PBIP format is learned](#how-the-pbip-format-is-learned)).
 
 ### Layouts
 
@@ -665,59 +664,51 @@ the in-memory model. When Microsoft changes PBIR, the blast radius is one direct
 
 ---
 
-## Learning the PBIP format
+## How the PBIP format is learned
 
-**This section is the actual first task, and it is research, not coding.** The PBIP/PBIR
-schema below is *not* documented here from memory, because guessing at it would produce a
-tool that silently writes invalid files. Establish it empirically and record what you find
-in `blueprint/pbir/schema.md`.
+Blueprint doesn't write PBIR from memory. Guessing at the format would produce a tool that
+silently writes invalid files, so every format fact is established in Power BI Desktop first,
+and the code relies only on facts recorded as verified. The method is a **probe**:
 
-### Protocol
+1. **Predict.** Write down what Desktop should produce before looking.
+2. **Build a candidate.** A `scripts/probe_*.py` script writes the change into a copy of a
+   fixture (or has Desktop make it), in a git repository on the Windows drive.
+3. **Let Desktop judge.** Open it, check that it draws, press Ctrl+S, then `git diff`. What Desktop
+   changes on save, and what it leaves alone, is the evidence.
+4. **Record it.** The diff goes under `docs/probes/` (`python scripts/probe_evidence.py`), the
+   fact goes into `blueprint/pbir/schema.md` marked verified, with the probe it came from, and
+   the probe is added to `tests/test_probe_replay.py`, which rebuilds it from the evidence and
+   tests Blueprint against Desktop's real output on every run.
+5. **Only then ship it.** A visual contract, option or spec key cites its probe. Open items in
+   `schema.md` are not used by the code.
 
-For each question, run the experiment and write down the answer *before* writing code.
-Predict the result first — a prediction you record and then check is worth more than one
-you form afterwards.
+Probes 01 to 31 cover pages and the registry, annotations, formatting and themes, fonts, every
+shipped visual type and its bindings, drill-downs, hierarchies, chart options, aggregations and
+formats, and sorts.
 
-```bash
-# Set up a sandbox
-cp -r <a report> /tmp/probe && cd /tmp/probe
-git init && git add -A && git commit -m "baseline"
-```
+### The first questions
 
-Then, one change at a time in Power BI Desktop → save → `git status && git diff`.
+The first probes answered these, in this order. They are all answered; `schema.md` and the code
+refer to them by number (`README Q4`).
 
-### Questions to answer
-
-| # | Question | Experiment |
+| # | Question | Answer lives in |
 |---|---|---|
-| 1 | What does a report directory contain at rest? | `tree` a freshly saved PBIP |
-| 2 | What files appear when you add **one blank page**? | add page, save, diff |
-| 3 | **Which existing file gets modified?** | same diff — look for a file listing pages and their order |
-| 4 | What is the ID format, and is it validated? | read the real IDs; do not assume `uuid4` is acceptable |
-| 5 | Is page order stored in a registry or implied by folder names? | reorder pages in Desktop, save, diff |
-| 6 | What files appear when you add **one card**? | add card, save, diff |
-| 7 | Where does a visual's position and size live? | move and resize it, save, diff |
-| 8 | Where does the visual title live? | set a title, save, diff |
-| 9 | What does a **field binding** look like? | bind one measure, save, diff |
-| 10 | What do the field wells look like for pie / column / table? | one visual type at a time |
-| 11 | How is a drill-down path represented? | add three levels to a category slot, save, diff |
-| 12 | Is there a schema version string anywhere? | grep the report for `schema`/`version` |
-| 13 | Does Desktop reformat or reorder JSON on save? | save twice without changes, diff |
-| 14 | Can arbitrary custom metadata survive a round trip? | add a key by hand, open and save in Desktop, diff |
+| 1 | What does a report directory contain at rest? | `schema.md`, “Report folder” |
+| 2 | What files appear when you add one blank page? | `schema.md`, “Creating pages and visuals” |
+| 3 | Which existing file gets modified? (`pages.json`: creating the folder alone leaves the page invisible) | `schema.md`, “Pages” |
+| 4 | What is the ID format, and is it validated? (20 hex characters; Blueprint's derived ids are accepted and kept) | `schema.md`, “Names and IDs”; `pbir/ids.py` |
+| 5 | Is page order a registry or implied by folder names? (`pageOrder` in `pages.json`) | `schema.md`, “Pages” |
+| 6 | What files appear when you add one card? | `schema.md`, “Visuals” |
+| 7 | Where does a visual's position and size live? | `schema.md`, “Visuals” |
+| 8 | Where does the visual title live? | `schema.md`, “Visuals” |
+| 9 | What does a field binding look like? | `schema.md`, “Visuals” |
+| 10 | What do the field wells look like per visual type? | `blueprint/visuals/*.yaml`, each citing its probe |
+| 11 | How is a drill-down path represented? (an ordered list of projections in one role) | `schema.md`, “Visuals” |
+| 12 | Is there a schema version string anywhere? (`$schema` on every document) | `schema.md`, “Schema versions” |
+| 13 | Does Desktop reformat JSON on save? (not unchanged files; what it writes has one fixed style, which `jsonfmt` reproduces byte for byte) | `schema.md`, “File encoding”; `pbir/jsonfmt.py` |
+| 14 | Can custom metadata survive a round trip? (yes, in `annotations`) | `schema.md`, “What Desktop changes on its own” (probe 01) |
 
-Question 3 is the one that will cost you an evening if you skip it: creating a page folder
-is almost certainly not enough to make the page appear.
-
-Question 13 matters for golden-file tests: if Desktop normalises JSON differently from
-your writer, every save will churn the diff.
-
-Question 14 decides whether tagging-in-Desktop is viable at all. If custom keys are
-stripped, the CLI-first approach in this README is the only workable one — which is why it
-is the design here.
-
-### Recording findings
-
-`blueprint/pbir/schema.md` is a living document. Suggested shape per entry:
+`schema.md` is a living document. Each entry says what is verified and how:
 
 ```markdown
 ## Pages
@@ -732,8 +723,7 @@ is the design here.
 _Evidence: `git diff` after adding one blank page — see `docs/probes/02-add-page.diff`._
 ```
 
-Commit the raw diffs under `docs/probes/`. They are your evidence, and they are how you
-tell what changed when a Desktop update breaks something.
+When a Desktop update changes the format, the replays fail and the raw diffs show what moved.
 
 ---
 
