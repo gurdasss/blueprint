@@ -560,6 +560,31 @@ content, so Blueprint's theme file matches Desktop's format exactly.
   well's menu set every level `active` (expand) and **did not switch to the plain column**.
   Probe 14 settled how Blueprint binds a date: `Table[Column]` as a plain `Column`, which Desktop draws
   and keeps as written.
+**Verified 2026-11-11, probe 32** (`scripts/probe_legend_totals.py`; evidence
+`docs/probes/32-legend-totals.diff`, the demo's model on fixture 02). Candidates written by hand
+after `bp apply` built verified shapes, drawn by Desktop, then kept through a real refresh and save
+(which changed nothing but `pages.json` `activePageName`). Predictions P1-P6 are in the script.
+
+- **A Legend column on a clustered column and a clustered bar** is `queryState.Series.projections =
+  [<Column>]`, no `active`, roles alphabetical (`Category`, `Series`, `Y`), `visualType` unchanged
+  (`clusteredColumnChart`, `clusteredBarChart`). Desktop draws one colour per Legend value, side by
+  side, with the legend below the chart. Both types behave alike, so `bar` can keep inheriting
+  `column`.
+- **A drill-down `Category` (Country, Region, both `active`) together with a Legend (Order Date)**
+  draws on both: the axis expanded, one colour per Legend value, as on the stacked charts (probe 28).
+- **Several measures together with a Legend column are refused** on the clustered charts too: the
+  tile shows only "There's too many columns in the Legend bucket. Please remove some.". So are
+  **two Legend columns** (probe 27 showed this on line). The contract needs `list_excludes:
+  [legend]` on `value` and a single-column `legend` slot, as `line` has.
+- **`objects.legend[0].properties.show = Literal false` hides the legend** on a clustered column, a
+  clustered bar and a line chart (each with two measures, so a legend of measure names would show),
+  alone and beside `position: 'Right'`. Written `show: true` beside `position: 'Top'` it shows at
+  the top; with no `legend` object the legend shows at the theme's default (bottom here). All kept
+  as written through the save.
+- **`objects.total[0].properties.totals = Literal false` removes a table's Total row**; `true`
+  and no `total` object both show it (Desktop's default is on), so only the `false` needs
+  writing. Kept as written through the save.
+
 **Verified 2026-11-10, probe 31** (`scripts/probe_bar_line_sort.py`; evidence
 `docs/probes/31-bar-line-sort.diff`, fixture 02 plus probe 20's `Target Amount`).
 
