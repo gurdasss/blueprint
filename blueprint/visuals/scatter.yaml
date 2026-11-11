@@ -1,0 +1,16 @@
+# Slot contract for spec type `scatter`. Verified in probe 34 (pbir/schema.md): `scatterChart`
+# with five wells — `Category` (a column, `"active": true`, and an ordered list is a drill-down),
+# `X` and `Y` (a measure each), `Size` (a measure) and the Legend in `Series` (a column, no
+# `active`). Desktop drew the minimal form, the full one, and one with a drill-down category.
+# Desktop adds `"active": true` to the `X` projection itself on save (probe 34, and both sample
+# reports carry it). Blueprint doesn't write it: `active` marks a column's drill state and `X`
+# takes a measure, so the flag is Desktop's to add, like the drill state on a Category list.
+type: scatter
+visual_type: scatterChart
+region: main
+slots:
+  category: { role: Category, accepts: column, required: true, ordered: true, active: true }
+  x:        { role: X, accepts: measure, required: true }
+  y:        { role: Y, accepts: measure, required: true }
+  size:     { role: Size, accepts: measure }
+  legend:   { role: Series, accepts: column }

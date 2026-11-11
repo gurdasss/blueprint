@@ -1,0 +1,10 @@
+# Slot contract for spec type `multi-row-card`. Verified in probe 34 (pbir/schema.md):
+# `multiRowCard`, every field in role `Values` in well order, no `"active"`. Desktop drew one
+# measure as a single value, two measures side by side in one row, and a column beside a measure
+# as one row per value (FR 200, UK 300) — the grouping the type is named for. So the slot takes
+# columns and measures mixed, like the table's.
+type: multi-row-card
+visual_type: multiRowCard
+region: main
+slots:
+  fields: { role: Values, accepts: [column, measure], required: true, ordered: true }

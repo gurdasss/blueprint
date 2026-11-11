@@ -247,6 +247,7 @@ def test_which_well_carries_active_is_declared_by_each_contract():
         "area": ["Category"], "bar": ["Category"], "card": [], "column": ["Category"],
         "donut": ["Category"], "header": [], "kpi": [], "line": ["Category"],
         "matrix": ["Columns", "Rows"], "pie": ["Category"], "slicer": ["Values"],
+        "map": ["Category"], "multi-row-card": [], "scatter": ["Category"],
         "stacked-bar": ["Category"], "stacked-column": ["Category"],
         "stacked-column-100": ["Category"], "table": []}
 

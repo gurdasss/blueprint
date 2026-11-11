@@ -1,0 +1,18 @@
+# Slot contract for spec type `map`. Verified in probe 34 (pbir/schema.md): `map` with `Category`
+# (a column, `"active": true`), `Size` (a measure) and the Legend in `Series` (a column). Desktop
+# drew a bubble per category sized by the measure, the Legend variant splitting each bubble into
+# segments, geocoding the values from the column NAME alone (the fixture's `Country` has no
+# `dataCategory` in TMDL).
+#
+# NOTE, and it is the client's to know: **map visuals are disabled by default in Power BI
+# Desktop** (File > Options and settings > Options > Global > Security > "Map and filled map
+# visuals"). Until that is switched on, Desktop draws the disabled message instead of the visual,
+# whoever wrote the file — and in probe 34 the message came back after a data refresh although
+# the setting was still on, so it appears to need a restart.
+type: map
+visual_type: map
+region: main
+slots:
+  category: { role: Category, accepts: column, required: true, ordered: true, active: true }
+  size:     { role: Size, accepts: measure, required: true }
+  legend:   { role: Series, accepts: column }

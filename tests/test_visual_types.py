@@ -62,8 +62,9 @@ def test_the_core_ships_every_probe_verified_type():
     probe 21 showed Desktop accepts what `bp apply` writes), then `pie` and `donut` (probes 08 and
     11 for the shapes and the Legend drill-down, 22-24 for the rest and Desktop's save)."""
     assert sorted(contracts()) == [
-        "area", "bar", "card", "column", "donut", "header", "kpi", "line", "matrix", "pie",
-        "slicer", "stacked-bar", "stacked-column", "stacked-column-100", "table"]
+        "area", "bar", "card", "column", "donut", "header", "kpi", "line", "map", "matrix",
+        "multi-row-card", "pie", "scatter", "slicer", "stacked-bar", "stacked-column",
+        "stacked-column-100", "table"]
 
 
 def test_contracts_ship_the_probed_types():
