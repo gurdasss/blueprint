@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any
 
@@ -331,14 +332,18 @@ def current_sort(visual_doc: dict) -> dict | None:
     return sort if isinstance(sort, dict) else None
 
 
-def with_option(visual_doc: dict, obj: str, prop: str, literal: str) -> dict:
+def with_option(visual_doc: dict, obj: str, prop: str, literal: str,
+                clear: Iterable[str] = ()) -> dict:
     """``visual_doc`` with ``visual.objects.<obj>[0].properties.<prop>`` set to ``literal``,
-    leaving every other formatting property as it is."""
+    leaving every other formatting property as it is, except the ``clear`` ones (the option's
+    other values' properties), which are removed."""
     body = dict(visual_doc.get("visual") or {})
     objects = dict(body.get("objects") or {})
     entries = list(objects.get(obj) or [{}])
     first = dict(entries[0] or {})
     props = dict(first.get("properties") or {})
+    for other in clear:
+        props.pop(other, None)
     props[prop] = _literal(literal)
     entries[0] = {**first, "properties": props}
     objects[obj] = entries

@@ -114,7 +114,7 @@ def test_the_core_chart_types_share_labels_and_legend(vtype: str):
     """probe 23 verified them on column, probe 31 on bar and line: the three behave the same."""
     options = contracts()[vtype].options
     assert sorted(options) == ["labels", "legend"]
-    assert sorted(options["legend"].values) == ["bottom", "left", "right", "top"]
+    assert sorted(options["legend"].values) == ["bottom", "left", "off", "right", "top"]  # probe 32
 
 
 @pytest.mark.parametrize("vtype", ["bar", "line"])

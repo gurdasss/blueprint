@@ -266,7 +266,7 @@ inherits: column
 region: kpi-row
 slots:
   value: { role: Y, accepts: measure, required: true }   # no longer a list
-  legend: { role: Series, accepts: column }              # added
+  legend: { role: Series, accepts: column }              # restated (column has one since probe 32)
 options: {}                                              # this type has none
 """)
     c = contracts(extra)["trend"]
@@ -284,7 +284,7 @@ def test_inherits_chains(tmp_path: Path):
                  mid="type: mid\nvisual_type: midChart\ninherits: column\nregion: kpi-row\n",
                  leaf="type: leaf\nvisual_type: leafChart\ninherits: mid\n")
     c = contracts(extra)["leaf"]
-    assert (c.region, list(c.slots)) == ("kpi-row", ["category", "value"])
+    assert (c.region, list(c.slots)) == ("kpi-row", ["category", "value", "legend"])
 
 
 def test_type_and_visual_type_are_never_inherited(tmp_path: Path):

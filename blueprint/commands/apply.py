@@ -335,9 +335,12 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
             # the user's) to set, and left alone.
             for name, value in vs.options.items():
                 opt = contract.options[name]
-                if render.option_literal(current.source.data, opt.object, opt.property) != opt.values[value]:
-                    current.source.data = render.with_option(current.source.data, opt.object,
-                                                             opt.property, opt.values[value])
+                prop, others = opt.prop(value), opt.siblings(value)
+                stale = any(render.option_literal(current.source.data, opt.object, o) is not None
+                            for o in others)
+                if stale or render.option_literal(current.source.data, opt.object, prop) != opt.values[value]:
+                    current.source.data = render.with_option(current.source.data, opt.object, prop,
+                                                             opt.values[value], clear=others)
                     current.notes.append(f"option {name} -> {value}")
             current.rect = rect
             current.positioned = True  # the layout owns this visual's position: restore it
@@ -362,7 +365,7 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
                             bindings=want or None,
                             title=None if is_header else vs.title, text=vs.title if is_header else None,
                             text_style=header_style if is_header else None,
-                            options=[(contract.options[n].object, contract.options[n].property,
+                            options=[(contract.options[n].object, contract.options[n].prop(val),
                                       contract.options[n].values[val]) for n, val in vs.options.items()],
                             bindings_mark=render.bindings_fingerprint(_bound(want)) if want else None,
                             sort=sorts.get(vs.id))

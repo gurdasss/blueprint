@@ -1,12 +1,15 @@
 # Slot contract for spec type `column`. Verified in probe 04: `clusteredColumnChart`, X axis in
 # role `Category` (an ordered list of columns is a drill-down), Y axis in role `Y`. Probe 16: a
-# hierarchy built in the model binds its levels there as a drill-down.
+# hierarchy built in the model binds its levels there as a drill-down. Probe 32: a Legend column
+# (role `Series`, no `active`) draws side by side on the clustered column and bar, also beside a
+# drill-down; several measures with it, or a second Legend column, are refused by Desktop.
 type: column
 visual_type: clusteredColumnChart
 region: main
 slots:
   category: { role: Category, accepts: [column, hierarchy], required: true, ordered: true }
-  value:    { role: Y, accepts: measure, required: true, ordered: true }   # a list: one series each (probe 20)
+  value:    { role: Y, accepts: measure, required: true, ordered: true, list_excludes: [legend] }   # a list: one series each (probe 20)
+  legend:   { role: Series, accepts: column }   # probe 32: one Legend column, as on the line chart
 options:
   # Probe 23: objects.labels[0].properties.show = true showed data labels on column, stacked
   # column, 100% stacked column and stacked bar charts. Left out: Desktop's default (off).
@@ -15,4 +18,7 @@ options:
   # chart, 'Top' on a 100% stacked column, 'Left' on a stacked bar. 'Bottom' couldn't be told from
   # the theme default (bottom) there; probe 28, with a theme defaulting to Top, showed 'Bottom'
   # moves it below a clustered column chart. Left out: the theme's default.
-  legend: { object: legend, property: position, values: { top: "'Top'", bottom: "'Bottom'", left: "'Left'", right: "'Right'" } }
+  # Probe 32: `show: false` hides the legend on a clustered column, a clustered bar and a line chart
+  # (alone, and beside a position); Desktop kept it through a save. Choosing `off` removes the
+  # position and choosing a position removes `show`, so one option is one state.
+  legend: { object: legend, property: position, values: { top: "'Top'", bottom: "'Bottom'", left: "'Left'", right: "'Right'", "off": { property: show, literal: "false" } } }

@@ -52,6 +52,18 @@ class Option:
     object: str
     property: str
     values: dict[str, str]  # spec value -> PBIR literal, e.g. dropdown -> "'Dropdown'"
+    # A value may write a different property of the same object than ``property`` (the legend's
+    # `off` writes `show`, its positions write `position`): spec value -> property.
+    properties: dict[str, str] = field(default_factory=dict)
+
+    def prop(self, value: str) -> str:
+        """The property ``value`` writes."""
+        return self.properties.get(value, self.property)
+
+    def siblings(self, value: str) -> frozenset[str]:
+        """The other properties this option's values write. Choosing ``value`` removes them, so a
+        legend moved from `off` to `top` isn't left hidden by the `show: false` `off` wrote."""
+        return frozenset(self.prop(v) for v in self.values) - {self.prop(value)}
 
 
 @dataclass(frozen=True)
@@ -127,8 +139,13 @@ def _contract(data: dict, where: str, stem: str) -> Contract:
             if not all(isinstance(k, str) for k in spec["values"]):
                 # YAML 1.1 reads an unquoted on/off/yes/no as a boolean: quote it ("on")
                 raise ContractError(f"{where}: option {name}: values keys must be strings (quote \"on\")")
-            options[name] = Option(name, spec["object"], spec["property"],
-                                   {k: str(v) for k, v in spec["values"].items()})
+            literals, props = {}, {}
+            for key, raw in spec["values"].items():
+                if isinstance(raw, dict):  # {property: show, literal: "false"}: another property
+                    literals[key], props[key] = str(raw["literal"]), str(raw["property"])
+                else:
+                    literals[key] = str(raw)
+            options[name] = Option(name, spec["object"], spec["property"], literals, props)
         contract = Contract(data["type"], data["visual_type"], data["region"], slots, options)
         for slot in slots.values():
             unknown = [s for s in slot.list_excludes if s not in slots]

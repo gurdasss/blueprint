@@ -18,4 +18,7 @@ options:
   # Probe 23 verified these shapes on the column and stacked charts; probe 31 wrote the same ones
   # here and Desktop drew them and kept them through a save. Left out: Desktop's default.
   labels: { object: labels, property: show, values: { "on": "true" } }
-  legend: { object: legend, property: position, values: { top: "'Top'", bottom: "'Bottom'", left: "'Left'", right: "'Right'" } }
+  # Probe 32: `show: false` hides the legend on a clustered column, a clustered bar and a line chart
+  # (alone, and beside a position); Desktop kept it through a save. Choosing `off` removes the
+  # position and choosing a position removes `show`, so one option is one state.
+  legend: { object: legend, property: position, values: { top: "'Top'", bottom: "'Bottom'", left: "'Left'", right: "'Right'", "off": { property: show, literal: "false" } } }
