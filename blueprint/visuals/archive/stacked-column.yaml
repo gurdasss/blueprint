@@ -12,6 +12,7 @@ slots:
   value:    { role: Y, accepts: measure, required: true, ordered: true, list_excludes: [legend] }
   legend:   { role: Series, accepts: column }
 options:
-  # Probe 23: objects.labels[0].properties.show = true showed data labels on column, stacked
-  # column, 100% stacked column and stacked bar charts. Left out: Desktop's default (off).
+# Probe 35: Desktop drew and kept this type's `labels` and the whole `legend` option (positions and
+# `off` = legend.show false), so it behaves like the core's column, bar and line.
   labels: { object: labels, property: show, values: { "on": "true" } }
+  legend: { object: legend, property: position, values: { top: "'Top'", bottom: "'Bottom'", left: "'Left'", right: "'Right'", "off": { property: show, literal: "false" } } }

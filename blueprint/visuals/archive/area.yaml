@@ -11,3 +11,8 @@ slots:
   category: { role: Category, accepts: column, required: true, ordered: true, active: true }
   value:    { role: Y, accepts: measure, required: true, ordered: true, list_excludes: [legend] }
   legend:   { role: Series, accepts: column }
+options:
+# Probe 35: Desktop drew and kept this type's `labels` and the whole `legend` option (positions and
+# `off` = legend.show false), so it behaves like the core's column, bar and line.
+  labels: { object: labels, property: show, values: { "on": "true" } }
+  legend: { object: legend, property: position, values: { top: "'Top'", bottom: "'Bottom'", left: "'Left'", right: "'Right'", "off": { property: show, literal: "false" } } }

@@ -560,6 +560,29 @@ content, so Blueprint's theme file matches Desktop's format exactly.
   well's menu set every level `active` (expand) and **did not switch to the plain column**.
   Probe 14 settled how Blueprint binds a date: `Table[Column]` as a plain `Column`, which Desktop draws
   and keeps as written.
+**Verified 2026-11-11, probe 35** (`scripts/probe_even_chart_options.py`; evidence
+`docs/probes/35-even-chart-options.diff`). `labels` and `legend` were verified unevenly across the
+charts still in the archive, by which probe happened to cover which type — area had no options at
+all, `stacked-column` had no verified legend position, and none of the four had `legend: off`
+(probe 32 wrote that only on the core's clustered column, clustered bar and line). This probe
+closed the seven missing cells so they could be promoted without carrying the gap in. The
+bindings were written by `bp apply` from the archived contracts, so they are acceptance-verified
+too; only the option objects were candidates.
+
+- **`objects.labels[0].properties.show = true` shows data labels on an `areaChart`** — on both
+  series (600/600 and 200/300). It was the open one: probe 23 only ever put that object on the
+  column and the three stacked charts.
+- **`objects.legend[0].properties.position = 'Right'`** moved the legend on the `areaChart` and on
+  the stacked column (`columnChart`), the two the earlier probes missed.
+- **`objects.legend[0].properties.show = false` hides the legend** on `areaChart`, `columnChart`,
+  `hundredPercentStackedColumnChart` and `barChart`, as it does on the core's three (probe 32). A
+  control with no `legend` object kept its legend at the theme's default (bottom), so the hidden
+  ones are genuinely changed.
+- **The save rewrote only the two visuals on the active page**, keeping their objects exactly and
+  adding Desktop's usual `$schema` bump and condition-less auto `filterConfig`; the other six
+  files it did not touch at all, so what was written is still on disk byte for byte. (Probes 33
+  and 34 showed the same: Desktop rewrites some visuals on a save and leaves others alone.)
+
 **Verified 2026-11-11, probe 34** (`scripts/probe_map_scatter_card.py`; evidence
 `docs/probes/34-map-scatter-card.diff`). The three types real reports use that no contract covers,
 written as candidates and drawn by Desktop, then kept through a refresh and save. A survey of the
