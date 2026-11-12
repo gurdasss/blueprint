@@ -124,6 +124,28 @@ def parse(data: Any, source: str = "<layout>", expected_name: str | None = None)
     return Layout(name, width, height, tuple(regions), source)
 
 
+# A `kpi-row` region shorter than this clips what the visuals meant for it draw: measured on the
+# Desktop bridge (2026-11-10 screenshots), where a 120px row cut off a KPI visual's goal line and
+# a titled card's label. Every shipped layout is 160px for that reason. A warning, never a
+# refusal: probes 9, 14, 17 and 19 built `standard-4-up` at 120px and Desktop saved those reports,
+# so `tests/pinned-layouts/` still re-applies them and must keep working.
+KPI_ROW_MIN_HEIGHT = 160
+KPI_ROW_ROLE = "kpi-row"
+
+
+def cramped(layout: Layout) -> list[str]:
+    """Regions too small for what their role holds — a warning for the layout's author.
+
+    Unlike :func:`conflicts`, nothing here refuses the layout: the guidelines say nothing about
+    region heights, and a report Desktop has already saved may use a shorter row.
+    """
+    return [f"region {r.key} is {r.rect.height:g}px high, under {KPI_ROW_MIN_HEIGHT}px: Desktop "
+            "clips a KPI visual's goal line and a titled card's label at that height (measured), "
+            f"so a {KPI_ROW_ROLE} region wants {KPI_ROW_MIN_HEIGHT}px or more"
+            for r in layout.regions
+            if r.role == KPI_ROW_ROLE and r.rect.height < KPI_ROW_MIN_HEIGHT]
+
+
 def conflicts(layout: Layout, grid: int, margin: int, gutter: int = 0) -> list[str]:
     """Ways ``layout`` breaks the guidelines it's used with. A region off the grid or inside the
     margin would make `bp apply` and `bp fmt` undo each other forever (behaviour audit); regions

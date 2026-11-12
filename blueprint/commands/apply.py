@@ -245,6 +245,7 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
     plan.warnings.extend(report.warnings)
     plan.warnings.extend(_title_warnings(placements, rules))
     plan.warnings.extend(_gap_warnings(page_spec, layout, placements, rules))
+    plan.warnings.extend(layouts.cramped(layout))
     built_with = f"{rules.name}@{rules.version}"
     rule = rules.typography.get("header")
     header_style = render.text_style(rule.fonts[0] if rule and rule.fonts else None,

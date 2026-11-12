@@ -96,6 +96,37 @@ def test_the_three_shipped_templates_fit_each_other():
     assert placements[0].region.role == g.page.title_region
 
 
+@pytest.mark.parametrize("name", SHIPPED)
+def test_no_shipped_layout_has_a_cramped_kpi_row(name):
+    """Every shipped KPI row is 160px, and the reason was a comment in six layout files until
+    layouts.KPI_ROW_MIN_HEIGHT held it."""
+    g = guidelines.load(ROOT / "guidelines" / "example.yaml")
+    assert layouts.cramped(layouts.load(name, g.layouts.search_path)) == []
+
+
+def test_a_short_kpi_row_warns_but_is_not_refused():
+    """Probes 9, 14, 17 and 19 built standard-4-up with a 120px KPI row and Desktop saved those
+    reports, so tests/pinned-layouts/ re-applies them. A refusal would break that replay, and
+    the guidelines say nothing about region heights — so this is a warning, and `conflicts()`
+    (which `bp apply` turns into an error) stays silent about it."""
+    pinned = layouts.load("standard-4-up", (ROOT / "tests" / "pinned-layouts",))
+    assert [r.rect.height for r in pinned.regions if r.role == "kpi-row"] == [120]
+    assert layouts.conflicts(pinned, 8, 16, 16) == []
+    assert layouts.cramped(pinned) == [
+        ("region kpi-row#1 is 120px high, under 160px: Desktop clips a KPI visual's goal line and "
+         "a titled card's label at that height (measured), so a kpi-row region wants 160px or more")]
+
+
+def test_a_kpi_row_exactly_at_the_minimum_is_fine():
+    at_minimum = {**LAYOUT, "regions": [{"role": "kpi-row", "x": 16, "y": 16, "w": 1248, "h": 160}]}
+    assert layouts.cramped(layouts.parse(at_minimum)) == []
+    short = {**LAYOUT, "regions": [{"role": "kpi-row", "x": 16, "y": 16, "w": 1248, "h": 152}]}
+    assert len(layouts.cramped(layouts.parse(short))) == 1
+    # Only the kpi-row role: nothing is measured about how short a chart or a header may be.
+    header = {**LAYOUT, "regions": [{"role": "header", "x": 16, "y": 16, "w": 1248, "h": 64}]}
+    assert layouts.cramped(layouts.parse(header)) == []
+
+
 def test_shipped_layouts():
     assert SHIPPED == ["dashboard-6", "grid-2x3", "kpi-row-plus-detail", "one-up", "standard-4-up", "two-up"]
 

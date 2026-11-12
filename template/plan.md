@@ -269,10 +269,15 @@ table (2 -> 616/16,
 template and asserts `conflicts()` finds nothing against the template
 guidelines, so the two template files can't drift apart.
 
-**Still open, cheap, not done:** `conflicts()` could warn when a `kpi-row`
-region is under 160px. That number is measured (bridge screenshots: at 120px
-Desktop clips a KPI's goal line and a titled card's label) and currently
-lives only in a comment in six layout files.
+**Done (2026-11-12):** the `kpi-row` height warning, as `layouts.cramped()`
+rather than inside `conflicts()`. `bp apply` turns `conflicts()` into an
+error, and probes 9, 14, 17 and 19 built `standard-4-up` with a 120px KPI
+row — Desktop saved those reports and `tests/pinned-layouts/` re-applies
+them — so a refusal would have broken the replay. The guidelines say nothing
+about region heights either, which makes this the layout author's warning,
+not a rule. The measured number (bridge screenshots: at 120px Desktop clips
+a KPI's goal line and a titled card's label) is now
+`layouts.KPI_ROW_MIN_HEIGHT` instead of a comment in six layout files.
 
 ### Step 4 (done, and later reversed): core seven visual types, and `inherits:`
 
