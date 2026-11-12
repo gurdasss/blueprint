@@ -93,12 +93,20 @@ then applies any overrides bar declares. The result in memory is a
 complete VisualDef — the engine never sees the inheritance, just the
 final merged object.
 
-**The shipped contracts don't use it, on purpose.** Each one cites the
-probe that verified its shape, and `options` are not slots: probe 23
-verified data labels and a legend position on the column and stacked
-charts, never on the clustered bar, so `bar: inherits: column` would
-ship an option nobody checked. Inheritance is for the types a client
-adds — exactly the case `extensions.custom_visuals.search_path` serves.
+**One shipped contract uses it: `bar.yaml`.** It was deliberately held
+back at first, because every contract cites the probe that verified its
+shape and `options` are not slots — probe 23 verified data labels and a
+legend position on the column and stacked charts, never on the clustered
+bar, so inheriting then would have shipped an option nobody had checked.
+Probe 31 wrote those shapes onto a clustered bar and Desktop drew and kept
+them, which made `bar` identical to `column` apart from the PBIR type, and
+`inherits: column` became the honest way to say so.
+
+That's the rule for using it: inherit when a probe has shown the parent's
+shapes work on the child too, not to save typing. `line` states its own
+slots for exactly that reason — its `legend` excludes a measure list beside
+it. Otherwise inheritance is for the types a client adds, the case
+`extensions.custom_visuals.search_path` serves.
 
 ### What inherits copies
 
@@ -160,22 +168,35 @@ slots:
     accepts: measure
 ```
 
-The visual is available on the next `bp apply` run. No code changes.
+Then tell Blueprint where that directory is — either in your guidelines,
 
-Custom visuals are an advanced, unlikely need — most clients never
-define one. If the need arises, it belongs in `extensions:`, not in
-the core guidelines.
+```yaml
+extensions:
+  custom_visuals:
+    search_path: ["my-visuals"]   # relative to this guidelines file
+```
+
+or with `--visuals DIR` on `apply`, `describe` and `manifest` for one run.
+The type is available on the next `bp apply`. No code changes.
+
+Most clients never define one, which is why this is opt-in rather than a
+core guidelines key. A type defined twice is refused, and a type with no
+contract is refused by name — adding a contract is the only way in.
+
+Only ship a type whose PBIR shape a Desktop probe has verified, and cite
+the probe in the YAML. That is the rule the shipped contracts follow, and
+the reason a guessed `visual_type` string is worse than no type at all:
+Desktop will either ignore the visual or draw something nobody intended.
 
 ### Load order
 
-Blueprint owns the visual repository. It loads `blueprint/visuals/`
-at startup, always, automatically. No path in guidelines. No client
-decision needed.
+```
+1. blueprint/visuals/*                              ← the 18 core types, always loaded
+2. extensions.custom_visuals.search_path            ← yours, declared in guidelines
+3. --visuals DIR                                    ← yours, for one run
+```
 
-```
-1. blueprint/visuals/*          ← built-in (ships with Blueprint)
-2. extensions (future)          ← custom visuals, if ever needed
-```
+The core always loads; there is no opt-in and no way to switch it off.
 
 ---
 
@@ -196,7 +217,7 @@ What happens when `bp apply spec.yaml` runs:
       - visual_type string from the def
       - query roles + field bindings from def slots + spec fields
       - formatting properties from def options + spec options
-      - position from layout + guidelines engine
+      - position from the layout region it was placed in
 
 4. All visuals validated and built? Write them all to disk.
    Any failure? Write nothing.
