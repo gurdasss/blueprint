@@ -5,8 +5,26 @@
 # is a rectangle that a visual fills. `bp apply` places visuals into
 # regions by matching their role.
 #
-# A layout file lives in a directory on the guidelines' search_path.
-# The file name (without .yaml) is the layout name a page spec uses.
+# ── Copy this file as `layouts/standard-dashboard.yaml` ──────────────
+# The file name (without .yaml) must equal the `name:` key below, and the
+# file must sit in a directory on the guidelines' `layouts.search_path`.
+# Copying it under its own name gives you:
+#
+#   layout 'standard-dashboard' not found in <your layouts dir>
+#
+# `search_path` entries resolve relative to the **guidelines file**, not
+# your current directory, so this works:
+#
+#   my-guidelines.yaml          layouts: {search_path: ["layouts"]}
+#   layouts/
+#     standard-dashboard.yaml   name: standard-dashboard
+#   overview.yaml               layout: standard-dashboard
+#
+# ── You may not need to write one at all ─────────────────────────────
+# Six layouts ship with Blueprint. `bp describe` lists every one on your
+# search path with its region counts — check that before writing a new
+# one. Write your own when none has the regions you need, or when your
+# canvas is a different size.
 #
 # Pixels are the only unit in this version. The client states every
 # coordinate; Blueprint never derives one. That means a little arithmetic
@@ -52,6 +70,12 @@ canvas:
 # An ordered list of named rectangles. Visuals fill regions of their
 # role in declaration order: the first `main` visual gets the first
 # `main` region, the second gets the second, and so on.
+#
+# **Declaration order is the only order.** Nothing reads a region's x or
+# y to decide what goes in it, so if you declare the right-hand region
+# first, the first visual of that role lands on the right. Declare
+# regions in reading order — left to right, top to bottom — and the
+# page comes out the way the list looks.
 #
 # Each region has:
 #   role   What kind of visual fills it. Core roles:
