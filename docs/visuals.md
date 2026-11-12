@@ -11,30 +11,33 @@ its Power BI type string, what data slots it has, and what formatting
 options it supports. Blueprint ships 18 of these in `blueprint/visuals/`,
 one per probe-verified type.
 
-At startup, Blueprint loads every visual YAML into memory as a dict of
-in-memory objects. When `bp apply` runs, it combines each visual's
-definition with the client's page spec to produce the PBIR JSON objects,
-then writes them to disk. Nothing persists in memory after the run.
+The first time anything asks for the contracts, Blueprint reads every visual
+YAML, resolves `inherits:`, and keeps the result as a dict of `Contract`
+objects (`slots.contracts()`). That is lazy, not at startup: a command that
+never needs a visual type never reads them. The result is cached for the
+rest of the process, once per distinct set of extra directories. When
+`bp apply` runs, it combines each visual's contract with the client's page
+spec to produce the PBIR JSON objects, then writes them to disk.
 
 ```
                         ┌─────────────────────────────────┐
-                        │         Startup (once)          │
+                        │   First use (cached after)      │
    blueprint/visuals/   │                                 │
-   *.yaml               │  Load all YAMLs                 │
+   *.yaml (+ yours)     │  Read every YAML                │
    ──────────────────▶  │  Resolve inherits: references   │
-                        │  Result: dict[str, VisualDef]   │
+                        │  Result: dict[str, Contract]    │
                         └────────────┬────────────────────┘
                                      │
                                      ▼
                         ┌─────────────────────────────────┐
-                        │         Runtime (per spec)      │
+                        │         Per spec                │
                         │                                 │
-   Page spec            │  1. Validate spec fields        │
-   ──────────────────▶  │     against visual's slots      │
-                        │  2. Resolve fields against TMDL │
-   TMDL model           │  3. Build PBIR JSON objects     │
-   ──────────────────▶  │     in memory                   │
-                        │  4. Write to disk                │
+   Page spec            │  1. Parse and check slots       │
+   ──────────────────▶  │     against the contract        │
+                        │  2. Place into layout regions   │
+   TMDL model           │  3. Resolve fields against TMDL │
+   ──────────────────▶  │  4. Build PBIR JSON in memory   │
+                        │  5. Write, or write nothing     │
                         └────────────┬────────────────────┘
                                      │
                                      ▼
@@ -45,7 +48,9 @@ then writes them to disk. Nothing persists in memory after the run.
 
 ## Visual definition format
 
-Each YAML file defines one visual type. Four fields:
+Each YAML file defines one visual type: its `type`, `visual_type` and default
+`region`, plus its `slots` and its `options`. The file name must equal
+`type`, or the loader refuses it.
 
 ```yaml
 # blueprint/visuals/column.yaml
@@ -65,6 +70,7 @@ slots:
     accepts: measure
     required: true
     ordered: true                     # list = multiple series
+    list_excludes: [legend]           # a list here is refused if `legend` is also set
 options:
   labels: { object: labels, property: show, values: { "on": "true" } }
   legend: { object: legend, property: position, values: { ... } }
@@ -88,10 +94,22 @@ visual_type: clusteredBarChart
 inherits: column                      # gets column's slots, options, region
 ```
 
-Three lines. The loader copies column's slots and options into bar,
+Three lines of YAML. The loader copies column's slots and options into bar,
 then applies any overrides bar declares. The result in memory is a
-complete VisualDef — the engine never sees the inheritance, just the
+complete `Contract` — the engine never sees the inheritance, just the
 final merged object.
+
+The loader is strict about it, and each of these is a `ContractError`:
+
+- a cycle, or a parent that isn't a loaded type;
+- a child that doesn't declare its own `type` and `visual_type`;
+- a core contract inheriting from outside the core (the core must load on
+  its own);
+- two files defining the same type, or two types claiming the same PBIR
+  `visual_type`. Nothing is silently shadowed.
+
+All files in every directory are read before any `inherits:` is resolved, so
+a custom type can inherit a core parent.
 
 **One shipped contract uses it: `bar.yaml`.** It was deliberately held
 back at first, because every contract cites the probe that verified its
@@ -112,28 +130,28 @@ it. Otherwise inheritance is for the types a client adds, the case
 
 | Field | Behavior |
 |-------|----------|
-| `slots` | Copied from parent. Child can add new slots or override individual ones. |
-| `options` | Copied from parent. Child can add or override. |
+| `slots` | Copied from parent. Child can add new slots or override individual ones. Mentioned but empty (`slots: {}`): the child has none. |
+| `options` | Copied from parent. Child can add or override. Mentioned but empty: the child has none. |
 | `region` | Copied from parent. Child can override. |
 | `visual_type` | **Never inherited.** Every visual must declare its own. |
 | `type` | **Never inherited.** Every visual must declare its own. |
 
-### Existing visuals that would share slots
+### Which shipped types inherit
+
+Only one does: `bar` inherits `column`. Every other contract states its own
+slots, because each one cites the probe that verified that shape.
 
 ```
-column  ← bar, stacked-column, stacked-bar, stacked-column-100, area
-           (all: category + value, same roles)
+column  ← bar                         (inherits)
 
-line    ← (the column's slots, restated: its own legend slot excludes a measure list; probe 32
-           gave column and bar the same legend slot, so this is no longer "adds legend")
+          stacked-column, stacked-bar, stacked-column-100, area
+          are written out in full, each its own probe-verified type.
+          Their slots are column's, except that `category` takes a
+          plain column and not a model hierarchy
 
-card    ← standalone (single value)
+line      its own slots; legend excludes a measure list beside it
 
-kpi     ← standalone (value + trend + target)
-
-table   ← matrix (columns of mixed types)
-
-header  ← standalone (no slots, textbox)
+card, kpi, table, matrix, header, ...   standalone
 ```
 
 ---
@@ -205,24 +223,27 @@ The core always loads; there is no opt-in and no way to switch it off.
 What happens when `bp apply spec.yaml` runs:
 
 ```
-1. Load visual YAMLs → resolve inherits → dict[str, VisualDef]
+1. contracts() → read the YAMLs, resolve inherits → dict[str, Contract]
+   (first call only; cached for the process)
 
-2. Parse page spec → list of visual specs with types, titles, slots
+2. spec.parse — the whole spec, every visual:
+   a. unknown type? refused, naming the types there are
+   b. does each slot exist, accept this kind of field, and take a list?
+   c. are the required slots there? every problem is collected with its
+      location and reported together
 
-3. For each visual in the spec:
-   a. Look up type in registry → get its VisualDef
-   b. Validate: does each spec slot match what the def accepts?
-   c. Resolve: does each field exist in the TMDL model?
-   d. Build: construct the PBIR JSON object in memory
-      - visual_type string from the def
-      - query roles + field bindings from def slots + spec fields
-      - formatting properties from def options + spec options
-      - position from the layout region it was placed in
+3. layouts.place — each visual takes the next free region of its role
 
-4. All visuals validated and built? Write them all to disk.
-   Any failure? Write nothing.
+4. Resolve every field against the TMDL model (apply._resolve)
 
-5. Memory is released. Nothing persists.
+5. Build each visual's PBIR JSON in memory (pbir/render.py):
+   - visual_type string from the contract
+   - query roles + field bindings from contract slots + spec fields
+   - formatting properties from contract options + spec options
+   - position from the layout region it was placed in
+
+6. Every spec given, all pre-flighted and built? Write them all to disk.
+   Any failure in any of them? Write nothing.
 ```
 
 The visual definitions provide the **structure** (what a column chart is).
