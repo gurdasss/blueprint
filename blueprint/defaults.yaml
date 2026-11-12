@@ -50,7 +50,7 @@ layouts:
 #     visual_title:  {font: Segoe UI, size: 12}
 #     body:          {font: [Segoe UI, Segoe UI Light], size: [10, 12]}
 
-# extensions: opt-in settings outside the core (template/extensions.md). What the core reads:
+# extensions: opt-in settings outside the core (docs/extensions.md). What the core reads:
 #   extensions:
 #     severity: {grid: warning}        # override a rule's baked-in severity (error|warning|off)
 #     decorative_types: [image, shape] # types that may contain visuals; exempt from margin/gutter

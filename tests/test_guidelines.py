@@ -188,7 +188,7 @@ def test_a_key_outside_the_core_is_refused_with_the_closest_one_named(tmp_path, 
 
 
 def test_extensions_stay_open_so_an_extension_can_add_its_own_keys(tmp_path):
-    """`extensions:` is the pass-through (template/extensions.md): the core reads five sub-keys
+    """`extensions:` is the pass-through (docs/extensions.md): the core reads five sub-keys
     and must not refuse the rest, or no extension could ship without a core change."""
     rules = guidelines.load(_write(tmp_path, "extensions:\n  conditional_formatting: {rules: []}\n"))
     assert rules.raw["extensions"]["conditional_formatting"] == {"rules": []}

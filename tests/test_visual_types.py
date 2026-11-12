@@ -233,7 +233,7 @@ def test_line_and_bar_match_probe_12(tmp_path: Path):
 
 
 
-# --- inherits: (template/visuals.md) -------------------------------------------------------
+# --- inherits: (docs/visuals.md) -------------------------------------------------------
 
 def _dir(tmp_path: Path, **files: str) -> tuple[Path, ...]:
     """A directory of contract YAMLs, as a client's extensions.custom_visuals.search_path."""

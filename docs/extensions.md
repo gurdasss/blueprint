@@ -126,7 +126,7 @@ slots:
 
 There is no `currency` alias and there won't be one: Desktop writes the
 *locale's* symbol, so an alias would have Blueprint invent a symbol the
-model never agreed to (`template/plan.md`). Sorting is not here either —
+model never agreed to (`docs/plan.md`). Sorting is not here either —
 it is `sort: {by, direction}` on the visual, where Desktop keeps it.
 
 **How it works:**

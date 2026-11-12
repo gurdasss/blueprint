@@ -153,7 +153,7 @@ all (see "Layouts" below), and the page spec changes are small.
 
 The pixel format stays: `canvas` + `regions` with explicit `x/y/w/h`. The
 structural-rows engine that an earlier draft of this plan called for is **not
-built** — it is a later version, recorded in `template/extensions.md`.
+built** — it is a later version, recorded in `docs/extensions.md`.
 
 | Module | Why it's unchanged |
 |--------|-------------------|
@@ -255,7 +255,7 @@ runs clean and is still idempotent.
 **Decision:** not built in this version. Layouts stay explicit pixels, the
 format `layouts.py` already reads. Relative positioning (rows, column
 counts, computed coordinates) is a later version, written up as an extension
-point in `template/extensions.md` with the remainder rule it would need, so
+point in `docs/extensions.md` with the remainder rule it would need, so
 it doesn't have to be re-derived.
 
 **What replaced it:** `template/layout.template.yaml` restored to the pixel
@@ -297,7 +297,7 @@ a KPI's goal line and a titled card's label) is now
 `stacked-bar`) moved to `blueprint/visuals/archive/`, which the loader doesn't
 glob. Archived, not deleted: each still cites its probe.
 
-A client opts them back in, per the seam `template/extensions.md` promised:
+A client opts them back in, per the seam `docs/extensions.md` promised:
 
 ```yaml
 extensions:
@@ -317,7 +317,7 @@ Evidence kept, not traded away: the probe replays, `test_visual_types`,
 output is byte-identical to a pre-change run. `tests/pinned-specs/` (new, like
 `pinned-layouts/`) holds probe 9's spec, which used `pie`.
 
-**4b — `inherits:`** resolves as `template/visuals.md` documents: the parent's
+**4b — `inherits:`** resolves as `docs/visuals.md` documents: the parent's
 `slots`, `options` and `region` are copied and the child overrides them key by
 key, so it can change one slot without restating the rest. `type` and
 `visual_type` are never inherited — a contract that didn't name its own PBIR
@@ -417,7 +417,7 @@ that make that drift fail loudly in future.
   `extensions.max_resize`.
 - `scripts/probe_annotations.py` wrote a `.blueprint.yaml` of `grid: {size: 16, max_resize: …}`,
   so re-running probe 01 would have failed at guidelines load.
-- `template/interactions.md` described guidelines as `grid: 8, margin: 16, gutter: 16`.
+- `docs/interactions.md` described guidelines as `grid: 8, margin: 16, gutter: 16`.
 - **A packaging hazard, found by building a wheel rather than trusting the globs:** setuptools
   copies into `build/lib` and never removes anything, so a wheel built in a tree with a stale
   `build/` shipped the eight archived contracts as `blueprint/visuals/*.yaml`. A pip-installed
@@ -515,9 +515,9 @@ real reports use and neither the core nor the archive covers.
 - [x] Write `template/guidelines.template.yaml`
 - [x] Phase 2: `template/layout.template.yaml`
 - [x] Phase 3: `template/page.template.yaml`
-- [x] Write `template/interactions.md`
-- [x] Write `template/visuals.md` (visual type system — runtime, inheritance)
-- [x] Write `template/extensions.md` (extension points by layer)
+- [x] Write `docs/interactions.md`
+- [x] Write `docs/visuals.md` (visual type system — runtime, inheritance)
+- [x] Write `docs/extensions.md` (extension points by layer)
 - [x] Compatibility analysis and incremental plan (this section)
 - [x] Step 1: Guidelines schema rewrite (merged with step 3)
 - [x] Step 3: Wire guidelines into consumers (done with step 1)

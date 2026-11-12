@@ -9,10 +9,16 @@ spec** per page — and writes Power BI PBIR pages from them.
 | `guidelines.template.yaml` | Your house standard: canvas, grid, margin, gutter, palette, fonts, page rules. One per organisation. | **Copy it.** Save as anything, e.g. `my-guidelines.yaml`. |
 | `layout.template.yaml` | One named arrangement of regions on the canvas. | **Copy it** to `layouts/<name>.yaml` — see the warning below. |
 | `page.template.yaml` | One page: which visuals, and what data goes in them. One per page. | **Copy it** per page, e.g. `overview.yaml`. |
-| `interactions.md` | How those three files constrain each other, and what `bp apply` does in what order. | **Read it** when something is refused and you want to know which file owns the number. |
-| `visuals.md` | How a visual type is defined, and how to write one of your own. | **Read it** only if you need a type Blueprint doesn't ship. |
-| `extensions.md` | Where settings outside the core would go. | **Skip it.** Parked on purpose — most of what it sketches isn't built. |
-| `plan.md` | Internal history: how the template rewrite was planned and what was dropped. | **Skip it.** Not documentation. |
+
+That's the whole folder: three files to copy, and this page. Reference
+material lives in [`docs/`](../docs/) — you don't need it to get a page
+built, and the two worth knowing about are:
+
+- [`docs/interactions.md`](../docs/interactions.md) — how those three files
+  constrain each other, and what `bp apply` does in what order. Read it when
+  something is refused and you want to know which file owns the number.
+- [`docs/visuals.md`](../docs/visuals.md) — the visual contract format, and
+  how to add a type Blueprint doesn't ship.
 
 ---
 
@@ -208,6 +214,6 @@ The errors name the file and the key. A few that come up first:
 | `two fields in <role> would both be called 'X'` | Two entries in one slot end up with the same display name — e.g. the same column listed twice in a table's `columns`. Bind one of them. |
 | `no free 'main' region left in layout` | Remove a visual, choose a layout with more regions, or set `region:` on one. |
 | `layout '<name>' doesn't fit the guidelines` | The layout's region coordinates: off the grid, inside the margin, or closer than the gutter. |
-| `'<type>' is not a supported visual type` | The type name. The error lists all of them; `visuals.md` covers adding your own. |
+| `'<type>' is not a supported visual type` | The type name. The error lists all of them; [`docs/visuals.md`](../docs/visuals.md) covers adding your own. |
 | `page '<name>' is built by spec '<id>'` | You renamed the spec file. Set `id:` back to the old name, as the error says. |
 | `unknown key <k>. Known here: …` | A typo in the guidelines. The core refuses unknown keys rather than ignoring them, and names the closest real one. |

@@ -40,7 +40,7 @@ is written.
 Pixels are the only unit in this version, and the client writes each one.
 Relative positioning — rows, column counts, coordinates Blueprint derives —
 is a later version, written up as an extension point in
-`template/extensions.md` §5. Until then the arithmetic is the client's, and
+`docs/extensions.md` §5. Until then the arithmetic is the client's, and
 `template/layout.template.yaml` works it out at the bottom of the file
 (the solved column table, and what a region flush to the margin needs).
 

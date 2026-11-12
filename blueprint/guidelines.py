@@ -8,7 +8,7 @@ Layers, later overriding earlier (mappings merge key by key; anything else is re
 4. command-line overrides                       e.g. ``--grid 8``
 
 Core keys (v1): version, name, canvas, spacing, page, palette, typography, layouts.
-Everything else is opt-in under ``extensions:`` (see ``template/extensions.md``): extra
+Everything else is opt-in under ``extensions:`` (see ``docs/extensions.md``): extra
 typography roles, severity overrides, decorative types, ``max_resize`` and
 ``custom_visuals.search_path`` (directories of visual contracts beyond the core). Keys the core
 doesn't know inside ``extensions:`` are passed through untouched.
@@ -115,7 +115,7 @@ class Palette:
 # (the names `formatting.fonts_in` produces). page_title is the textbox `bp apply` creates for
 # a `type: header` visual, visual_title a visual's own title, body any other textbox.
 CORE_ROLES = {"page_title": "header", "visual_title": "title", "body": "textbox"}
-# Further internal roles, opt-in under `extensions.typography` (template/extensions.md):
+# Further internal roles, opt-in under `extensions.typography` (docs/extensions.md):
 # subtitle, the old card's value and the new card's value (callout) and its Category label.
 EXTENSION_ROLES = ("subtitle", "callout", "card_label")
 TYPOGRAPHY_ROLES = tuple(CORE_ROLES) + EXTENSION_ROLES
@@ -303,7 +303,7 @@ def _refuse_unknown_keys(layer: dict[str, Any], source: str) -> None:
     """Refuse a key the core doesn't implement, naming the closest one it does.
 
     Only `extensions:` is open: the core reads five sub-keys there and passes the rest through
-    untouched (template/extensions.md), so an extension's own keys must not be refused here."""
+    untouched (docs/extensions.md), so an extension's own keys must not be refused here."""
     for key, value in layer.items():
         if key == PASS_THROUGH:
             continue

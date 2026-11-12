@@ -31,7 +31,7 @@
 # up front (worked out for you at the bottom of this file) in exchange for
 # a layout that is exactly what it says. Relative positioning — rows and
 # column counts that Blueprint turns into pixels — is a later version; see
-# template/extensions.md.
+# docs/extensions.md.
 #
 # Rules enforced by `bp apply`:
 #   - Every region must sit on the guidelines grid.

@@ -696,10 +696,16 @@ blueprint/
 │   ├── 02-card-and-chart/
 │   └── README.md               # how each was made, so they can be rebuilt
 │
-├── docs/probes/                # raw Desktop diffs: the evidence behind schema.md
+├── docs/
+│   ├── probes/                 # raw Desktop diffs: the evidence behind schema.md
+│   ├── interactions.md         # how guidelines, layout and page spec constrain each other
+│   ├── visuals.md              # the visual contract format, and adding a type of your own
+│   ├── extensions.md           # extension points by layer (mostly not built)
+│   └── plan.md                 # history: how the v0.6 template rewrite was planned
+│
 ├── scripts/                    # probe builders (probe_*.py), demo.sh, desktop.sh, ci_check.sh
 ├── unverified-probes/          # probes written but never opened in Desktop: not evidence
-├── template/                   # the client-first design notes and plan for v0.6
+├── template/                   # the three files a client copies, and a README to start from
 │
 └── tests/                      # includes golden/, pinned-layouts/, pinned-specs/ and
                                 # test_probe_replay.py (every probe replayed against Blueprint)

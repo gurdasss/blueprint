@@ -133,7 +133,7 @@ def parse_slot(item: Any, at: str, problems: list[str]) -> FieldRef | None:
     """One slot entry: a field reference, or a mapping of a field plus per-slot decisions.
 
     ``"Sales[Amount]"`` and ``{field: "Sales[Amount]"}`` mean the same thing. The mapping is the
-    only way to say more, so there is one way to write each thing (template/plan.md step 5).
+    only way to say more, so there is one way to write each thing (docs/plan.md step 5).
     """
     if not isinstance(item, dict):
         ref = parse_field(item)

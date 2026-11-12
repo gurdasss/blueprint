@@ -3,7 +3,7 @@
 Usage:
     python scripts/probe_aggregate_format.py <dest folder>
 
-Two open items block `template/plan.md` step 5, where a page spec says more about a field than
+Two open items block `docs/plan.md` step 5, where a page spec says more about a field than
 which field it is. Both need Desktop's own output, not a guess:
 
 - **Aggregation.** `reader` already reads an implicit aggregate of a column

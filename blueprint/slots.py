@@ -106,7 +106,7 @@ def _read(path: Path) -> dict:
 
 
 def _resolve(name: str, raw: dict[str, tuple[Path, dict]], chain: tuple[str, ...] = ()) -> dict:
-    """``name``'s raw contract with its ``inherits:`` chain merged in (template/visuals.md).
+    """``name``'s raw contract with its ``inherits:`` chain merged in (docs/visuals.md).
 
     The parent's ``slots``, ``options`` and ``region`` are copied; the child overrides them key
     by key, so it can change one slot without restating the others. ``type`` and ``visual_type``
