@@ -28,16 +28,35 @@ layout: standard-dashboard
 #
 # Required per visual:
 #   type     A Blueprint visual type (see `bp describe` for the list).
-#   title    The visual's display title.
-#   slots    Data bindings — which fields go into which slot.
+#            The only key every visual needs.
+#
+# Required by some types:
+#   title    The header's text, so a `type: header` visual needs one.
+#            Every other type's title is optional.
+#   slots    Data bindings — which fields go into which slot. Each type's
+#            contract marks the slots it requires (`bp describe` lists
+#            them); a header has none.
 #
 # Optional per visual:
-#   region   Override the visual type's default region role.
-#   options  Formatting choices the visual type declares (e.g. labels,
-#            legend position). See `bp describe` for available options.
-#   sort     { by: <field>, direction: ascending | descending }
-#            The field must be one this visual binds. Left out, the
-#            visual keeps Desktop's own default sort.
+#   id         Stable identity within the page, for re-apply matching.
+#              Lowercase letters, digits and hyphens, max 40.
+#              Default: `<type>-<n>`, counting that type in spec order.
+#              Re-apply matches on this id, so inserting or reordering
+#              two visuals of the same type renumbers them and each
+#              takes over the other's visual on the page: the fields are
+#              rebound in place and reported, not refused, because
+#              Blueprint wrote them both and neither looks edited.
+#              Set `id:` on any type you use more than once and that
+#              stops mattering.
+#   region     Override the visual type's default region role.
+#   options    Formatting choices the visual type declares (e.g. labels,
+#              legend position). See `bp describe` for available options.
+#   sort       { by: <field>, direction: ascending | descending }
+#              The field must be one this visual binds. Left out, the
+#              visual keeps Desktop's own default sort.
+#   blueprint  The one accepted value is `ignore`: this visual is placed
+#              by hand in Desktop on purpose. Blueprint never creates,
+#              moves, binds or counts it, and it takes no region.
 
 visuals:
 
@@ -62,7 +81,10 @@ visuals:
       value: "[Total Revenue]"
 
   # ── Column chart with options ──────────────────────────────────
+  # `id:` is optional, but it pins this visual's identity across
+  # re-applies no matter what is added above it.
   - type: column
+    id: revenue-by-region
     title: Revenue by Region
     options: { labels: "on" }
     sort: { by: "[Total Revenue]", direction: descending }
@@ -92,7 +114,7 @@ visuals:
 #   value: "Table[Hierarchy]"         a model hierarchy (binds all levels)
 #
 #   One way to write one thing: a field is a string. Anything a slot
-#   needs beyond the field will be a mapping key (see "Not built yet").
+#   needs beyond the field is a mapping key — see "the long form" below.
 #
 #
 # ── Drill-down paths (ordered lists) ──
