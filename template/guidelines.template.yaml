@@ -3,8 +3,10 @@
 # ─────────────────────────────────────────────────────────────────────
 # This is the minimum a client provides. Every key here is enforced by
 # `bp check`. Keys that are absent fall back to built-in defaults.
-# Advanced features (four-sided margins, brand colours, visual-container
-# styling, per-rule severity overrides) are added through extensions.
+# Anything outside the core is opt-in under `extensions:`, which today
+# reads five sub-keys — per-rule severity, decorative types, a resize
+# limit, extra typography roles and visual contracts of your own. See
+# "Extensions" at the foot of this file.
 #
 # Usage:
 #   bp check  --report <path> --guidelines this-file.yaml
@@ -123,23 +125,26 @@ layouts:
 #     search_path:                    # probe-verified types the core ships. Relative
 #       - "my-visuals"                # entries resolve against this file.
 #
-# Anything else here is passed through untouched, for an extension's
-# own code to read (there is no registry). Sketches of what comes next:
+# Those five are the whole of what the core reads. Anything else here is
+# passed through untouched, for an extension's own code to read: there is
+# no registry, so a key nothing reads has no effect and is not refused.
+#
+# The shapes below are **not implemented**. Nothing in Blueprint reads
+# them; they are here as sketches of where such settings would go, so
+# writing one changes nothing about your report. Each needs a survey of
+# real reports and a Desktop probe before it is built.
 #
 # extensions:
-#   four_sided_margin:
+#   four_sided_margin:                # not implemented
 #     top: 16
 #     right: 24
 #     bottom: 16
 #     left: 24
-#   brand_colors:
+#   brand_colors:                     # not implemented
 #     primary: "#0F2027"
 #     secondary: "#203A43"
 #   approved_visual_types: [card, column, bar, line, pie, table, matrix]
-#   visual_containers:
+#   visual_containers:                # not implemented
 #     background_color: "#FFFFFF"
 #     border: { enabled: true, color: "#E1DFDD", width: 1 }
 #     corner_radius: 4
-#   validation_severity:
-#     grid_alignment: error
-#     page_margin: warning
