@@ -94,6 +94,19 @@ palette:
 # Font names must match Power BI Desktop's font list exactly.
 # A weight is part of the face name (e.g. "Segoe UI Semibold"),
 # not a separate property.
+#
+# `font` and `size` each take one value or a list:
+#
+#   page_title: { font: [Segoe UI Semibold, Segoe UI Bold], size: [18, 20] }
+#
+# A list is an allowed set. `bp check` passes any listed font and any
+# listed size, and the two are checked independently (either font may
+# go with either size). It is not a fallback chain.
+#
+# What Blueprint itself writes (the header textbox from `bp apply`, the
+# theme from `bp theme`) uses the FIRST entry only, so put your
+# preferred value first. A role you leave out, or an empty list, allows
+# anything. There is one rule per role, not per visual type or page.
 
 typography:
   page_title:   { font: Segoe UI Semibold, size: 18 }
