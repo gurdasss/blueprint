@@ -452,3 +452,105 @@ def test_the_two_hierarchy_wells_say_how_many_levels_they_mark():
     assert "hierarchy" in c["slicer"].slots["field"].accepts
     # probe 39 never put a hierarchy in a matrix's Columns, so it still refuses one
     assert "hierarchy" not in c["matrix"].slots["columns"].accepts
+
+
+# --- what docs/visuals.md says about loading, checked rather than read ----------------------
+# Each of these was a sentence in that file before it was a test. Prose has no test, and the first
+# version of the file described a loader that didn't exist, so the claims that can be run are.
+
+def test_an_empty_slots_section_clears_the_parents_slots_but_not_its_options(tmp_path: Path):
+    """The doc's "what inherits copies" table: mentioned but empty means none, per section."""
+    extra = _dir(tmp_path, bare="type: bare\nvisual_type: bareChart\ninherits: column\nslots: {}\n")
+    c = contracts(extra)["bare"]
+    assert c.slots == {}
+    assert c.options == contracts()["column"].options  # a section it didn't mention is inherited
+
+
+def test_a_contracts_file_name_must_equal_its_type(tmp_path: Path):
+    extra = _dir(tmp_path, wrong="type: other\nvisual_type: otherChart\nregion: main\nslots: {}\n")
+    with pytest.raises(ContractError, match="type 'other' must match the file name"):
+        contracts(extra)
+
+
+def test_a_core_contract_cannot_inherit_from_outside_the_core(tmp_path: Path, monkeypatch):
+    """The core must load on its own, whatever directories a client adds. The loader decides
+    "core" by directory, so point it at a throwaway one rather than editing a shipped file."""
+    from blueprint import slots
+
+    core = tmp_path / "core"
+    outside = tmp_path / "outside"
+    core.mkdir()
+    outside.mkdir()
+    (outside / "q.yaml").write_text("type: q\nvisual_type: qChart\nregion: main\nslots: {}\n")
+    (core / "c.yaml").write_text("type: c\nvisual_type: cChart\ninherits: q\n")
+    monkeypatch.setattr(slots, "VISUALS_DIR", core)
+    slots.contracts.cache_clear()
+    try:
+        with pytest.raises(ContractError, match="a core contract can't inherit 'q'"):
+            contracts((outside,))
+    finally:
+        slots.contracts.cache_clear()  # don't leave a cache built from the fake core behind
+
+
+def test_only_hierarchy_taking_types_say_so_in_category():
+    """docs/visuals.md says the stacked charts and area take a plain column in `category`, not a
+    model hierarchy, which is why they are not `inherits: column`."""
+    c = contracts()
+    assert "hierarchy" in c["column"].slots["category"].accepts
+    for name in ("stacked-column", "stacked-bar", "stacked-column-100", "area"):
+        assert c[name].slots["category"].accepts == ("column",), name
+
+
+def test_the_examples_in_visuals_md_load(tmp_path: Path):
+    """The "Adding a new visual" examples are what a client copies, so they have to be accepted
+    by the loader as written. Pull every fenced yaml block headed `# my-visuals/<type>.yaml` out
+    of the doc instead of repeating them here, where they could drift from it."""
+    import re
+
+    text = (ROOT / "docs" / "visuals.md").read_text(encoding="utf-8")
+    blocks = re.findall(r"```yaml\n# my-visuals/([a-z0-9-]+)\.yaml\n(.*?)```", text, re.DOTALL)
+    assert {name for name, _ in blocks} >= {"waterfall", "gauge"}, "the doc's examples moved"
+    extra = _dir(tmp_path, **{name: f"# my-visuals/{name}.yaml\n{body}" for name, body in blocks})
+    loaded = contracts(extra)
+    assert list(loaded["waterfall"].slots) == list(contracts()["column"].slots)
+    assert list(loaded["gauge"].slots) == ["value", "target"]
+    assert loaded["gauge"].slots["target"].accepts == ("measure",)
+
+
+def test_the_documented_custom_visuals_block_resolves_against_the_guidelines_file(tmp_path: Path):
+    """The `extensions: custom_visuals: search_path: ["my-visuals"]` block in the doc, in a
+    guidelines file, from a directory that is not the current one."""
+    folder = tmp_path / "client"
+    (folder / "my-visuals").mkdir(parents=True)
+    (folder / "my-visuals" / "waterfall.yaml").write_text(
+        "type: waterfall\nvisual_type: waterfallChart\ninherits: column\n")
+    (folder / "g.yaml").write_text(
+        'version: 1\nname: x\nextensions:\n  custom_visuals:\n    search_path: ["my-visuals"]\n')
+    rules = guidelines.load(folder / "g.yaml")
+    assert rules.visuals == ((folder / "my-visuals").resolve(),)
+    assert "waterfall" in contracts(rules.visuals)
+    assert "waterfall" not in contracts()
+
+
+@pytest.mark.parametrize("command, reads", [
+    (["inspect"], False),
+    (["check", "--guidelines", str(GUIDE)], False),
+    (["describe", "--guidelines", str(GUIDE)], True),
+    (["manifest", "--dry-run"], True),
+])
+def test_contracts_are_read_lazily_not_at_startup(command, reads, card_chart_fixture: Path):
+    """docs/visuals.md says the contracts are read the first time something asks and cached, so
+    a command with no use for a visual type never reads them. inspect and check don't; describe
+    and manifest do (apply does too, and is covered everywhere else).
+
+    A fresh interpreter, because this process has long since filled the cache, and clearing it
+    first would hide a load at import time, which is exactly what "not at startup" rules out."""
+    import subprocess
+    import sys
+
+    code = ("import sys; from blueprint import cli, slots\n"
+            "try: cli.main(sys.argv[1:])\nexcept SystemExit: pass\n"
+            "print(slots.contracts.cache_info().misses)")
+    out = subprocess.run([sys.executable, "-c", code, command[0], "--report", str(card_chart_fixture),
+                          *command[1:]], capture_output=True, text=True, cwd=ROOT, check=True)
+    assert (int(out.stdout.strip().splitlines()[-1]) > 0) is reads

@@ -13,11 +13,12 @@ one per probe-verified type.
 
 The first time anything asks for the contracts, Blueprint reads every visual
 YAML, resolves `inherits:`, and keeps the result as a dict of `Contract`
-objects (`slots.contracts()`). That is lazy, not at startup: a command that
-never needs a visual type never reads them. The result is cached for the
-rest of the process, once per distinct set of extra directories. When
-`bp apply` runs, it combines each visual's contract with the client's page
-spec to produce the PBIR JSON objects, then writes them to disk.
+objects (`slots.contracts()`). That is lazy, not at startup: `inspect` and
+`check` never read them, while `apply`, `describe` and `manifest` do. The
+result is cached for the rest of the process, once per distinct set of extra
+directories. When `bp apply` runs, it combines each visual's contract with
+the client's page spec to produce the PBIR JSON objects, then writes them to
+disk.
 
 ```
                         ┌─────────────────────────────────┐
