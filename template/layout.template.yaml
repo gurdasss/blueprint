@@ -20,6 +20,11 @@
 #   - Every region must be inside the guidelines margin.
 #   - Every pair of regions must be at least the guidelines gutter apart.
 #   - Violating any of these refuses the layout, not the spec.
+#
+# And one warning, not a refusal:
+#   - A `kpi-row` region under 160px gets a warning and is applied anyway.
+#     At 120px Desktop clips a KPI visual's goal line and a titled card's
+#     label (measured); see the row heights at the bottom of this file.
 # ─────────────────────────────────────────────────────────────────────
 
 

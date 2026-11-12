@@ -71,11 +71,17 @@ flags.
 A region extending outside the layout's own canvas is refused earlier still,
 by `layouts.parse`.
 
+One thing is only a **warning**: a `kpi-row` region under 160px. At 120px
+Desktop clips a KPI visual's goal line and a titled card's label (measured),
+so `bp apply` says so and builds the page anyway — region heights aren't
+something the guidelines state, and a report Desktop has already saved may
+use a shorter row.
+
 ### What guidelines provide to the engine
 
 | Guideline key | What the engine uses it for |
 |---|---|
-| `canvas.width` / `canvas.height` | The size `bp apply` gives the page. A layout canvas that differs is not refused, but `bp check` then reports every such page under `page-size`. |
+| `canvas.width` / `canvas.height` | What `bp check` compares a page against, under the `page-size` rule. The page's actual size comes from the *layout's* canvas, so keep the two equal or every spec-built page is reported. |
 | `spacing.grid` | Every region edge must land on a multiple. |
 | `spacing.margin` | Minimum distance from every region edge to the page edge. |
 | `spacing.gutter` | Minimum gap between regions that share part of a row or column. |
@@ -87,7 +93,7 @@ by `layouts.parse`.
 | Layout key | What the engine uses it for |
 |---|---|
 | `name` | Identity — what the page spec references. Must match the file name. |
-| `canvas.width` / `canvas.height` | The page size. On a re-run `apply` errors if the page it finds isn't this size: it never scales a layout. |
+| `canvas.width` / `canvas.height` | The size `bp apply` gives the page it creates. On a re-run it errors if the page it finds isn't this size: it never scales a layout. |
 | `regions[].role` | The region role visuals fill (`header`, `kpi-row`, `main`, or any lowercase name of the client's own). |
 | `regions[].x` / `.y` | The region's top-left corner, in pixels. |
 | `regions[].w` / `.h` | The region's width and height, in pixels. |
@@ -150,8 +156,8 @@ the layout.
 |---|---|
 | `page.require_title` | If `true`, the spec must include a `type: header` visual. |
 | `page.title_region` | The region role that header must sit in. |
-| `page.max_visuals` | The spec can't exceed this count (counted by `density_policy`). |
-| `page.density_policy` | How visuals are counted: `all`, `visible`, or `data` (excludes headers/textboxes). |
+| `page.max_visuals` | A page over this count is reported by `bp check` under the `density` rule. `bp apply` doesn't count: it will build a page that exceeds the limit, and `check` is what says so. |
+| `page.density_policy` | How visuals are counted for that rule: `all`, `visible`, or `data` (excludes headers/textboxes). |
 | `palette.*` | `bp check` validates that the built page's colours match the palette. |
 | `typography.page_title` | `bp apply` writes this onto the header textbox it creates. |
 | `typography.*` | `bp check` validates that fonts and sizes match the typography rules. |
@@ -211,7 +217,7 @@ confusing result in Desktop. This is validated before any file is written.
    c. Resolve the layout name → load the layout from search_path
    d. Check the layout's regions against the guidelines
       (grid, margin, gutter) — refuse the layout if any edge is off
-   e. Validate the page spec against the guidelines (title, density)
+   e. Check the page spec's header against the title rules (a warning)
    f. Resolve field references against the TMDL model
    g. Place visuals into regions by role
    h. Write PBIR files (or refuse if anything failed)

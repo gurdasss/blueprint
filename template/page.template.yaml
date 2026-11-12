@@ -41,13 +41,18 @@ layout: standard-dashboard
 #   id         Stable identity within the page, for re-apply matching.
 #              Lowercase letters, digits and hyphens, max 40.
 #              Default: `<type>-<n>`, counting that type in spec order.
-#              Re-apply matches on this id, so inserting or reordering
-#              two visuals of the same type renumbers them and each
-#              takes over the other's visual on the page: the fields are
-#              rebound in place and reported, not refused, because
-#              Blueprint wrote them both and neither looks edited.
-#              Set `id:` on any type you use more than once and that
-#              stops mattering.
+#              Re-apply matches on this id, so anything that renumbers
+#              one type moves its visuals around:
+#                - adding a second card *after* the first renumbers
+#                  nothing; the new one is card-2 and is created.
+#                - adding one *before* it makes the new entry card-1,
+#                  which takes over the card already on the page, while
+#                  the old entry is now card-2 and is created fresh.
+#                - swapping two cards makes each take over the other's.
+#              A takeover rebinds the fields in place and reports it; it
+#              isn't refused, because Blueprint wrote both visuals and
+#              neither looks edited in Desktop. Set `id:` on any type you
+#              use more than once and none of this applies.
 #   region     Override the visual type's default region role.
 #   options    Formatting choices the visual type declares (e.g. labels,
 #              legend position). See `bp describe` for available options.
@@ -55,8 +60,13 @@ layout: standard-dashboard
 #              The field must be one this visual binds. Left out, the
 #              visual keeps Desktop's own default sort.
 #   blueprint  The one accepted value is `ignore`: this visual is placed
-#              by hand in Desktop on purpose. Blueprint never creates,
-#              moves, binds or counts it, and it takes no region.
+#              and bound by hand in Desktop on purpose. Blueprint never
+#              creates, moves or binds it, and it takes no region — so
+#              the entry is a note to Blueprint, not a visual it builds.
+#              Its slots, options and sort are dropped if you write any.
+#              Use it to keep a hand-made visual's id listed in the spec:
+#              that stops `bp apply` warning that a Blueprint visual by
+#              that id is no longer in the spec.
 
 visuals:
 
