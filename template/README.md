@@ -81,8 +81,21 @@ warnings — none of them about the page you just built. They are the
 fixture's own hand-built `Overview` page (off the grid, 1920×1080 against a
 1280×720 standard) and its stock Power BI theme (whose colours and fonts
 aren't the example palette). That is what `check` is for: it reads the whole
-report, not only Blueprint's part of it. `bp fmt` fixes the grid findings
-and `bp theme` the theme ones.
+report, not only Blueprint's part of it.
+
+Those errors are the two other commands' job, so fix them and look again:
+
+```bash
+bp theme --report /tmp/my-report --guidelines guidelines/example.yaml   # palette + fonts
+bp fmt   --report /tmp/my-report --guidelines guidelines/example.yaml   # snap to the grid
+bp check --report /tmp/my-report --guidelines guidelines/example.yaml
+```
+
+Now `check` exits 0: no errors, and two warnings that no command can fix
+for you — the fixture's hand-built page is 1920×1080, and one of its
+visuals touches the page edge. Blueprint won't resize a page or move
+someone's visual to satisfy a rule; it tells you and leaves the decision
+with you.
 
 ---
 
