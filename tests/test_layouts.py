@@ -74,6 +74,28 @@ def test_the_shipped_template_layout_fits_the_template_guidelines():
         "header#1", "kpi-row#1", "kpi-row#2", "main#1", "main#2"]
 
 
+def test_the_three_shipped_templates_fit_each_other():
+    """The guard the other two template tests leave open: one parses the page template, one
+    checks the layout template against the guidelines, and nothing put the page *through* the
+    layout. So the page template could ask for a region the layout template doesn't have (or
+    leave one empty, a gap `bp apply` warns about) and every test would still pass. A client
+    copies all three together, so they have to place."""
+    g = guidelines.load(ROOT / "template" / "guidelines.template.yaml")
+    page = spec.parse(yaml.safe_load((ROOT / "template" / "page.template.yaml").read_text(
+        encoding="utf-8")), "page.template.yaml")
+    layout = layouts.parse(yaml.safe_load((ROOT / "template" / "layout.template.yaml").read_text()),
+                           "layout.template.yaml", "standard-dashboard")
+    assert page.layout == layout.name, "the page template must name the layout template"
+    placements = layouts.place(page, layout)
+    assert [(p.visual.type, p.region.key) for p in placements] == [
+        ("header", "header#1"), ("kpi", "kpi-row#1"), ("card", "kpi-row#2"),
+        ("column", "main#1"), ("table", "main#2")]
+    assert layouts.unused(layout, placements) == [], "a region with no visual is a gap on the page"
+    # The header the guidelines ask for, in the region they ask for.
+    assert g.page.require_title and g.page.title_region == "header"
+    assert placements[0].region.role == g.page.title_region
+
+
 def test_shipped_layouts():
     assert SHIPPED == ["dashboard-6", "grid-2x3", "kpi-row-plus-detail", "one-up", "standard-4-up", "two-up"]
 
