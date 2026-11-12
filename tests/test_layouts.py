@@ -127,6 +127,36 @@ def test_a_kpi_row_exactly_at_the_minimum_is_fine():
     assert layouts.cramped(layouts.parse(header)) == []
 
 
+def test_copying_the_layout_template_the_way_the_readme_says_works(tmp_path):
+    """template/README.md tells a client to copy layout.template.yaml to
+    `layouts/standard-dashboard.yaml` beside their guidelines, because the file name must equal
+    the `name:` key and `layouts.search_path` resolves against the guidelines file rather than
+    the current directory. Both halves of that instruction are behaviour, so pin it: copying the
+    file under its own name is the first thing that bit, and a client who hits
+    "layout 'standard-dashboard' not found" has no way to tell which of the two rules it broke."""
+    (tmp_path / "layouts").mkdir()
+    (tmp_path / "my-guidelines.yaml").write_text(
+        (ROOT / "template" / "guidelines.template.yaml").read_text(encoding="utf-8"),
+        encoding="utf-8")
+    body = (ROOT / "template" / "layout.template.yaml").read_text(encoding="utf-8")
+    (tmp_path / "layouts" / "standard-dashboard.yaml").write_text(body, encoding="utf-8")
+
+    g = guidelines.load(tmp_path / "my-guidelines.yaml")
+    assert g.layouts.search_path == (tmp_path / "layouts",), "search_path anchors to its own file"
+    assert g.layouts.default == "standard-dashboard"
+    layout = layouts.load(g.layouts.default, g.layouts.search_path)
+    assert layouts.conflicts(layout, g.spacing.grid, g.spacing.margin, g.spacing.gutter) == []
+
+    # Under its own name it is not found, which is the error the README warns about.
+    (tmp_path / "layouts" / "standard-dashboard.yaml").rename(
+        tmp_path / "layouts" / "layout.template.yaml")
+    with pytest.raises(LayoutError, match="not found"):
+        layouts.load("standard-dashboard", g.layouts.search_path)
+    # And loading it by its file name is refused too: the name key must match.
+    with pytest.raises(LayoutError, match="must be 'layout.template'"):
+        layouts.load("layout.template", g.layouts.search_path)
+
+
 def test_shipped_layouts():
     assert SHIPPED == ["dashboard-6", "grid-2x3", "kpi-row-plus-detail", "one-up", "standard-4-up", "two-up"]
 
