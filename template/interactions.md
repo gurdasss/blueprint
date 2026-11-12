@@ -2,8 +2,9 @@
 
 > Guidelines → Layout → Page Spec: a dependency chain where each file
 > constrains the next. The guidelines own the numbers (canvas, grid,
-> margin, gutter). The layout describes structure (rows, columns). The
-> engine connects them and computes every pixel coordinate.
+> margin, gutter). The layout states every region's pixel coordinates.
+> The engine checks the layout against the guidelines and places the
+> spec's visuals into its regions.
 
 ---
 
@@ -13,68 +14,71 @@
 ┌─────────────┐       feeds into       ┌──────────┐     constrains     ┌───────────┐
 │  Guidelines  │ ──────────────────────▶│  Engine   │ ──────────────────▶│ Page Spec │
 │              │                        │           │                    │           │
-│  canvas      │   canvas, grid,        │  computes │   region count,    │  layout   │
-│  spacing     │   margin, gutter       │  pixel    │   roles, sizes     │  visuals  │
-│  page rules  │   ─────────────────▶   │  regions  │   constrain what   │  slots    │
-│  palette     │                        │  from     │   the spec can do  │           │
-│  typography  │       ┌──────────┐     │  both     │                    │           │
-│  layouts     │       │  Layout  │────▶│  inputs   │                    │           │
-│              │       │          │     │           │                    │           │
-│              │       │  rows    │     └──────────┘                    └───────────┘
-│              │       │  roles   │          ▲                               │
-│              │       │  heights │          │         references            │
-│              │       │  columns │          └───────────────────────────────┘
+│  canvas      │   canvas, grid,        │  checks   │   region count,    │  layout   │
+│  spacing     │   margin, gutter       │  the      │   roles, sizes     │  visuals  │
+│  page rules  │   ─────────────────▶   │  layout,  │   constrain what   │  slots    │
+│  palette     │                        │  places   │   the spec can do  │           │
+│  typography  │       ┌──────────┐     │  visuals  │                    │           │
+│  layouts     │       │  Layout  │────▶│  into its │                    │           │
+│              │       │          │     │  regions  │                    │           │
+│              │       │  canvas  │     └──────────┘                    └───────────┘
+│              │       │  regions │          ▲                               │
+│              │       │  x y w h │          │         references            │
+│              │       │  roles   │          └───────────────────────────────┘
 └─────────────┘       └──────────┘            (page spec names a layout)
 ```
 
 ---
 
-## 1. Guidelines + Layout → Engine (coordinate computation)
+## 1. Guidelines + Layout → Engine (checking, not computing)
 
-The layout describes **structure** — rows and columns. The guidelines provide
-**numbers** — canvas size, grid, margin, gutter. Neither file contains pixel
-coordinates. The engine connects them.
+The layout states **where every region is**, in pixels. The guidelines state
+the **numbers those regions must obey** — canvas size, grid, margin, gutter.
+The engine's job here is to refuse a layout that breaks them, before anything
+is written.
 
-### What the engine computes
+Pixels are the only unit in this version, and the client writes each one.
+Relative positioning — rows, column counts, coordinates Blueprint derives —
+is a later version, written up as an extension point in
+`template/extensions.md` §5. Until then the arithmetic is the client's, and
+`template/layout.template.yaml` works it out at the bottom of the file
+(the solved column table, and what a region flush to the margin needs).
 
-Given guidelines `canvas: 1280×720` and `spacing: {grid: 8, margin: 16, gutter: 16}`, and
-layout `rows: [{header, 64}, {kpi-row, 160, columns: 2}, {main, columns: 2}]`:
+### What the engine checks (`layouts.conflicts`)
+
+Given guidelines `canvas: 1280×720` and `spacing: {grid: 8, margin: 16, gutter: 16}`,
+every region in the layout must satisfy all three:
 
 ```
-Step 1 — Usable area
-  usable_width  = canvas.width  − 2 × margin = 1280 − 32 = 1248
-  usable_height = canvas.height − 2 × margin = 720  − 32 = 688
+On the grid       Every edge on a multiple of spacing.grid.
+                  The page edges always count as grid lines.
+                    region main#2 is off the 8px grid (right=1277.55)
 
-Step 2 — Row heights
-  header:  64px (explicit)
-  kpi-row: 160px (explicit)
-  gutters: 2 × gutter = 32px (between header→kpi-row and kpi-row→main)
-  main:    688 − 64 − 160 − 32 = 432px (fills remaining space)
+Inside the margin Every edge at least spacing.margin from the page edge.
+                    region header#1 is inside the 16px margin (left)
 
-Step 3 — Column widths (per row)
-  header (1 col):  1248px
-  kpi-row (2 col): (1248 − 16) / 2 = 616px each
-  main (2 col):    (1248 − 16) / 2 = 616px each
-
-Step 4 — Snap every value to grid (nearest multiple of 8)
-  All values already on grid ✓
-
-Step 5 — Compute x, y for each region
-  header   → x:16  y:16  w:1248 h:64
-  kpi-row₁ → x:16  y:96  w:616  h:160
-  kpi-row₂ → x:648 y:96  w:616  h:160
-  main₁    → x:16  y:272 w:616  h:432
-  main₂    → x:648 y:272 w:616  h:432
+Gutter apart      Regions sharing part of a row or column at least
+                  spacing.gutter apart.
+                    regions main#1 and main#2 are 8px apart, less than
+                    the 16px gutter
 ```
+
+A failure refuses **the layout**, not the spec. The reason: a region off the
+grid or inside the margin would make `bp apply` and `bp fmt` undo each other
+forever, and regions closer than the gutter would build pages `bp check` then
+flags.
+
+A region extending outside the layout's own canvas is refused earlier still,
+by `layouts.parse`.
 
 ### What guidelines provide to the engine
 
 | Guideline key | What the engine uses it for |
 |---|---|
-| `canvas.width` / `canvas.height` | The bounding box. All regions live inside it. |
-| `spacing.grid` | Snap target. Every computed edge rounds to the nearest multiple. |
-| `spacing.margin` | Inset from page edges. Regions start at `(margin, margin)`. |
-| `spacing.gutter` | Gap between adjacent regions — both horizontal (between columns) and vertical (between rows). |
+| `canvas.width` / `canvas.height` | The size `bp apply` gives the page. A layout canvas that differs is not refused, but `bp check` then reports every such page under `page-size`. |
+| `spacing.grid` | Every region edge must land on a multiple. |
+| `spacing.margin` | Minimum distance from every region edge to the page edge. |
+| `spacing.gutter` | Minimum gap between regions that share part of a row or column. |
 | `layouts.search_path` | Where to find layout files. |
 | `layouts.default` | The layout used when a page spec doesn't name one. |
 
@@ -82,29 +86,39 @@ Step 5 — Compute x, y for each region
 
 | Layout key | What the engine uses it for |
 |---|---|
-| `name` | Identity — what the page spec references. |
-| `rows[].role` | The region role visuals fill (`header`, `kpi-row`, `main`). |
-| `rows[].height` | Explicit row height in pixels. Omitted = fill remaining space. |
-| `rows[].columns` | How many side-by-side regions. Default 1. |
+| `name` | Identity — what the page spec references. Must match the file name. |
+| `canvas.width` / `canvas.height` | The page size. On a re-run `apply` errors if the page it finds isn't this size: it never scales a layout. |
+| `regions[].role` | The region role visuals fill (`header`, `kpi-row`, `main`, or any lowercase name of the client's own). |
+| `regions[].x` / `.y` | The region's top-left corner, in pixels. |
+| `regions[].w` / `.h` | The region's width and height, in pixels. |
 
 ### What neither file provides
 
-Pixel coordinates. Those are the engine's output, not anyone's input.
+Which visual goes where. That is the spec's job, matched by role.
 
 ---
 
-## 2. Computed regions → Page Spec
+## 2. Regions → Page Spec
 
-The computed regions **constrain** what a page spec can ask for.
+A layout's regions **constrain** what a page spec can ask for.
 
-| Computed property | What it constrains on the page spec |
+| Region property | What it constrains on the page spec |
 |---|---|
 | Region count per role | The spec can place at most N visuals of a given role. Exceeding the count is an error ("running out of regions"), never a reflow. |
-| Region roles available | A spec can only use roles the layout defines. If the layout has no `kpi-row` row, a KPI visual (whose default role is `kpi-row`) needs an explicit `region: main` override or a different layout. |
-| Region dimensions | The visual gets exactly the computed region size. No stretching, no splitting. |
+| Region roles available | A spec can only use roles the layout defines. If the layout has no `kpi-row` region, a KPI visual (whose default role is `kpi-row`) needs an explicit `region: main` override or a different layout. |
+| Region dimensions | The visual gets exactly the region's size. No stretching, no splitting, no spanning two regions. |
 
-**What the computed regions do NOT constrain:** which visual types go in a
-region, what fields are bound, or the visual's title. Those are the spec's job.
+Visuals fill regions **in declaration order**: each takes the next unused
+region whose role matches — the visual's own `region:` if it has one, else the
+role its type's contract declares. A `blueprint: ignore` visual takes no
+region.
+
+A region no visual was placed in is a gap on the page. `bp apply` warns
+(`layouts.unused`) and names layouts that place the spec with every region
+filled, but it never stretches other regions into the gap.
+
+**What the regions do NOT constrain:** which visual types go in a region, what
+fields are bound, or the visual's title. Those are the spec's job.
 
 ---
 
@@ -119,7 +133,8 @@ layout: standard-dashboard    # ← must exist on the guidelines search_path
 
 `bp apply` resolves this name against the guidelines' `layouts.search_path`
 directories. If the layout file isn't found, the error names the directories
-it searched.
+it searched. Entries on that search path resolve relative to the guidelines
+file that declares them, not the current directory.
 
 When the spec omits `layout:`, the guidelines' `layouts.default` is used.
 If that's also unset, it's an error.
@@ -129,15 +144,22 @@ If that's also unset, it's an error.
 ## 4. Page Spec ↔ Guidelines (direct constraints)
 
 Some guideline keys constrain the page spec directly, without going through
-the layout engine.
+the layout.
 
 | Guideline key | What it constrains on the page spec |
 |---|---|
 | `page.require_title` | If `true`, the spec must include a `type: header` visual. |
+| `page.title_region` | The region role that header must sit in. |
 | `page.max_visuals` | The spec can't exceed this count (counted by `density_policy`). |
 | `page.density_policy` | How visuals are counted: `all`, `visible`, or `data` (excludes headers/textboxes). |
 | `palette.*` | `bp check` validates that the built page's colours match the palette. |
+| `typography.page_title` | `bp apply` writes this onto the header textbox it creates. |
 | `typography.*` | `bp check` validates that fonts and sizes match the typography rules. |
+
+The title rules are the one place `apply` warns rather than refuses: a spec
+that would fail `page.require_title` or `page.title_region` is still applied,
+with a warning naming what `bp check` will report. Whether a page must have a
+title is the guidelines' call, and `check` is what enforces it.
 
 ---
 
@@ -164,10 +186,9 @@ confusing result in Desktop. This is validated before any file is written.
 
 | Concern | Guidelines | Layout | Engine | Page Spec |
 |---|:---:|:---:|:---:|:---:|
-| Page dimensions | ✅ declares | — | ✅ reads | — |
-| Grid / margin / gutter | ✅ declares | — | ✅ reads | — |
-| Row structure (roles, heights, columns) | — | ✅ declares | ✅ reads | — |
-| Region pixel coordinates | — | — | ✅ computes | — |
+| Page dimensions | ✅ declares | ✅ declares | ✅ compares | — |
+| Grid / margin / gutter | ✅ declares | — | ✅ enforces | — |
+| Region pixel coordinates | — | ✅ declares | ✅ checks | — |
 | Region roles | — | ✅ declares | ✅ passes through | ✅ fills |
 | Which layout to use | ✅ default | — | — | ✅ selects |
 | Visual types | — | — | — | ✅ declares |
@@ -175,7 +196,7 @@ confusing result in Desktop. This is validated before any file is written.
 | Colour rules | ✅ declares | — | — | — (checked after) |
 | Font rules | ✅ declares | — | — | — (checked after) |
 | Density limit | ✅ declares | — | — | ✅ must obey |
-| Title requirement | ✅ declares | — | — | ✅ must obey |
+| Title requirement | ✅ declares | — | — | ✅ should obey |
 
 ---
 
@@ -185,20 +206,26 @@ confusing result in Desktop. This is validated before any file is written.
 1. Client writes guidelines.yaml, layouts/*.yaml, and page-spec.yaml
 2. `bp apply page-spec.yaml --report R --guidelines guidelines.yaml`
 
-   a. Load guidelines (defaults ← org file ← report override ← CLI flags)
+   a. Load guidelines (defaults ← org file ← report override ← --set flags)
    b. Parse the page spec
-   c. Resolve the layout name → load the structural layout from search_path
-   d. Compute pixel regions from layout + guidelines (grid, margin, gutter)
-   e. Validate page spec against guidelines (title, density)
+   c. Resolve the layout name → load the layout from search_path
+   d. Check the layout's regions against the guidelines
+      (grid, margin, gutter) — refuse the layout if any edge is off
+   e. Validate the page spec against the guidelines (title, density)
    f. Resolve field references against the TMDL model
-   g. Place visuals into computed regions by role
+   g. Place visuals into regions by role
    h. Write PBIR files (or refuse if anything failed)
-   i. Run `bp check` rules on the result (palette, typography, etc.)
-   j. Regenerate the manifest
+   i. Regenerate the manifest
 ```
 
-Steps d–f happen **before** any file is written. Every problem is collected
-with its location and reported together. Nothing is half-written.
+Steps c–g happen **before** any file is written. Every problem is collected
+with its location and reported together. Nothing is half-written. Given
+several specs, all of them are pre-flighted and nothing is written if any
+one fails.
+
+`bp apply` does not run the `bp check` rules on what it wrote. It reports what
+it changed, warns about the title rules and about a new visual overlapping a
+hand-placed one, and leaves the rest to `bp check`.
 
 ---
 
@@ -207,9 +234,9 @@ with its location and reported together. Nothing is half-written.
 The smallest complete set of files a client needs:
 
 ```
-my-guidelines.yaml           ← 7 sections, ~30 lines
+my-guidelines.yaml           ← 8 sections, ~30 lines
 layouts/
-  standard-dashboard.yaml    ← name + rows, ~10 lines
+  standard-dashboard.yaml    ← name + canvas + regions, ~10 lines
 pages/
   overview.yaml              ← page name + layout + visuals, ~20 lines
 ```
