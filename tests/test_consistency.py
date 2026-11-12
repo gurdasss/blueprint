@@ -28,6 +28,18 @@ def test_there_is_shipped_yaml_to_check():
     assert len(SHIPPED_YAML) > 5  # guard against the globs silently finding nothing
 
 
+def test_template_holds_only_what_a_client_copies():
+    """`template/` is the folder a client copies from, so only the templates and the README
+    belong in it. It had drifted into holding reference docs (interactions.md, visuals.md), a
+    parked sketch (extensions.md) and the rewrite's work log (plan.md) — to the point that
+    README.md spent two rows of its file table telling readers to skip files in the folder it
+    had just pointed them at. Those live in docs/ now; this keeps them there."""
+    found = sorted(p.name for p in (ROOT / "template").iterdir() if p.is_file())
+    assert found == ["README.md", "guidelines.template.yaml", "layout.template.yaml",
+                     "page.template.yaml"], (
+        "template/ should hold only *.template.yaml and README.md; reference docs go in docs/")
+
+
 @pytest.mark.parametrize("path", SHIPPED_YAML, ids=lambda p: str(p.relative_to(ROOT)))
 def test_no_shipped_file_uses_a_retired_key(path: Path):
     """A key the loader refuses must not survive in a file the repo ships: a client copying it
