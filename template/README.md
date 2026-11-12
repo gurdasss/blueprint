@@ -171,7 +171,9 @@ Knowing these saves time arguing with it:
 - **It never moves content between pages.**
 - **It never touches a visual you placed by hand**, or one marked
   `blueprint: ignore`. (`bp fmt` is the exception: snapping to the grid is
-  its whole job, and it snaps every visual that isn't `blueprint: ignore`.)
+  its whole job, so it snaps hand-placed visuals too. It still honours
+  `blueprint: ignore`, and skips grouped visuals and pages with no fixed
+  size, with a warning.)
 - **It doesn't delete.** A visual dropped from a spec is left on the page,
   with a warning.
 
