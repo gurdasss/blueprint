@@ -254,8 +254,12 @@ def check_conditional_format(page, guidelines, ext_config) -> list[Finding]: ...
 ```
 
 **How it works:**
-- Core runs its rules: grid, margin, gutter, bounds, overlap,
-  density, palette, typography, title
+- Core runs its own rules. `guidelines.RULES` is the list:
+  `format, bounds, grid, margin, gutter, overlap, page-size, density,
+  typography, title`
+- `palette` is a rule id too, but not one of those: its severity comes from
+  `palette.enforce` (strict/warn/off), so `extensions.severity` refuses the
+  name
 - Rules are independent — adding one never changes existing ones
 - An extension's rule runs in the extension's own command or pass; `bp check`
   has no plug-in point, and `extensions.severity` only accepts the core rule
