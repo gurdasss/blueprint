@@ -13,8 +13,10 @@ one per probe-verified type.
 
 The first time anything asks for the contracts, Blueprint reads every visual
 YAML, resolves `inherits:`, and keeps the result as a dict of `Contract`
-objects (`slots.contracts()`). That is lazy, not at startup: `inspect` and
-`check` never read them, while `apply`, `describe` and `manifest` do. The
+objects (`slots.contracts()`). That is lazy, not at startup. `apply`,
+`describe` and `manifest` always read them; `inspect` never does; `check`
+and `fmt` read them only when the report already carries a Blueprint
+manifest (they compare against it, or refresh it after writing). The
 result is cached for the rest of the process, once per distinct set of extra
 directories. When `bp apply` runs, it combines each visual's contract with
 the client's page spec to produce the PBIR JSON objects, then writes them to
@@ -195,7 +197,8 @@ extensions:
     search_path: ["my-visuals"]   # relative to this guidelines file
 ```
 
-or with `--visuals DIR` on `apply`, `describe` and `manifest` for one run.
+or with `--visuals DIR` for one run. It is on every command that reads
+contracts: `apply`, `check`, `describe`, `fmt` and `manifest`.
 The type is available on the next `bp apply`. No code changes.
 
 Most clients never define one, which is why this is opt-in rather than a

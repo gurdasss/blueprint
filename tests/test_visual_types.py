@@ -532,25 +532,38 @@ def test_the_documented_custom_visuals_block_resolves_against_the_guidelines_fil
     assert "waterfall" not in contracts()
 
 
-@pytest.mark.parametrize("command, reads", [
-    (["inspect"], False),
-    (["check", "--guidelines", str(GUIDE)], False),
-    (["describe", "--guidelines", str(GUIDE)], True),
-    (["manifest", "--dry-run"], True),
+@pytest.mark.parametrize("command, with_manifest, reads", [
+    (["inspect"], False, False),
+    (["inspect"], True, False),
+    (["check", "--guidelines", str(GUIDE)], False, False),
+    (["check", "--guidelines", str(GUIDE)], True, True),
+    (["fmt", "--dry-run", "--guidelines", str(GUIDE)], True, False),
+    (["fmt", "--guidelines", str(GUIDE)], True, True),
+    (["describe", "--guidelines", str(GUIDE)], False, True),
+    (["manifest", "--dry-run"], False, True),
 ])
-def test_contracts_are_read_lazily_not_at_startup(command, reads, card_chart_fixture: Path):
+def test_contracts_are_read_lazily_not_at_startup(command, with_manifest, reads, tmp_path: Path):
     """docs/visuals.md says the contracts are read the first time something asks and cached, so
-    a command with no use for a visual type never reads them. inspect and check don't; describe
-    and manifest do (apply does too, and is covered everywhere else).
+    a command with no use for a visual type never reads them. inspect never does; check and fmt do
+    only when the report carries a Blueprint manifest (they compare against it, or refresh it after
+    writing); describe and manifest always do (so does apply, covered everywhere else).
 
-    A fresh interpreter, because this process has long since filled the cache, and clearing it
+    The first version of this test had no manifest case, so it passed on a report where check
+    reads nothing and the doc said check never reads contracts: wrong, and nothing noticed. A
+    fresh interpreter, because this process has long since filled the cache, and clearing it
     first would hide a load at import time, which is exactly what "not at startup" rules out."""
     import subprocess
     import sys
 
+    # A copy: `card_chart_fixture` is the committed fixture itself, and `apply` and `fmt` write.
+    shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
+    report = tmp_path / "proj" / "Fixture.Report"
+    if with_manifest:
+        spec_path = ROOT / "examples" / "sales-overview.yaml"
+        assert main(["apply", str(spec_path), "--report", str(report), "--guidelines", str(GUIDE)]) == 0
     code = ("import sys; from blueprint import cli, slots\n"
             "try: cli.main(sys.argv[1:])\nexcept SystemExit: pass\n"
             "print(slots.contracts.cache_info().misses)")
-    out = subprocess.run([sys.executable, "-c", code, command[0], "--report", str(card_chart_fixture),
+    out = subprocess.run([sys.executable, "-c", code, command[0], "--report", str(report),
                           *command[1:]], capture_output=True, text=True, cwd=ROOT, check=True)
     assert (int(out.stdout.strip().splitlines()[-1]) > 0) is reads
