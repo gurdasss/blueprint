@@ -21,7 +21,7 @@
 #   overview.yaml               layout: standard-dashboard
 #
 # ── You may not need to write one at all ─────────────────────────────
-# Six layouts ship with Blueprint. `bp describe` lists every one on your
+# Blueprint ships several layouts. `bp describe` lists every one on your
 # search path with its region counts — check that before writing a new
 # one. Write your own when none has the regions you need, or when your
 # canvas is a different size.

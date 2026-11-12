@@ -49,7 +49,8 @@ use what it lists.
 ## A first run that needs no editing
 
 Nothing here touches your own report. Copy a fixture, build a page in it,
-then look at what happened.
+then look at what happened. **Run these from the repository root**, since
+the paths are relative to it.
 
 ```bash
 cp -r fixtures/02-card-and-chart /tmp/my-report
@@ -67,8 +68,10 @@ bp apply examples/sales-overview.yaml --report /tmp/my-report \
 ```
 
 That creates a page `Sales Overview` with a header, a card and a column
-chart, on the `two-up` layout. Open `/tmp/my-report` in Power BI Desktop to
-see it.
+chart, on the `two-up` layout. Open the `.pbip` in Power BI Desktop to see
+it — and if you're running Blueprint under WSL, copy the folder somewhere
+Windows can reach first (`/mnt/c/...`), because Desktop can't open a path
+inside the WSL filesystem.
 
 Then:
 
@@ -91,25 +94,30 @@ bp fmt   --report /tmp/my-report --guidelines guidelines/example.yaml   # snap t
 bp check --report /tmp/my-report --guidelines guidelines/example.yaml
 ```
 
-Now `check` exits 0: no errors, and two warnings that no command can fix
-for you — the fixture's hand-built page is 1920×1080, and one of its
-visuals touches the page edge. Blueprint won't resize a page or move
-someone's visual to satisfy a rule; it tells you and leaves the decision
-with you.
+Now `check` exits 0, with two warnings left. Both are things neither
+command will do for you: nothing resizes a page, so the fixture's
+hand-built 1920×1080 page stays that size, and `fmt` only snaps edges to
+the grid — so the visual that was 10.29px from the left edge is now at 8,
+on the grid but still inside the 16px margin. Moving it out of the margin
+would be a judgement about someone's layout, so `check` reports it and
+leaves it to you.
 
 ---
 
 ## Your own report
 
+Keep your files in a directory of your own — they're yours, not
+Blueprint's, and nothing below writes into the Blueprint repo.
+
 ```bash
-# 0. Work on a copy until you trust it.
+# 0. Somewhere of your own, and a copy of the report until you trust it.
+mkdir -p ~/my-standard/layouts && cd ~/my-standard
 cp -r <your-pbip> /tmp/trial
 
-# 1. Copy the three templates.
-cp template/guidelines.template.yaml  my-guidelines.yaml
-mkdir -p layouts
-cp template/layout.template.yaml      layouts/standard-dashboard.yaml
-cp template/page.template.yaml        overview.yaml
+# 1. Copy the three templates (BP = where you cloned Blueprint).
+cp $BP/template/guidelines.template.yaml  my-guidelines.yaml
+cp $BP/template/layout.template.yaml      layouts/standard-dashboard.yaml
+cp $BP/template/page.template.yaml        overview.yaml
 
 # 2. Find out what you can actually write. Field names come from here.
 bp describe --report /tmp/trial --guidelines my-guidelines.yaml
@@ -137,39 +145,53 @@ and writes nothing if any one fails.
 
 ## Before you write a layout
 
-You may not need to. `bp describe` lists every layout on your search path
-with its region counts:
+You may not need to. Blueprint ships several, and `bp describe` lists every
+layout on your search path with its region counts — two lines of it, as an
+example of the shape:
 
 ```
 Layouts
-  dashboard-6: 1280x720; 1 header, 3 kpi-row, 3 main
   grid-2x3: 1280x720; 1 header, 6 main
-  kpi-row-plus-detail: 1280x720; 1 header, 4 kpi-row, 1 main
-  one-up: 1280x720; 1 header, 1 main
   standard-4-up (default): 1280x720; 1 header, 1 kpi-row, 2 main
-  two-up: 1280x720; 1 header, 2 main
 ```
 
-Six ship with Blueprint, all 1280×720. Write your own when none has the
-regions you need, or when your canvas is a different size — and read
-`layout.template.yaml` first, which works out the arithmetic.
+Match the counts against the visuals your spec needs, by role. Write your
+own when none of them has the regions you want, or when your canvas is a
+different size — and read `layout.template.yaml` first, which works out the
+arithmetic.
 
 ---
 
-## What Blueprint will not do
+## What `bp apply` will not do
 
 Knowing these saves time arguing with it:
 
 - **It never reflows.** Too many visuals for a layout's regions is an error,
   not a rearrangement. A region left empty is a gap, and it stays a gap.
 - **It never moves content between pages.**
-- **It never silently undoes a Desktop edit.** If you rebind a visual's
-  fields in Desktop and the spec disagrees, `apply` refuses and tells you to
-  pass `--overwrite-edits`.
 - **It never touches a visual you placed by hand**, or one marked
-  `blueprint: ignore`.
+  `blueprint: ignore`. (`bp fmt` is the exception: snapping to the grid is
+  its whole job, and it snaps every visual that isn't `blueprint: ignore`.)
 - **It doesn't delete.** A visual dropped from a spec is left on the page,
   with a warning.
+
+### What it *does* take back on a re-run
+
+The spec owns these, so a re-apply restores them. It reports each change,
+but it doesn't ask first:
+
+- **Position and size.** The layout owns them. Nudge a Blueprint visual in
+  Desktop and the next apply moves it back (`x 400 -> 16`).
+- **The header's text and style**, unless you edited the textbox into more
+  than the single run Blueprint wrote — then it warns and leaves it.
+- **Any option or sort the spec sets.** One the spec *doesn't* mention is
+  left to you.
+
+The one thing it guards is **field bindings**. Each Blueprint visual carries
+a fingerprint of what it last bound, so if you rebind fields in Desktop and
+the spec disagrees, `apply` refuses and names `--overwrite-edits`. So: put
+layout and bindings in the spec, and keep formatting Blueprint doesn't
+manage in Desktop.
 
 ---
 
@@ -181,9 +203,9 @@ The errors name the file and the key. A few that come up first:
 |---|---|
 | `layout '<name>' not found` | The layout file's name, or `layouts.search_path` in the guidelines. See snag 1 above. |
 | `no measure [X] in the semantic model` | The field name in the spec. `bp describe` lists the real ones. |
-| `two fields in Values would both be called 'X'` | Two entries in one slot whose display name is the same (e.g. a column and a measure both named `Amount`). Bind one of them. |
+| `two fields in <role> would both be called 'X'` | Two entries in one slot end up with the same display name — e.g. the same column listed twice in a table's `columns`. Bind one of them. |
 | `no free 'main' region left in layout` | Remove a visual, choose a layout with more regions, or set `region:` on one. |
-| `layout <name> doesn't fit the guidelines` | The layout's region coordinates: off the grid, inside the margin, or closer than the gutter. |
+| `layout '<name>' doesn't fit the guidelines` | The layout's region coordinates: off the grid, inside the margin, or closer than the gutter. |
 | `'<type>' is not a supported visual type` | The type name. The error lists all of them; `visuals.md` covers adding your own. |
 | `page '<name>' is built by spec '<id>'` | You renamed the spec file. Set `id:` back to the old name, as the error says. |
 | `unknown key <k>. Known here: …` | A typo in the guidelines. The core refuses unknown keys rather than ignoring them, and names the closest real one. |
