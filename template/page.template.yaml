@@ -5,11 +5,21 @@
 # intent — which visuals go on a page and what data they show — not
 # pixel coordinates.
 #
-# Usage:
-#   bp apply this-file.yaml --report <path> --guidelines <path>
+# Copy this file per page, e.g. `overview.yaml`. Then, before applying:
 #
-# Discover what you can write:
-#   bp describe --report <path> --guidelines <path> --json
+#   - Replace every field name below. `[Total Revenue]`, `Geography[Region]`
+#     and the rest are invented, to show the syntax. They are not in your
+#     model, and you get one error per field if you leave them.
+#   - Point `layout:` at a layout that exists. See `bp describe`.
+#
+# Discover what you can write (types, slots, options, layouts, and your
+# model's own fields):
+#   bp describe --report <path> --guidelines <path> [--json]
+#
+# Usage:
+#   bp apply this-file.yaml --report <path> --guidelines <path> [--dry-run]
+#
+# See template/README.md for the whole path from here to a built page.
 # ─────────────────────────────────────────────────────────────────────
 
 
@@ -25,6 +35,43 @@ layout: standard-dashboard
 
 # ── Visuals ──────────────────────────────────────────────────────────
 # An ordered list. Each visual fills the next free region of its role.
+#
+# ── How that decides where a visual lands ──────────────────────────
+#
+# Not top-to-bottom, and not left-to-right. Role first, then order
+# within that role:
+#
+#   1. Each visual has a role — its own `region:` if it sets one, else
+#      the role its type declares (`header` -> header, `kpi` ->
+#      kpi-row, every other type -> main).
+#   2. Each role is a separate queue. The Nth visual of a role, in the
+#      order written here, takes the Nth region of that role, in the
+#      order the layout file declares them.
+#   3. A `blueprint: ignore` visual is skipped and takes no region.
+#
+# So the order of this list only matters *within* one role. Listing a
+# card before a KPI does not put the card higher up the page. On the
+# shipped `dashboard-6` layout, this list:
+#
+#     header, card, kpi, table, kpi, kpi
+#
+# places like this — the card is second in the list and lands at the
+# bottom of the page, because its role is `main`:
+#
+#     header  -> header#1    x= 16 y= 16
+#     card    -> main#1      x= 16 y=272      <- 2nd listed, bottom row
+#     kpi     -> kpi-row#1   x= 16 y= 96      <- 3rd listed, top row
+#     table   -> main#2      x=440 y=272
+#     kpi     -> kpi-row#2   x=440 y= 96
+#     kpi     -> kpi-row#3   x=864 y= 96
+#
+# Reading left-to-right and top-to-bottom is a convention of the
+# shipped layouts, which declare their regions in that order. Nothing
+# in Blueprint looks at a region's x or y to decide what goes in it.
+#
+# Too many visuals of one role is an error naming the layout and its
+# region count — never a rearrangement. A region left over is a gap:
+# `bp apply` warns and names layouts that would fill every region.
 #
 # Required per visual:
 #   type     A Blueprint visual type (see `bp describe` for the list).
