@@ -2,6 +2,15 @@
 
 > Client-perspective-first redesign of Blueprint's input files.
 
+> **This is a historical record, not documentation.** It is the plan for the
+> v0.6 template rewrite, written before that work and annotated as each step
+> landed. It is kept because the *reasoning* is worth having — why step 2 was
+> dropped, what probe 29 settled, what the `--visuals` defect cost — not
+> because it describes the tool as it is. Several things it predicted did not
+> survive contact; each is marked **[superseded]** below, with what replaced
+> it. For how Blueprint works now, read `template/README.md`,
+> `docs/interactions.md` and `docs/visuals.md`.
+
 ---
 
 ## Goal
@@ -38,6 +47,15 @@ We design them **in this order**, because each one constrains the next.
 ---
 
 ## Core 20% summary
+
+> **[superseded in part]** This section is the target as first drawn. What
+> shipped differs in three ways: `page.title_region` is a core key too (the
+> snippet below predates it); named formats and pipe syntax were both
+> dropped in step 5, so the feature table below advertises two things that
+> do not exist; and the core is 18 visual types, not seven — step 4's
+> archive was reversed in v0.8.0. `guidelines.CORE_KEYS` is the real list,
+> and sweep tests in `tests/test_consistency.py` hold it to `defaults.yaml`
+> and to the client template.
 
 ### Core keys (guidelines)
 
@@ -77,17 +95,22 @@ layouts:
 
 ### Core features beyond guidelines
 
-| Feature | How it works |
-|---------|-------------|
-| Drill-down paths | Ordered list in a slot: `category: ["Country", "State", "City"]` |
-| Named data formats | `format: currency` / `whole_number` / `decimal` / `percentage` |
-| Inline aggregation | Pipe syntax: `"Table[Column] \| distinctcount"` |
-| Visual inheritance | `inherits: column` in visual YAML — reuse slots |
-| Model hierarchies | `"Table[Hierarchy]"` binds all levels automatically |
+| Feature | How it works | Shipped? |
+|---------|-------------|---|
+| Drill-down paths | Ordered list in a slot: `category: ["Country", "State", "City"]` | yes |
+| Named data formats | `format: currency` / `whole_number` / `decimal` / `percentage` | **no** — step 5 dropped the aliases; `format:` takes a Power BI format string, because Desktop writes the *locale's* currency symbol |
+| Inline aggregation | Pipe syntax: `"Table[Column] \| distinctcount"` | **no** — step 5 dropped it for `aggregate:` in the slot's long form; the pipe was a second language inside a string |
+| Visual inheritance | `inherits: column` in visual YAML — reuse slots | yes |
+| Model hierarchies | `"Table[Hierarchy]"` binds all levels automatically | yes, where a slot accepts one |
 
 ### Core visual types
 
 header, card, kpi, column, line, bar, table (7 types).
+
+> **[superseded]** The core is `slots.CORE_TYPES` — 18 probe-verified types.
+> The eight this step archived were promoted in batches, and `scatter`,
+> `multi-row-card` and `map` were added from probes 34 and 36. See step 4's
+> reversal note.
 
 ---
 
@@ -121,6 +144,15 @@ all (see "Layouts" below), and the page spec changes are small.
 | `manifest.py` | Builds manifest from model annotations. No guideline knowledge. |
 
 **14 modules, ~3,500 lines — zero changes needed.**
+
+> **[superseded]** Measured afterwards (`git diff v0.5.1 v0.6.0`), eight of
+> the fourteen were untouched and six were not: `pbir/render.py` (+68/-5,
+> the new binding shapes), `pbir/reader.py` (+8/-4), `pbir/theme.py`
+> (+7/-13), `manifest.py` (+6/-5), `grid.py` (+1/-1) and `model.py` (+1).
+> About 120 lines, so the estimate was right in spirit and wrong as
+> stated — "no guideline knowledge" predicted which modules were insulated
+> from the *schema*, not which would go untouched by the features that
+> landed with it.
 
 #### Minor adaptation (~80% compatible) — small targeted edits
 
@@ -157,7 +189,7 @@ built** — it is a later version, recorded in `docs/extensions.md`.
 
 | Module | Why it's unchanged |
 |--------|-------------------|
-| `layouts.py` | `parse()` keeps reading pixel regions. No `compute_regions()`. `place()`, `find()`, `available()`, `load()`, `conflicts()`, `unused()` already do their jobs. |
+| `layouts.py` | `parse()` keeps reading pixel regions. No `compute_regions()`. `place()`, `find()`, `available()`, `load()`, `conflicts()`, `unused()` already do their jobs. (Two lines did change: `place()` reads a contract's region role. `layouts.cramped()` arrived later still — see step 2.) |
 | `guidelines/layouts/*.yaml` | The six shipped layouts are already in the final format, already on the grid, already inside the margin. |
 | `tests/pinned-layouts/` | Probes 9/14/17/19 pinned `standard-4-up` at 120px; nothing has to be re-pinned. |
 
@@ -176,7 +208,7 @@ agent. `template/layout.template.yaml` carries the worked numbers.
 |-----------|--------|
 | `tests/test_guidelines.py` | Rewrite — tests the guideline schema directly. |
 | `tests/test_layouts.py` | Minor — field paths only (`g.spacing.*`). Layout parsing and placement tests stay. |
-| `tests/test_spec.py` | Add tests — pipe syntax, long-form slots, named formats. |
+| `tests/test_spec.py` | Add tests — pipe syntax, long-form slots, named formats. **[superseded]** No such file: the spec tests are `test_spec_errors.py` and `test_spec_identity.py`, and the long form landed in `test_aggregate_format.py`. Pipe syntax and named formats were dropped. |
 | `tests/test_validate.py` | Minor — remap field paths, typography role names. |
 | `tests/test_apply_golden.py` | Unchanged until steps 5-6. Guidelines and layout changes must not alter a byte. |
 | `tests/test_probe_replay.py` | Minor — probe 15's guidelines fixture only; layout fixtures untouched. |
@@ -341,6 +373,14 @@ legend position on the column and stacked charts, never on the clustered bar,
 so `bar: inherits: column` would ship an option no probe checked. Inheritance
 is for types a client adds. A test pins that reasoning.
 
+> **[superseded by probe 31]** `bar.yaml` is `inherits: column` now. The
+> reasoning above is why it couldn't be at the time, and it held until a
+> probe removed the obstacle: probe 31 wrote those shapes onto a clustered
+> bar, Desktop drew and kept them, and `bar` became identical to `column`
+> apart from the PBIR type. The test that pinned this was inverted with it
+> (`test_bar_inherits_column_now_that_a_probe_covers_its_options`). See
+> "Basic richness for the core seven" below.
+
 **Result:** 598 passed, `ruff` clean, demo byte-identical.
 
 ### Step 5 + 6 (done): one way to say more about a field
@@ -407,8 +447,9 @@ writes (steps 5 and 6 will; nothing before them does).
 
 **What it turned out to be.** The plan expected this step to regenerate golden output and fix
 fixtures still on the old schema. Neither was needed: each step fixed its own tests as it
-landed, and **golden output is byte-identical to `main` across the whole branch**
-(`git diff main -- tests/golden` is empty). So the sweep became a hunt for the drift this branch
+landed, and **golden output is byte-identical to `main` across the whole branch** apart from the
+manifest's own `blueprint_version` (`0.5.1` -> `0.6.0`), which every release moves. So the sweep
+became a hunt for the drift this branch
 kept producing — a key renamed in code but not in the file a client copies — plus the checks
 that make that drift fail loudly in future.
 
