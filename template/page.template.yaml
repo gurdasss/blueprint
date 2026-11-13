@@ -194,6 +194,10 @@ visuals:
 #   sort: { by: "[Total Revenue]", direction: descending }
 #   sort: { by: "Geography[Region]", direction: ascending }
 #
+#   To sort on a column the visual summarises, name the column; it
+#   follows the aggregate the visual shows (probe 41). Or say which:
+#   sort: { by: { field: "Sales[Amount]", aggregate: sum }, direction: descending }
+#
 #   One sort per visual, on a field the visual shows — that is what
 #   Desktop stores (probe 31). Leave `sort` out and Desktop's own
 #   default stands; a sort you set in Desktop is left alone too.

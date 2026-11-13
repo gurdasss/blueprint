@@ -831,6 +831,19 @@ after `bp apply` built verified shapes, drawn by Desktop, then kept through a re
 - A sort Blueprint writes from a spec is therefore an explicit one: the key without
   `isDefaultSort`.
 
+**Verified 2026-11-13, Desktop 2.159.1231.0, probe 41** (by hand; evidence
+`docs/probes/41-sort-by-aggregate.diff`, a financial PBIP built by `bp apply`, not fixture 02, so
+it is not replayed). The user set a table's sort to its `Sum of Profit` column, descending, and
+saved.
+
+- **A sort on an aggregated column is an `Aggregation` field**, not the bare column:
+  `sortDefinition.sort[0].field = {"Aggregation": {"Expression": {"Column": …}, "Function": 0}}`,
+  the same `Function` code as the projection it sorts on (here Sum = 0), and no `isDefaultSort`
+  (as probe 31). Before this, a spec `sort.by` on an aggregated column wrote the bare `Column`,
+  which no Desktop save produced.
+- Only Sum (code 0) was exercised. The other codes are the projection's (probe 29) and the sort
+  reuses them; a Desktop save of a sort on each is not yet in evidence.
+
 **Verified 2026-11-10, probe 29** (`scripts/probe_aggregate_format.py`; evidence
 `docs/probes/29-aggregate-format.diff`, fixture 02, all content invented). Each aggregation was
 chosen on a **fresh** field, because an aggregation changed in place keeps the field's old

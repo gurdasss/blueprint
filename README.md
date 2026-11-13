@@ -324,7 +324,10 @@ visuals:
 ```
 
 A visual's `sort: {by, direction}` writes the visual's own sort (probe 31). `by` must be a field
-the visual binds, because Desktop ignores any other. A spec with no `sort` leaves Desktop's sort,
+the visual binds, because Desktop ignores any other. To sort on an aggregated column write
+`by: Sales[Amount]` (it follows the visual's only aggregate of that column) or, explicitly,
+`by: {field: "Sales[Amount]", aggregate: sum}`; Desktop stores that as an `Aggregation` (probe 41).
+A spec with no `sort` leaves Desktop's sort,
 or the one a user set, alone. `labels` and `legend` options are available on every chart type:
 `column`, `bar`, `line`, `area` and the stacked charts, and since v0.9.0 `pie` and `donut` too.
 `scatter` and `map` take `legend` but **not** `labels` — Desktop deletes that object on those two

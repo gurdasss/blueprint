@@ -38,7 +38,9 @@ SPEC_SYNTAX = {
         "options": "optional mapping of option name -> value, from the type's options "
                    "(left out: Desktop's default)",
         "sort": "optional {by: <field>, direction: ascending|descending}; the field must be one "
-                "this visual binds. Left out: Desktop's own default sort (probe 31)",
+                "this visual binds. `by` may be a slot-style mapping {field, aggregate} to sort on an "
+                "aggregated column (a plain Table[Column] follows the visual's only aggregate of it; "
+                "probe 41). Left out: Desktop's own default sort (probe 31)",
         "blueprint": "`ignore`: leave this visual alone (it takes no region)",
     },
     "fields": {

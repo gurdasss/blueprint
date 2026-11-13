@@ -98,8 +98,12 @@ def _resolve(placements: list[layouts.Placement], report: Report, visual_dirs: t
             except semantic.ModelError as exc:
                 problems.append(f"visuals[{v.index}].sort.by: {exc}")
             else:
-                sorts[v.id] = (render.Binding(ref.kind, table, ref.name),
-                               spec.DIRECTIONS[v.sort.direction])
+                if ref.aggregate:  # probe 41: Desktop sorts on the Aggregation, same Function code
+                    target = render.Binding("aggregation", table, ref.name,
+                                            function=spec.AGGREGATIONS[ref.aggregate])
+                else:
+                    target = render.Binding(ref.kind, table, ref.name)
+                sorts[v.id] = (target, spec.DIRECTIONS[v.sort.direction])
         for role, fields in roles.items():
             names = [f.projection()["nativeQueryRef"] for f in fields]
             clashes = sorted({n for n in names if names.count(n) > 1})
