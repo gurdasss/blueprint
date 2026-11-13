@@ -270,10 +270,13 @@ def _sort(at: str, raw: Any, slots: dict[str, tuple[FieldRef, ...]],
         problems.append(f"{at}.sort: unknown keys {', '.join(sorted(map(str, unknown)))} "
                         "(a sort takes by, direction)")
         return None
-    by = parse_field(raw.get("by"))
+    by = parse_slot(raw["by"], f"{at}.sort.by", problems) if "by" in raw else None
     if by is None:
-        problems.append(f"{at}.sort.by: {raw.get('by')!r} is not a field reference "
-                        "(use Table[Column] or [Measure])")
+        if "by" not in raw:
+            problems.append(f"{at}.sort.by: a sort needs a field to sort by")
+        return None
+    if by.format is not None:
+        problems.append(f"{at}.sort.by: format has no meaning in a sort; drop it")
         return None
     direction = raw.get("direction")
     if not isinstance(direction, str) or direction not in DIRECTIONS:
@@ -281,12 +284,19 @@ def _sort(at: str, raw: Any, slots: dict[str, tuple[FieldRef, ...]],
                         f"{', '.join(sorted(DIRECTIONS))}")
         return None
     bound = [ref for refs in slots.values() for ref in refs]
-    if not any(ref.kind == by.kind and ref.name == by.name
-               and (by.table is None or ref.table == by.table) for ref in bound):
+    same = [ref for ref in bound if ref.kind == by.kind and ref.name == by.name
+            and (by.table is None or ref.table == by.table)]
+    exact = [ref for ref in same if ref.aggregate == by.aggregate]
+    if not exact and by.aggregate is None and len({ref.aggregate for ref in same}) == 1:
+        # `by: "T[Col]"` where the visual shows only an aggregate of that column: Desktop sorts on
+        # the aggregation (probe 41), so the sort follows what the visual draws.
+        exact = same[:1]
+    if not exact:
         names = ", ".join(str(ref) for ref in bound) or "nothing"
         problems.append(f"{at}.sort.by: {by} isn't bound by this visual (it binds {names}); "
                         "Desktop sorts on a field the visual shows")
         return None
+    by = replace(by, aggregate=exact[0].aggregate)
     return SortSpec(by, direction)
 
 

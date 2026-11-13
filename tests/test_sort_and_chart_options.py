@@ -125,3 +125,50 @@ def test_the_options_reach_the_visual(report: Path, vtype: str):
     objects = _visual(report, contracts()[vtype].visual_type)["visual"]["objects"]
     assert objects["labels"][0]["properties"]["show"]["expr"]["Literal"]["Value"] == "true"
     assert objects["legend"][0]["properties"]["position"]["expr"]["Literal"]["Value"] == "'Right'"
+
+
+TABLE = ("  - type: table\n    title: Detail\n    slots:\n      columns:\n"
+         "        - \"Sales[Country]\"\n"
+         "        - {field: \"Sales[Amount]\", aggregate: sum}\n")
+AGG_SORT = {"Aggregation": {"Expression": {"Column": {"Expression": {"SourceRef": {"Entity": "Sales"}},
+                                                      "Property": "Amount"}}, "Function": 0}}
+
+
+@pytest.mark.parametrize("by", ['"Sales[Amount]"', '{field: "Sales[Amount]", aggregate: sum}'])
+def test_a_sort_on_an_aggregated_column_writes_the_aggregation(report: Path, by: str):
+    """probe 41: Desktop stores a sort on `Sum of Profit` as an Aggregation field with the
+    projection's Function code, no isDefaultSort. A plain `by` follows the visual's only aggregate."""
+    assert _apply(report, TABLE + f"    sort: {{by: {by}, direction: descending}}\n") == 0
+    sort = _visual(report, "tableEx")["visual"]["query"]["sortDefinition"]
+    assert sort == {"sort": [{"field": AGG_SORT, "direction": "Descending"}]}
+
+
+def test_a_sort_on_the_wrong_aggregate_is_refused(report: Path):
+    before = {f: f.read_bytes() for f in report.rglob("*.json")}
+    assert _apply(report, TABLE + "    sort: {by: {field: \"Sales[Amount]\", aggregate: max},"
+                                  " direction: descending}\n") != 0
+    assert before == {f: f.read_bytes() for f in report.rglob("*.json")}  # refused, nothing written
+
+
+def test_reapplying_an_aggregated_sort_is_a_no_op(report: Path):
+    body = TABLE + "    sort: {by: \"Sales[Amount]\", direction: descending}\n"
+    assert _apply(report, body) == 0
+    before = {f: f.read_bytes() for f in report.rglob("*.json")}
+    assert _apply(report, body) == 0
+    assert before == {f: f.read_bytes() for f in report.rglob("*.json")}
+
+
+@pytest.mark.parametrize("aggregate, code", [("sum", 0), ("average", 1), ("distinctcount", 2),
+                                             ("min", 3), ("max", 4), ("count", 5)])
+def test_the_sort_carries_each_aggregates_function_code(report: Path, aggregate: str, code: int):
+    """probe 41: Count (5), Average (1), Max (4) and Count Distinct (2) each sorted with the same
+    Function as their projection; Sum (0) and Min (3) likewise."""
+    body = ("  - type: table\n    title: Detail\n    slots:\n      columns:\n"
+            "        - \"Sales[Country]\"\n"
+            f"        - {{field: \"Sales[Amount]\", aggregate: {aggregate}}}\n"
+            "    sort: {by: \"Sales[Amount]\", direction: descending}\n")
+    assert _apply(report, body) == 0
+    visual = _visual(report, "tableEx")["visual"]["query"]
+    [entry] = visual["sortDefinition"]["sort"]
+    assert entry["field"]["Aggregation"]["Function"] == code
+    assert entry["field"] == visual["queryState"]["Values"]["projections"][1]["field"]
