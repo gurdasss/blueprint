@@ -552,8 +552,9 @@ layouts:
 The core file is small on purpose: `version`, `name`, `canvas` (width and height), `spacing`
 (`grid`, `margin`, `gutter`), `page`, `palette`, `typography` (`page_title`, `visual_title`,
 `body`) and `layouts`. Rule severities are fixed in code. `palette` also takes optional sentiment
-colours, `good`, `neutral` and `bad` (hex): `bp theme` writes them as the theme's own keys, which
-a KPI's indicator draws (probe 42), and `bp check` compares them with the theme. Everything else
+colours, `good`, `neutral` and `bad` (hex): `bp theme` writes them as the theme's own keys, a KPI
+draws `good` at or above its goal and `bad` below it (probes 42, 43; no probe has yet seen what
+draws `neutral`), and `bp check` compares them with the theme. Everything else
 is opt-in under `extensions:`:
 
 ```yaml
