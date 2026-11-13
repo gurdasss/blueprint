@@ -905,6 +905,42 @@ hand.
   formatting. Blueprint still writes the key (Desktop keeps it and shows it in the Customize
   dialog, probe 42), so a client's `neutral` is stored, but no probe has yet shown what reads it.
 
+**Verified 2026-11-13, Desktop 2.159.1231.0, probe 44** (`scripts/probe_theme_divergent.py`;
+evidence `docs/probes/44-divergent-colors.diff`; the financial demo PBIP, not fixture 02, so not
+replayed; by hand, the theme edits are candidates; bridge captures local only). Divergent colours:
+the theme keys `minimum`, `center`, `maximum` (Fluent2: `#FCE4D6`, `#FAFAFA`, `#D4EDFC`; `null`
+`#FF7F48` is a fourth key for missing values, **not** probed).
+
+- **Desktop reads the three keys from a custom theme** and shows them in *Customize current theme*
+  under "Divergent colors" (Minimum / Center / Maximum), as written, upper-case hex. The
+  theme file was not rewritten by a save.
+- **A new gradient pre-fills its swatches from the theme.** With set A in the theme
+  (`#6A00FF`, `#00E5D8`, `#FF5E00`), a conditional-format gradient's dialog (Cell elements ->
+  Background color -> fx -> Gradient) showed Lowest `#6A00FF` and Highest `#FF5E00`, and with
+  "Add a middle color" ticked Middle `#00E5D8`, read by the user before touching anything. After
+  the theme was swapped to set B and Desktop reloaded, a new gradient dialog (cancelled, not
+  saved) showed Lowest `#FF00C8`, Middle `#B7FF00`, Highest `#0030FF`.
+- **Desktop stores the colours as hex literals, not a theme reference.** Per table column,
+  `visual.objects.values[]` has one entry with `properties.backColor.solid.color.expr.FillRule`
+  `{Input, FillRule}`, `Input` the field as in the projection (here `Aggregation` of the
+  `financials` column, `Function` 0), and `selector = {"data": [{"dataViewWildcard":
+  {"matchingOption": 1}}], "metadata": "<the projection's queryRef>"}`. The two shapes:
+  - two colours: `FillRule.linearGradient2 = {min: {color: Literal "'#6A00FF'"}, max: {color:
+    Literal "'#FF5E00'"}, nullColoringStrategy: {strategy: Literal "'asZero'"}}`;
+  - with a middle colour: `linearGradient3` with `min`, `mid`, `max` (the key is `mid`, not
+    `center`) and the same `nullColoringStrategy`.
+  Desktop also wrote no `min`/`max` number: the gradient runs over the column's own lowest and
+  highest value (the table drew violet at the lowest cell and orange at the highest).
+- **So the theme only feeds the defaults of a rule made afterwards.** After the swap to set B and
+  a full redraw (the first capture after the reload was blank; wait, then capture again) both
+  saved gradients still drew set A. Their colours are fixed in the visual: changing the theme's
+  divergent colours does not recolour a conditional format that already exists.
+- `bp check` doesn't look inside the gradient: the page passes with the note "2 colour
+  expression(s) not checked".
+- **Not probed:** `null`, a rules-based or field-value conditional format (also stored in
+  `objects`, probably), data bars, and whether a gradient with an explicit number (Lowest value:
+  Number) keeps the same shape.
+
 **Verified 2026-11-10, probe 29** (`scripts/probe_aggregate_format.py`; evidence
 `docs/probes/29-aggregate-format.diff`, fixture 02, all content invented). Each aggregation was
 chosen on a **fresh** field, because an aggregation changed in place keeps the field's old

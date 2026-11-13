@@ -1,0 +1,210 @@
+# Probe 44: divergent colours (theme minimum/center/maximum) and conditional-formatting gradients. By hand, on
+# probe 43's report (the financial demo PBIP, not fixture 02, so not replayed). The candidate theme is
+# blueprint-theme.json with minimum/center/maximum added (set A: #6A00FF, #00E5D8, #FF5E00). The user read
+# Customize theme (Divergent colors = set A) and, before touching anything, each gradient dialog's swatches:
+# Lowest #6A00FF, Highest #FF5E00 (two colours), and with the middle colour ticked Middle #00E5D8. Desktop's
+# save stored them as hex literals in the visual (below). The theme was then swapped to set B (#FF00C8,
+# #B7FF00, #0030FF) and reloaded: the two saved gradients still drew set A, the Customize dialog showed set B,
+# and a new (cancelled, unsaved) gradient dialog pre-filled set B. Not replayed.
+
+######## probe 44 candidate: set A divergent colours added to blueprint-theme.json
+
+diff --git a/financial.Report/StaticResources/RegisteredResources/blueprint-theme.json b/financial.Report/StaticResources/RegisteredResources/blueprint-theme.json
+index 898a670..dcdfcd8 100644
+--- a/financial.Report/StaticResources/RegisteredResources/blueprint-theme.json
++++ b/financial.Report/StaticResources/RegisteredResources/blueprint-theme.json
+@@ -12,6 +12,9 @@
+   "good": "#2E9E4F",
+   "neutral": "#F0C419",
+   "bad": "#B3124B",
++  "minimum": "#6A00FF",
++  "center": "#00E5D8",
++  "maximum": "#FF5E00",
+   "textClasses": {
+     "callout": {
+       "fontFace": "Georgia",
+
+######## gradients saved (Sum of Sales two colours, Sum of Profit with a middle colour)
+
+diff --git a/financial.Report/definition/pages/f369533433acb79be66c/visuals/d4a1868bbbde7120b6a9/visual.json b/financial.Report/definition/pages/f369533433acb79be66c/visuals/d4a1868bbbde7120b6a9/visual.json
+index 13f0c1c..f0f49ca 100644
+--- a/financial.Report/definition/pages/f369533433acb79be66c/visuals/d4a1868bbbde7120b6a9/visual.json
++++ b/financial.Report/definition/pages/f369533433acb79be66c/visuals/d4a1868bbbde7120b6a9/visual.json
+@@ -87,6 +87,145 @@
+         }
+       }
+     },
++    "objects": {
++      "values": [
++        {
++          "properties": {
++            "backColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "FillRule": {
++                      "Input": {
++                        "Aggregation": {
++                          "Expression": {
++                            "Column": {
++                              "Expression": {
++                                "SourceRef": {
++                                  "Entity": "financials"
++                                }
++                              },
++                              "Property": "Sales"
++                            }
++                          },
++                          "Function": 0
++                        }
++                      },
++                      "FillRule": {
++                        "linearGradient2": {
++                          "min": {
++                            "color": {
++                              "Literal": {
++                                "Value": "'#6A00FF'"
++                              }
++                            }
++                          },
++                          "max": {
++                            "color": {
++                              "Literal": {
++                                "Value": "'#FF5E00'"
++                              }
++                            }
++                          },
++                          "nullColoringStrategy": {
++                            "strategy": {
++                              "Literal": {
++                                "Value": "'asZero'"
++                              }
++                            }
++                          }
++                        }
++                      }
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "data": [
++              {
++                "dataViewWildcard": {
++                  "matchingOption": 1
++                }
++              }
++            ],
++            "metadata": "Sum(financials.Sales)"
++          }
++        },
++        {
++          "properties": {
++            "backColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "FillRule": {
++                      "Input": {
++                        "Aggregation": {
++                          "Expression": {
++                            "Column": {
++                              "Expression": {
++                                "SourceRef": {
++                                  "Entity": "financials"
++                                }
++                              },
++                              "Property": "Profit"
++                            }
++                          },
++                          "Function": 0
++                        }
++                      },
++                      "FillRule": {
++                        "linearGradient3": {
++                          "min": {
++                            "color": {
++                              "Literal": {
++                                "Value": "'#6A00FF'"
++                              }
++                            }
++                          },
++                          "mid": {
++                            "color": {
++                              "Literal": {
++                                "Value": "'#00E5D8'"
++                              }
++                            }
++                          },
++                          "max": {
++                            "color": {
++                              "Literal": {
++                                "Value": "'#FF5E00'"
++                              }
++                            }
++                          },
++                          "nullColoringStrategy": {
++                            "strategy": {
++                              "Literal": {
++                                "Value": "'asZero'"
++                              }
++                            }
++                          }
++                        }
++                      }
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "data": [
++              {
++                "dataViewWildcard": {
++                  "matchingOption": 1
++                }
++              }
++            ],
++            "metadata": "Sum(financials.Profit)"
++          }
++        }
++      ]
++    },
+     "visualContainerObjects": {
+       "title": [
+         {
+diff --git a/financial.Report/definition/pages/pages.json b/financial.Report/definition/pages/pages.json
+index 7d22545..426ba24 100644
+--- a/financial.Report/definition/pages/pages.json
++++ b/financial.Report/definition/pages/pages.json
+@@ -7,5 +7,5 @@
+     "1ddb604a16aec49f1e98",
+     "c427668b7b063cd17719"
+   ],
+-  "activePageName": "1ddb604a16aec49f1e98"
++  "activePageName": "f369533433acb79be66c"
+ }
+\ No newline at end of file
+
+######## probe 44 candidate: swap theme to set B
+
+diff --git a/financial.Report/StaticResources/RegisteredResources/blueprint-theme.json b/financial.Report/StaticResources/RegisteredResources/blueprint-theme.json
+index dcdfcd8..cf36f10 100644
+--- a/financial.Report/StaticResources/RegisteredResources/blueprint-theme.json
++++ b/financial.Report/StaticResources/RegisteredResources/blueprint-theme.json
+@@ -12,9 +12,9 @@
+   "good": "#2E9E4F",
+   "neutral": "#F0C419",
+   "bad": "#B3124B",
+-  "minimum": "#6A00FF",
+-  "center": "#00E5D8",
+-  "maximum": "#FF5E00",
++  "minimum": "#FF00C8",
++  "center": "#B7FF00",
++  "maximum": "#0030FF",
+   "textClasses": {
+     "callout": {
+       "fontFace": "Georgia",
