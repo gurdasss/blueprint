@@ -1038,7 +1038,8 @@ original-resolution bridge captures, local only). `ThemeDataColor {ColorId, Perc
   {"ThemeDataColor": {"ColorId": 3, "Percent": 0.4}}}}}}, "selector": {"id": "default"}}`, and
   for one card Desktop also wrote a first entry `{"properties": {"show": {"expr": {"Literal":
   {"Value": "true"}}}}}`. Desktop also wrote `visualContainerObjects.background[0].properties.
-  show = false` on each card it edited, and bumped its `$schema` 2.13.0 -> 2.14.0.
+  show = false` on the first two cards it edited (not on the last two, which already carried a
+  hand-written fill), and bumped each edited file's `$schema` 2.13.0 -> 2.14.0.
 - The base theme's 24 `ThemeDataColor` references now read: `ColorId 0` (pie/donut `borderColor`,
   slicer fills) is white; `ColorId 2` shaded -0.2, -0.4 and -0.6 (button fills, accent bars) is the
   **first data colour** darkened, not a grey.
