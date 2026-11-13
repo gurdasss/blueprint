@@ -79,7 +79,7 @@ SPECS = {
         f'{{ type: donut, id: a-donut, title: Donut, options: {{ legend: bottom }}, slots: {{ category: {COUNTRY}, value: {SALES} }} }}',
         f'{{ type: scatter, id: a-scatter, title: Scatter, slots: {{ category: {COUNTRY}, x: {SALES}, y: {PROFIT} }} }}',
         f'{{ type: multi-row-card, id: a-mrc, title: Multi-row card, slots: {{ fields: [{COUNTRY}, {SALES}, {PROFIT}] }} }}',
-        f'{{ type: kpi, id: a-kpi, title: KPI, slots: {{ value: {SALES}, trend: {DATE}, target: {GROSS} }} }}']),
+        f'{{ type: kpi, id: a-kpi, title: KPI, region: main, slots: {{ value: {SALES}, trend: {DATE}, target: {GROSS} }} }}']),
     "gallery-b.yaml": page("Gallery B", "gallery-6", [
         f'{{ type: stacked-column, id: b-stacked-col, title: Stacked column, slots: {{ category: {COUNTRY}, value: {SALES}, legend: {SEGMENT} }} }}',
         f'{{ type: stacked-column-100, id: b-stacked-100, title: 100% stacked column, slots: {{ category: {COUNTRY}, value: {SALES}, legend: {SEGMENT} }} }}',
