@@ -880,8 +880,17 @@ the core with no opt-in, the chart types take the same `labels`/`legend` options
 `donut`, `legend` on `scatter` and `map`, and a model hierarchy in a matrix's rows and a slicer's
 field. Verified as candidates in probes 37-39 and accepted from `bp apply` in probe 40 (done).
 
-**Next, each needing a Desktop probe first:** axis titles, conditional formatting, a matrix's
-subtotals, and a hierarchy in a matrix's *columns*.
+**v0.10 — the rest of the palette.** Sentiment (`good`/`neutral`/`bad`), divergent
+(`minimum`/`center`/`maximum`) and structural (`second_level` ... `disabled_text`) colours in the
+guidelines, written to the theme; a table column's conditional-format `gradient: 2|3` built from
+the divergent colours. Verified as candidates in probes 42, 44 and 46 and accepted from Blueprint's
+own output in probes 43, 45 and 49 (done).
+
+**Next, each needing a Desktop probe first:** axis titles, the rest of conditional formatting
+(rules, data bars), a matrix's subtotals, and a hierarchy in a matrix's *columns*. A survey of the
+three sample reports (78 visuals) found no other gap worth a contract: Blueprint builds 91% of the
+visuals in them, and the commonest `objects` key it can't express, `categoryAxis.axisType`, is one
+Desktop writes for itself.
 
 **Later, in no particular order.** Bookmarks. Relative layout positioning. A `bp new` scaffold.
 Theme file generation (done: `bp theme`). CI action for `bp check` (done: [In CI](#in-ci)).

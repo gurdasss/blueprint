@@ -4,6 +4,58 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
+## v0.10.0 (2026-11-13)
+
+The rest of a Power BI theme's colour palette, and the one piece of conditional formatting a
+real-report survey justified. Every fact was verified in Desktop as a candidate and then accepted
+from Blueprint's own output (probes 42-51).
+
+- **Sentiment colours: `palette.good`, `palette.neutral`, `palette.bad`.** `bp theme` writes them
+  as the theme's own top-level keys. A KPI draws `good` at or **at-or-above** its goal and `bad`
+  below it; a KPI with no goal draws no sentiment colour at all. **Nothing was ever seen to draw
+  `neutral`** — it is written and kept, but what reads it is still open (probes 42, 43).
+- **Divergent colours: `palette.minimum`, `palette.center`, `palette.maximum`.** They go to the
+  theme, which makes them the defaults of every conditional-format gradient a person adds in
+  Desktop. A **saved** gradient stores plain hex and does not follow a later theme change, so a
+  theme key alone can only change future gradients (probe 44).
+- **A table column can ask for a gradient**: `{field: ..., aggregate: sum, gradient: 2|3}` writes a
+  `FillRule` background built from those three colours, so a client's colours land in the visual
+  itself. Re-applying after the guidelines change rewrites the stops in place; a gradient the spec
+  stops asking for is left alone, the user's other `values` entries survive, and rebinding a field
+  drops the gradient that named it. Declared per contract (`gradient: true` on a table's `columns`)
+  and verified from `bp apply` in probe 45.
+- **Structural colours: `palette.second_level`, `third_level`, `fourth_level`, `disabled_text`**,
+  named as Power BI's *Customize current theme* dialog labels them (first-level is `palette.text`,
+  background is `palette.background`). Measured, not guessed: `second_level` paints the secondary
+  grey text, `third_level` a dropdown slicer's border, `fourth_level` a multi-row card's accent
+  bars, `disabled_text` the Filters pane edge (probes 46, 48, 49).
+- **`bp check` compares all of these with the report's theme** and names the client's key, not the
+  theme's internal one. The colours also count as approved colours for the palette rule. A
+  gradient's own colours inside a visual are still an unchecked "colour expression".
+
+**Deliberately not added**, each because a probe showed there was nothing to promise: the five
+structural keys `backgroundNeutral`, `foregroundNeutralLight`, `backgroundDark`, `tableAccent` and
+`shapeStroke`. A gallery of every visual type Blueprint builds showed **zero** pixels of them, and
+probe 50 then ruled out hover, selection, focus, a table style preset, an inserted shape and an
+inserted button too.
+
+**Format facts settled along the way**, now in `blueprint/pbir/schema.md`:
+
+- `ThemeDataColor.ColorId`, open since probe 02, is resolved: **0 is a fixed white and 1 a fixed
+  black** (not the theme's background and foreground), `n >= 2` is `dataColors[n-2]` for the
+  **first eight** data colours only, and `Percent` is a signed RGB tint (probe 47).
+- Power BI's **modern** structural names (`secondLevelElements`, ...) are read by Desktop, but it
+  writes the **legacy** names back and the legacy value wins when a file holds both — which is why
+  Blueprint writes the legacy form (probe 51).
+
+**New probe tooling**, both standard-library or built-in only:
+
+- `scripts/probe_pixels.py` — a PNG reader that samples a pixel or counts a colour across a
+  capture, so "what does this theme key paint?" is answered by measurement rather than by eye.
+- `scripts/hover_capture.ps1` — moves the real cursor, optionally clicks or sends Tab, then
+  photographs the screen, because the Desktop bridge's page screenshot can never show a hover,
+  selection or focus state.
+
 ## v0.9.0 (2026-11-11)
 
 The options and hierarchy wells the core was still missing, each verified in Desktop as a
