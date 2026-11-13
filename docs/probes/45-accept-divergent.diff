@@ -1,0 +1,90 @@
+# Probe 45: acceptance for palette.minimum|center|maximum and a table column's gradient:. Built entirely by
+# Blueprint on the financial demo PBIP (probe 43's report; not fixture 02, so not replayed):
+# `bp theme` with guidelines.yaml (set C: #8E0152, #FFFFBF, #276419) and `bp apply` of specs/gradients.yaml, a
+# table with Sum of Sales gradient: 2 and Sum of Profit gradient: 3. Desktop drew both as probe 44's hand-built
+# gradients, showed set C under Divergent colors, and its save changed ONLY pages.json activePageName (no visual,
+# no theme, no $schema bump). Re-running theme and apply: No changes; bp check 0/0. Then guidelines.yaml was
+# edited to set D (#2166AC, #FDDBC7, #B2182B) and Blueprint re-applied: both gradients rewritten in place (the
+# five colour lines below) and the theme's three values; Desktop reloaded and drew set D. A further Ctrl+S
+# wrote nothing. Desktop's .pbi/editorSettings.json (a new local file) is left out.
+
+######## desktop open and save (set C)
+
+diff --git a/financial.Report/definition/pages/pages.json b/financial.Report/definition/pages/pages.json
+index 1194972..8b1b530 100644
+--- a/financial.Report/definition/pages/pages.json
++++ b/financial.Report/definition/pages/pages.json
+@@ -8,5 +8,5 @@
+     "c427668b7b063cd17719",
+     "ef22f9d6f6ddf0a5e600"
+   ],
+-  "activePageName": "1ddb604a16aec49f1e98"
++  "activePageName": "ef22f9d6f6ddf0a5e600"
+ }
+\ No newline at end of file
+
+######## blueprint: theme and apply with set D (guidelines.yaml edited)
+
+diff --git a/financial.Report/StaticResources/RegisteredResources/blueprint-theme.json b/financial.Report/StaticResources/RegisteredResources/blueprint-theme.json
+index c45dcfe..de6fd11 100644
+--- a/financial.Report/StaticResources/RegisteredResources/blueprint-theme.json
++++ b/financial.Report/StaticResources/RegisteredResources/blueprint-theme.json
+@@ -12,9 +12,9 @@
+   "good": "#2E9E4F",
+   "neutral": "#F0C419",
+   "bad": "#B3124B",
+-  "minimum": "#8E0152",
+-  "center": "#FFFFBF",
+-  "maximum": "#276419",
++  "minimum": "#2166AC",
++  "center": "#FDDBC7",
++  "maximum": "#B2182B",
+   "textClasses": {
+     "callout": {
+       "fontFace": "Georgia",
+diff --git a/financial.Report/definition/pages/ef22f9d6f6ddf0a5e600/visuals/96bf22b37b166089c103/visual.json b/financial.Report/definition/pages/ef22f9d6f6ddf0a5e600/visuals/96bf22b37b166089c103/visual.json
+index 59b3a13..f0f53f6 100644
+--- a/financial.Report/definition/pages/ef22f9d6f6ddf0a5e600/visuals/96bf22b37b166089c103/visual.json
++++ b/financial.Report/definition/pages/ef22f9d6f6ddf0a5e600/visuals/96bf22b37b166089c103/visual.json
+@@ -114,14 +114,14 @@
+                           "min": {
+                             "color": {
+                               "Literal": {
+-                                "Value": "'#8E0152'"
++                                "Value": "'#2166AC'"
+                               }
+                             }
+                           },
+                           "max": {
+                             "color": {
+                               "Literal": {
+-                                "Value": "'#276419'"
++                                "Value": "'#B2182B'"
+                               }
+                             }
+                           },
+@@ -178,21 +178,21 @@
+                           "min": {
+                             "color": {
+                               "Literal": {
+-                                "Value": "'#8E0152'"
++                                "Value": "'#2166AC'"
+                               }
+                             }
+                           },
+                           "mid": {
+                             "color": {
+                               "Literal": {
+-                                "Value": "'#FFFFBF'"
++                                "Value": "'#FDDBC7'"
+                               }
+                             }
+                           },
+                           "max": {
+                             "color": {
+                               "Literal": {
+-                                "Value": "'#276419'"
++                                "Value": "'#B2182B'"
+                               }
+                             }
+                           },

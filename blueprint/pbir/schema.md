@@ -941,6 +941,30 @@ the theme keys `minimum`, `center`, `maximum` (Fluent2: `#FCE4D6`, `#FAFAFA`, `#
   `objects`, probably), data bars, and whether a gradient with an explicit number (Lowest value:
   Number) keeps the same shape.
 
+**Verified 2026-11-13, Desktop 2.159.1231.0, probe 45** (`scripts/probe_accept_divergent.py`;
+evidence `docs/probes/45-accept-divergent.diff`; the financial demo PBIP, not fixture 02, so not
+replayed; bridge captures local only). The acceptance half of probe 44: everything was written by
+Blueprint (`bp theme` with `palette.minimum|center|maximum`, `bp apply` of a table with `{aggregate:
+sum, gradient: 2}` and `{aggregate: sum, gradient: 3}`), nothing by hand.
+
+- **Desktop draws and keeps what Blueprint wrote.** The two shapes (`linearGradient2` with `min`,
+  `max`; `linearGradient3` with `min`, `mid`, `max`; hex literals; `nullColoringStrategy asZero`;
+  selector `dataViewWildcard` + the projection's `queryRef`) opened with no error and drew as probe
+  44's hand-built gradients did, and the Customize dialog showed the three divergent colours.
+  Ctrl+S changed **only** `pages.json` `activePageName`: no `visual.json` (not even a `$schema`
+  bump), no theme file. Re-running `bp theme` and `bp apply`: No changes. `bp check`: 0 errors,
+  0 warnings, the note "2 colour expression(s) not checked".
+- **Recolouring from the guidelines works on Blueprint's own gradients.** Editing the three
+  palette colours and re-running `bp theme` and `bp apply` rewrote the two entries **in place**
+  (the five colour lines and the theme's three values changed, nothing appended), and after a
+  bridge reload the table drew the new colours. This is the difference from probe 44, where a
+  theme change alone left a saved gradient untouched.
+- A Ctrl+S after that wrote nothing: Desktop treated the reloaded state as unmodified, so this
+  step shows no more than "Desktop didn't rewrite it".
+- **Not probed:** a gradient on a plain (unaggregated) column or on a model measure (the spec
+  refuses both: probe 44 saw an aggregated column only), a gradient on a matrix's values, a rules
+  or field-value conditional format, data bars, and `null`.
+
 **Verified 2026-11-10, probe 29** (`scripts/probe_aggregate_format.py`; evidence
 `docs/probes/29-aggregate-format.diff`, fixture 02, all content invented). Each aggregation was
 chosen on a **fresh** field, because an aggregation changed in place keeps the field's old
