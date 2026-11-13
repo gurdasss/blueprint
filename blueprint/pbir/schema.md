@@ -1069,8 +1069,8 @@ with the bounding box of the near matches:
   either page, though the pages hold a table, a matrix, a list slicer, every chart type above and a
   KPI. Static captures only: hover, selection, focus, disabled and error states, and visual types
   Blueprint doesn't build (buttons, shapes, images, text boxes) were not looked at, so this is
-  "not seen", never "unused". The list slicer's checkboxes, the table and matrix grid and rules, and
-  the chart axes and gridlines do not use any of the five.
+  "not seen", never "unused". In those static states the list slicer's checkboxes, the table and matrix
+  grids and rules, and the chart axes and gridlines show none of the five.
 - Predictions: H1 held (two more keys paint). H2's guesses were wrong in detail: the slicer border is
   `backgroundLight`, not `backgroundNeutral` or `shapeStroke`, and the table and matrix grids take no
   `tableAccent`. H4 (a reload changes no `visual.json`) was not retested: the report was freshly
