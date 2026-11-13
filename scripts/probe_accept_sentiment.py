@@ -30,6 +30,13 @@ PREDICTIONS (written before the probe is opened):
      custom theme and Desktop writes no second theme file. No `visual.json` gains an `objects`
      entry for a colour. At most Desktop raises a file's `$schema` 2.13.0 -> 2.14.0, adds its
      usual condition-less auto `filterConfig` and rewrites `pages.json` `activePageName`.
+ N1  (follow-up, written after B1-B4's save and before the next reload; B3 was wrong: the level
+     KPI drew good, so neutral is still unseen.) A KPI with **no goal** (`specs/no-goal.yaml`, a
+     page of its own because trio-focus has three KPI regions and apply never reflows) is the
+     candidate for neutral. Prediction: its indicator draws neutral `#F0C419`. Low confidence:
+     it may draw no sentiment colour (the theme's foreground) or good. If neither the no-goal
+     KPI nor anything else here draws yellow, `neutral` is still open, and a waterfall's total
+     bar is the next candidate (needs a contract and its own probe).
  B5  Re-running `bp theme` and `bp apply` on the saved report changes nothing but the manifest,
      and `bp check` with the same guidelines has no `palette` finding about the sentiment colours.
 
