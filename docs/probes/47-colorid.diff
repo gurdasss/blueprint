@@ -1,0 +1,732 @@
+# Probe 47: what ThemeDataColor ColorId and Percent mean. By hand on probe 46's final report (the financial demo PBIP;
+# not fixture 02, so not replayed). Blueprint built the page Swatches (14 cards, specs/swatches.yaml); the user picked
+# cells in Desktop's own Theme colors grid (10 columns: white, black, then Theme color 1-8, i.e. dataColors[0..7];
+# 6 rows) for the cards' own fill, so Desktop wrote the shape; I then hand-wrote ThemeDataColor numbers into the same
+# shape (the two candidate sections) to reach ColorId 0/1 (not reachable in the picker) and the range's end.
+# Card fills were sampled in the original-resolution captures (local only): see schema.md. The card titles name
+# the picker cell they were MEANT for; the user picked other cells for R1 C1 and R1 C2, and the saved JSON is the
+# record. Not replayed.
+
+######## desktop: R1 C1 picked Theme color 2, 40% lighter (the card's own fill), saved
+
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/c0de4b49f83adca89cdd/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/c0de4b49f83adca89cdd/visual.json
+index a21a039..8b1b43c 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/c0de4b49f83adca89cdd/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/c0de4b49f83adca89cdd/visual.json
+@@ -1,5 +1,5 @@
+ {
+-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+   "name": "c0de4b49f83adca89cdd",
+   "position": {
+     "x": 24,
+@@ -38,6 +38,29 @@
+         }
+       }
+     },
++    "objects": {
++      "fillCustom": [
++        {
++          "properties": {
++            "fillColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 3,
++                      "Percent": 0.4
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
++      ]
++    },
+     "visualContainerObjects": {
+       "title": [
+         {
+@@ -58,6 +81,19 @@
+             }
+           }
+         }
++      ],
++      "background": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "false"
++                }
++              }
++            }
++          }
++        }
+       ]
+     }
+   },
+diff --git a/financial.Report/definition/pages/pages.json b/financial.Report/definition/pages/pages.json
+index 3ae9a54..18c3d7a 100644
+--- a/financial.Report/definition/pages/pages.json
++++ b/financial.Report/definition/pages/pages.json
+@@ -9,5 +9,5 @@
+     "ef22f9d6f6ddf0a5e600",
+     "a1e403236989a4494a64"
+   ],
+-  "activePageName": "ef22f9d6f6ddf0a5e600"
++  "activePageName": "a1e403236989a4494a64"
+ }
+\ No newline at end of file
+
+######## desktop: R1 C2 picked Theme color 7, 20% lighter, saved
+
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/54acb0043b961b26665b/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/54acb0043b961b26665b/visual.json
+index 0627bdc..b1eb3ad 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/54acb0043b961b26665b/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/54acb0043b961b26665b/visual.json
+@@ -1,5 +1,5 @@
+ {
+-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+   "name": "54acb0043b961b26665b",
+   "position": {
+     "x": 200,
+@@ -38,6 +38,40 @@
+         }
+       }
+     },
++    "objects": {
++      "fillCustom": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            }
++          }
++        },
++        {
++          "properties": {
++            "fillColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 8,
++                      "Percent": 0.2
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
++      ]
++    },
+     "visualContainerObjects": {
+       "title": [
+         {
+@@ -58,6 +92,19 @@
+             }
+           }
+         }
++      ],
++      "background": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "false"
++                }
++              }
++            }
++          }
++        }
+       ]
+     }
+   },
+
+######## probe 47 candidate: ThemeDataColor ColorId 0/1/2/11/12 and negative Percent written by hand
+
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/3cf36bcaa11a1c83ad9f/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/3cf36bcaa11a1c83ad9f/visual.json
+index 159678c..55d8ab0 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/3cf36bcaa11a1c83ad9f/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/3cf36bcaa11a1c83ad9f/visual.json
+@@ -59,6 +59,29 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "fillCustom": [
++        {
++          "properties": {
++            "fillColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 12,
++                      "Percent": 0
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/5206ba1792e973a4f555/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/5206ba1792e973a4f555/visual.json
+index 63b9ccd..b48265c 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/5206ba1792e973a4f555/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/5206ba1792e973a4f555/visual.json
+@@ -59,6 +59,29 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "fillCustom": [
++        {
++          "properties": {
++            "fillColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 0,
++                      "Percent": 0.5
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/6307400708b39c80bd6d/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/6307400708b39c80bd6d/visual.json
+index 00df773..1dfce73 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/6307400708b39c80bd6d/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/6307400708b39c80bd6d/visual.json
+@@ -59,6 +59,29 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "fillCustom": [
++        {
++          "properties": {
++            "fillColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 3,
++                      "Percent": -0.5
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/8893305f41bdf80caeb8/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/8893305f41bdf80caeb8/visual.json
+index 480d38f..80d6d68 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/8893305f41bdf80caeb8/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/8893305f41bdf80caeb8/visual.json
+@@ -59,6 +59,29 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "fillCustom": [
++        {
++          "properties": {
++            "fillColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 1,
++                      "Percent": 0
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/8cba9e6bbce6ffbf389f/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/8cba9e6bbce6ffbf389f/visual.json
+index c3a8a32..26eccf4 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/8cba9e6bbce6ffbf389f/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/8cba9e6bbce6ffbf389f/visual.json
+@@ -59,6 +59,29 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "fillCustom": [
++        {
++          "properties": {
++            "fillColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 2,
++                      "Percent": 0
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/a7519a8f55b49b8ac56c/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/a7519a8f55b49b8ac56c/visual.json
+index 42aea60..75ec79e 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/a7519a8f55b49b8ac56c/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/a7519a8f55b49b8ac56c/visual.json
+@@ -59,6 +59,29 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "fillCustom": [
++        {
++          "properties": {
++            "fillColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 0,
++                      "Percent": 0
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/b6dce08fdaa41446fdaa/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/b6dce08fdaa41446fdaa/visual.json
+index 2a2b6d2..d6a1c12 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/b6dce08fdaa41446fdaa/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/b6dce08fdaa41446fdaa/visual.json
+@@ -59,6 +59,29 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "fillCustom": [
++        {
++          "properties": {
++            "fillColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 11,
++                      "Percent": 0
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/c5a17e4531f2a3f0a127/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/c5a17e4531f2a3f0a127/visual.json
+index 8ac3979..7942e1d 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/c5a17e4531f2a3f0a127/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/c5a17e4531f2a3f0a127/visual.json
+@@ -59,6 +59,29 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "fillCustom": [
++        {
++          "properties": {
++            "fillColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 1,
++                      "Percent": 0.5
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/cf1992004acef56dbd35/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/cf1992004acef56dbd35/visual.json
+index fa998af..5235ac3 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/cf1992004acef56dbd35/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/cf1992004acef56dbd35/visual.json
+@@ -59,6 +59,29 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "fillCustom": [
++        {
++          "properties": {
++            "fillColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 0,
++                      "Percent": -0.5
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+
+######## probe 47 candidate 2: ColorId 9, 10, 11 written by hand
+
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/4b833ede9089cc600c8d/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/4b833ede9089cc600c8d/visual.json
+index 30f8b9d..5b66bfd 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/4b833ede9089cc600c8d/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/4b833ede9089cc600c8d/visual.json
+@@ -59,6 +59,29 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "fillCustom": [
++        {
++          "properties": {
++            "fillColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 10,
++                      "Percent": 0
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/76bd2689b22c4dc1b491/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/76bd2689b22c4dc1b491/visual.json
+index 9728c1c..754acbb 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/76bd2689b22c4dc1b491/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/76bd2689b22c4dc1b491/visual.json
+@@ -59,6 +59,29 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "fillCustom": [
++        {
++          "properties": {
++            "fillColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 9,
++                      "Percent": 0
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/d5bf44addb4b6c4e103b/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/d5bf44addb4b6c4e103b/visual.json
+index e0cf16e..32d9794 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/d5bf44addb4b6c4e103b/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/d5bf44addb4b6c4e103b/visual.json
+@@ -59,6 +59,29 @@
+           }
+         }
+       ]
++    },
++    "objects": {
++      "fillCustom": [
++        {
++          "properties": {
++            "fillColor": {
++              "solid": {
++                "color": {
++                  "expr": {
++                    "ThemeDataColor": {
++                      "ColorId": 11,
++                      "Percent": 0
++                    }
++                  }
++                }
++              }
++            }
++          },
++          "selector": {
++            "id": "default"
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+
+######## desktop: C1 R6 picked Theme color 7, C3 R4 picked Theme color 8, saved
+
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/4b833ede9089cc600c8d/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/4b833ede9089cc600c8d/visual.json
+index 5b66bfd..6bd543e 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/4b833ede9089cc600c8d/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/4b833ede9089cc600c8d/visual.json
+@@ -1,5 +1,5 @@
+ {
+-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+   "name": "4b833ede9089cc600c8d",
+   "position": {
+     "x": 904,
+@@ -38,28 +38,6 @@
+         }
+       }
+     },
+-    "visualContainerObjects": {
+-      "title": [
+-        {
+-          "properties": {
+-            "show": {
+-              "expr": {
+-                "Literal": {
+-                  "Value": "true"
+-                }
+-              }
+-            },
+-            "text": {
+-              "expr": {
+-                "Literal": {
+-                  "Value": "'C1 R6'"
+-                }
+-              }
+-            }
+-          }
+-        }
+-      ]
+-    },
+     "objects": {
+       "fillCustom": [
+         {
+@@ -69,7 +47,7 @@
+                 "color": {
+                   "expr": {
+                     "ThemeDataColor": {
+-                      "ColorId": 10,
++                      "ColorId": 8,
+                       "Percent": 0
+                     }
+                   }
+@@ -82,6 +60,28 @@
+           }
+         }
+       ]
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'C1 R6'"
++                }
++              }
++            }
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [
+diff --git a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/d5bf44addb4b6c4e103b/visual.json b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/d5bf44addb4b6c4e103b/visual.json
+index 32d9794..63d2475 100644
+--- a/financial.Report/definition/pages/a1e403236989a4494a64/visuals/d5bf44addb4b6c4e103b/visual.json
++++ b/financial.Report/definition/pages/a1e403236989a4494a64/visuals/d5bf44addb4b6c4e103b/visual.json
+@@ -1,5 +1,5 @@
+ {
+-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
++  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+   "name": "d5bf44addb4b6c4e103b",
+   "position": {
+     "x": 1080,
+@@ -38,28 +38,6 @@
+         }
+       }
+     },
+-    "visualContainerObjects": {
+-      "title": [
+-        {
+-          "properties": {
+-            "show": {
+-              "expr": {
+-                "Literal": {
+-                  "Value": "true"
+-                }
+-              }
+-            },
+-            "text": {
+-              "expr": {
+-                "Literal": {
+-                  "Value": "'C3 R4'"
+-                }
+-              }
+-            }
+-          }
+-        }
+-      ]
+-    },
+     "objects": {
+       "fillCustom": [
+         {
+@@ -69,7 +47,7 @@
+                 "color": {
+                   "expr": {
+                     "ThemeDataColor": {
+-                      "ColorId": 11,
++                      "ColorId": 9,
+                       "Percent": 0
+                     }
+                   }
+@@ -82,6 +60,28 @@
+           }
+         }
+       ]
++    },
++    "visualContainerObjects": {
++      "title": [
++        {
++          "properties": {
++            "show": {
++              "expr": {
++                "Literal": {
++                  "Value": "true"
++                }
++              }
++            },
++            "text": {
++              "expr": {
++                "Literal": {
++                  "Value": "'C3 R4'"
++                }
++              }
++            }
++          }
++        }
++      ]
+     }
+   },
+   "annotations": [

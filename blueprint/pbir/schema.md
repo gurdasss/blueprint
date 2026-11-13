@@ -182,8 +182,8 @@ What follows for a palette or typography check:
   default", not "unset".
 - **Per-category formatting puts data values in report files** (`'<value>'` in the
   selector). This confirms Learn's warning. Fixtures and committed evidence must be redacted.
-- Mapping picker grid positions to `ColorId`/`Percent` is **not established**:
-  "1st column, 1st row" gave `ColorId 0, Percent -0.1`. Don't infer grid positions from it.
+- Mapping picker grid positions to `ColorId`/`Percent`: settled in probe 47 (see there). Probe 03's
+  "1st column, 1st row gave `ColorId 0, Percent -0.1`" fits it: column 1 is white and `-0.1` a darker shade.
 - Map visuals were unavailable in this Desktop (step 7 skipped). Desktop didn't rewrite
   or convert the existing map `visual.json` files.
 
@@ -213,10 +213,10 @@ What follows for a palette or typography check:
 - Earlier finding still stands: the sample's original `Concourse` theme had no file. A theme
   reference whose file is missing must be reported, not assumed.
 
-**Open:** what `ThemeDataColor.ColorId` indexes. The commonly cited mapping (0 =
-background, 1 = foreground, n ≥ 2 = `dataColors[n-2]`) is **unverified**, and so is the
-shade formula for `Percent`. A check that only needs "is this a theme reference" doesn't
-depend on either.
+**Settled in probe 47:** `ThemeDataColor.ColorId` 0 is a fixed white and 1 a fixed black (not the
+theme's `background`/`foreground`), and `n >= 2` is `dataColors[n-2]` up to `ColorId 9`; `Percent` is
+an RGB tint (details under probe 47). A check that only needs "is this a theme reference" doesn't
+depend on any of it.
 
 ## Typography
 
@@ -1005,6 +1005,46 @@ hex (none elsewhere in the theme), so a readout maps a label to a key exactly.
   committed on its own); where `foregroundNeutralLight`, `backgroundLight`, `backgroundNeutral`,
   `backgroundDark`, `foregroundNeutralTertiary`, `tableAccent` and `shapeStroke` paint; and
   `ColorId` (probe 47).
+
+**Verified 2026-11-13, Desktop 2.159.1231.0, probe 47** (`scripts/probe_colorid.py`; evidence
+`docs/probes/47-colorid.diff`; the financial demo PBIP, not fixture 02, so not replayed; picks by the
+user in Desktop's own picker, then by-hand candidates in the same shape; card fills sampled from
+original-resolution bridge captures, local only). `ThemeDataColor {ColorId, Percent}`:
+
+- **The picker's "Theme colors" grid is 10 columns by 6 rows. Its top row is white, black, then
+  Theme color 1 to 8** (the first eight data colours of the theme: here `#0B6E75` ... `#A66999`);
+  further rows are shades, and a swatch's tooltip reads e.g. `#95b162, Theme color 5, 20% lighter`
+  (a base-row swatch only `#5B7DB1, Theme color 4`).
+- **`ColorId` is the column, 0-based: 0 white, 1 black, `n` (2 to 9) = `dataColors[n - 2]`**, i.e.
+  Theme color N is `ColorId N + 1`. Saved by Desktop: Theme color 2 (40% lighter) -> `ColorId 3`;
+  Theme color 7 (20% lighter) -> `ColorId 8`; Theme color 7 and 8 from the base row -> `ColorId 8`
+  and `9`, each with an explicit `Percent 0`. Drawn, sampled: each resolves against the theme's
+  **custom** data colours (`ColorId 2` drew `#0B6E75`, not Fluent's `#118DFF`).
+- **`ColorId` 0 and 1 are fixed white and black, not the theme's `background`/`foreground`** (hand-
+  written, drawn): `0, 0` drew `#FFFFFF`, `1, 0` `#000000`, `0, -0.5` `#808080` and `1, 0.5`
+  `#808080`, while this theme's `background` is `#F7F4EC` and `foreground` `#1F2A33`. Fits the
+  base theme using `ColorId 0` for pie and donut slice borders.
+- **`ColorId` 10, 11 and 12 do not resolve** (hand-written): the card drew its default fill
+  (`#F7F4EC`). The picker offers no such colour: there is no Theme color 9 or 10. So the colours
+  a `ThemeDataColor` can name are the first **eight** data colours, however many the theme has
+  (this one has 480).
+- **`Percent` is a signed fraction, an RGB tint per channel, rounded half up**: positive lightens
+  towards white, `c + (255 - c) * p`; negative darkens, `c * (1 + p)`. Desktop's tooltip for
+  `#7A9E3B` "20% lighter" read `#95B162` and `#E8A33D` "50% darker" `#74521F`; drawn: `3, 0.4`
+  `#F1C88B`, `8, 0.2` `#FEAB85`, and a hand-written `3, -0.5` `#74521F`. Which `Percent` each
+  grid row uses was not mapped (seen: 0.2 and 0.4 lighter, 0.5 darker).
+- **Shape for a card's own fill** (Visual > Cards, not the container's General > Background): `visual.
+  objects.fillCustom[]` entry `{"properties": {"fillColor": {"solid": {"color": {"expr":
+  {"ThemeDataColor": {"ColorId": 3, "Percent": 0.4}}}}}}, "selector": {"id": "default"}}`, and
+  for one card Desktop also wrote a first entry `{"properties": {"show": {"expr": {"Literal":
+  {"Value": "true"}}}}}`. Desktop also wrote `visualContainerObjects.background[0].properties.
+  show = false` on each card it edited, and bumped its `$schema` 2.13.0 -> 2.14.0.
+- The base theme's 24 `ThemeDataColor` references now read: `ColorId 0` (pie/donut `borderColor`,
+  slicer fills) is white; `ColorId 2` shaded -0.2, -0.4 and -0.6 (button fills, accent bars) is the
+  **first data colour** darkened, not a grey.
+- **Not probed:** a `ThemeDataColor` in another property, whether the grid's rows 2 to 6 use
+  fixed steps, and how a hierarchical theme with fewer than eight data colours resolves a high
+  `ColorId`.
 
 **Verified 2026-11-10, probe 29** (`scripts/probe_aggregate_format.py`; evidence
 `docs/probes/29-aggregate-format.diff`, fixture 02, all content invented). Each aggregation was
