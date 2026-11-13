@@ -114,9 +114,10 @@ def theme_from(layer: str, name: str, data: Any, builtin: bool = False) -> Theme
         return v.upper() if isinstance(v, str) and HEX.match(v) else None
 
     data = data if isinstance(data, dict) else {}
+    sentiment = {k: c for k in ("good", "neutral", "bad") if (c := one(data.get(k)))}
     return Theme(name, layer, False, builtin, hexes(data.get("dataColors")),
-                 one(data.get("foreground")), one(data.get("background")), text_classes(data),
-                 visual_text(data))
+                 one(data.get("foreground")), one(data.get("background")), sentiment,
+                 text_classes(data), visual_text(data))
 
 
 # --- fonts (probe 03) ----------------------------------------------------------------------

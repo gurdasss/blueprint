@@ -63,6 +63,12 @@ page:
 #   categorical   Ordered series colours for charts.
 #   background    Page / visual background colour.
 #   text          Default text colour.
+#   good, neutral, bad
+#                 Sentiment colours: what a KPI's indicator draws for a
+#                 result that is on the good side of its goal, level with
+#                 it, or on the bad side. Optional (omit: the theme's own).
+#                 `bp check` compares them with the theme once `categorical`
+#                 is set (an empty palette isn't checked at all).
 #   extra         Further approved colours (e.g. a shade picked from the
 #                 theme, which is stored as resolved hex). Optional.
 #   enforce       strict (error) | warn (warning) | off (skip check)
@@ -76,6 +82,9 @@ palette:
     - "#59A14F"
   background: "#FFFFFF"
   text: "#333333"
+  good: "#59A14F"
+  neutral: "#F28E2B"
+  bad: "#E15759"
   extra: []
   enforce: strict
 

@@ -100,10 +100,21 @@ class Palette:
     text: str | None
     extra: tuple[str, ...]  # further allowed colours, e.g. sanctioned shades
     enforce: str  # strict (error) | warn (warning) | off
+    # Sentiment colours (probe 42): the theme's good/neutral/bad, which a KPI's indicator reads.
+    # None leaves the theme's default (the base theme's pastels) alone.
+    good: str | None = None
+    neutral: str | None = None
+    bad: str | None = None
+
+    @property
+    def sentiment(self) -> dict[str, str]:
+        """The sentiment colours the guidelines set, keyed by the theme's own key names."""
+        return {k: v for k, v in (("good", self.good), ("neutral", self.neutral),
+                                  ("bad", self.bad)) if v}
 
     @property
     def allowed(self) -> frozenset[str]:
-        return frozenset([*self.categorical, *self.extra,
+        return frozenset([*self.categorical, *self.extra, *self.sentiment.values(),
                           *(c for c in (self.background, self.text) if c)])
 
     @property
@@ -283,7 +294,8 @@ CORE_KEYS: dict[str, tuple[str, ...]] = {
     "canvas": ("width", "height"),
     "spacing": ("grid", "margin", "gutter"),
     "page": ("max_visuals", "density_policy", "require_title", "title_region"),
-    "palette": ("categorical", "background", "text", "extra", "enforce"),
+    "palette": ("categorical", "background", "text", "extra", "enforce",
+                "good", "neutral", "bad"),
     "typography": tuple(CORE_ROLES),
     "layouts": ("search_path", "default"),
 }
@@ -509,6 +521,9 @@ def _palette(raw: dict[str, Any]) -> Palette:
         text=_hex(_get(raw, "palette.text"), "palette.text", nullable=True),
         extra=_hex_list(raw, "palette.extra"),
         enforce=enforce,
+        good=_hex(_get(raw, "palette.good"), "palette.good", nullable=True),
+        neutral=_hex(_get(raw, "palette.neutral"), "palette.neutral", nullable=True),
+        bad=_hex(_get(raw, "palette.bad"), "palette.bad", nullable=True),
     )
 
 

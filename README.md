@@ -194,7 +194,7 @@ Then open the report in Power BI Desktop and look at it.
 | `bp describe` | Everything a spec can use: spec syntax, visual types and slots, layouts and regions, guideline limits, and with `--report`, the model's fields in spec syntax and the pages specs built. Read-only. |
 | `bp apply <spec>...` | Create or update pages from page specs (files or folders of them). All are checked before anything is written. |
 | `bp manifest` | (Re)generate the manifest from the report's current state. |
-| `bp theme` | Write a custom theme from the guidelines (palette, text colour, title/callout/card label fonts) and make the report use it. |
+| `bp theme` | Write a custom theme from the guidelines (palette, text colour, sentiment colours, title/callout/card label fonts) and make the report use it. |
 
 `--dry-run` is available on every mutating command and prints the planned file writes
 without performing them. `inspect`, `check` and `describe` take `--json`; `check` also takes `--github`.
@@ -551,8 +551,10 @@ layouts:
 
 The core file is small on purpose: `version`, `name`, `canvas` (width and height), `spacing`
 (`grid`, `margin`, `gutter`), `page`, `palette`, `typography` (`page_title`, `visual_title`,
-`body`) and `layouts`. Rule severities are fixed in code. Everything else is opt-in under
-`extensions:`:
+`body`) and `layouts`. Rule severities are fixed in code. `palette` also takes optional sentiment
+colours, `good`, `neutral` and `bad` (hex): `bp theme` writes them as the theme's own keys, which
+a KPI's indicator draws (probe 42), and `bp check` compares them with the theme. Everything else
+is opt-in under `extensions:`:
 
 ```yaml
 extensions:

@@ -1,7 +1,8 @@
 """`bp theme`: write a custom theme from the guidelines and make the report use it.
 
 The theme holds only overrides on top of the report's base theme (as Desktop's own customised
-themes do): palette.categorical -> dataColors, palette.text/background -> foreground/background
+themes do): palette.categorical -> dataColors, palette.text/background -> foreground/background,
+palette.good/neutral/bad -> the theme's sentiment colours (a KPI's indicator)
 (and the colour of every text class), typography.title/callout -> textClasses.title/callout,
 typography.card_label -> visualStyles.cardVisual["*"].label.
 Visuals with their own colours or fonts aren't changed; `bp check` still reports them.

@@ -62,6 +62,7 @@ def build(rules: Guidelines) -> tuple[dict[str, Any], list[str]]:
         theme["foreground"] = pal.text
     if pal.background:
         theme["background"] = pal.background
+    theme.update(pal.sentiment)  # good / neutral / bad: the theme's own key names (probe 42)
 
     classes: dict[str, dict[str, Any]] = {}
     visual_cards: dict[str, dict[str, Any]] = {}

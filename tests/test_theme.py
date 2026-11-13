@@ -230,3 +230,81 @@ def test_replacing_a_custom_theme_when_there_is_no_base_theme(card_chart_fixture
     assert main([*args, "--replace-theme"]) == 0
     assert jsonfmt.load(report_json)["themeCollection"] == {"customTheme": {
         "name": "blueprint-theme.json", "reportVersionAtImport": version, "type": "RegisteredResources"}}
+
+
+# --- sentiment colours (probe 42) ---------------------------------------------------------
+
+CATEGORICAL = "categorical: ['#4E79A7', '#F28E2B']"  # the palette check only runs with one
+SENTIMENT = "palette: {" + CATEGORICAL + ", good: '#00e000', neutral: '#00B7FF', bad: '#8000FF'}\n"
+
+
+def test_sentiment_colours_are_written_with_the_themes_own_key_names(tmp_path: Path):
+    doc, _ = theme.build(_rules(tmp_path, "name: S\npalette: {background: '#F7F4EC', "
+                                          "good: '#00e000', neutral: '#00B7FF', bad: '#8000FF'}\n"))
+    # probe 42: Desktop saved good/neutral/bad right after background, upper-cased hex
+    assert list(doc) == ["name", "background", "good", "neutral", "bad"]
+    assert (doc["good"], doc["neutral"], doc["bad"]) == ("#00E000", "#00B7FF", "#8000FF")
+
+
+def test_unset_sentiment_colours_are_left_to_the_theme(tmp_path: Path):
+    doc, _ = theme.build(_rules(tmp_path, "palette: {good: '#00E000', text: '#333333'}\n"))
+    assert doc["good"] == "#00E000"
+    assert "neutral" not in doc and "bad" not in doc
+    doc, _ = theme.build(guidelines.load(GUIDE))
+    assert not {"good", "neutral", "bad"} & set(doc)
+
+
+def test_sentiment_alone_is_enough_for_a_theme(tmp_path: Path):
+    doc, _ = theme.build(_rules(tmp_path, "palette: {bad: '#8000FF'}\n"))
+    assert doc == {"name": "Blueprint defaults", "bad": "#8000FF"}
+
+
+@pytest.mark.parametrize("body", ["palette: {good: green}\n", "palette: {bad: '#FFF'}\n",
+                                  "palette: {neutral: 5}\n"])
+def test_a_bad_sentiment_colour_is_refused(tmp_path: Path, body: str):
+    with pytest.raises(guidelines.GuidelinesError, match=r"palette\.(good|bad|neutral) must be a #RRGGBB"):
+        _rules(tmp_path, body)
+
+
+def test_a_misspelt_sentiment_key_is_refused_with_the_real_one(tmp_path: Path):
+    with pytest.raises(guidelines.GuidelinesError, match="did you mean good"):
+        _rules(tmp_path, "palette: {goood: '#00E000'}\n")
+
+
+def test_sentiment_colours_can_be_set_from_the_command_line(tmp_path: Path):
+    f = tmp_path / "g.yaml"
+    f.write_text("palette: {good: '#00E000'}\n")
+    rules = guidelines.load(f, overrides=guidelines.overrides_from(["palette.bad=#8000FF"]))
+    assert rules.palette.sentiment == {"good": "#00E000", "bad": "#8000FF"}
+
+
+def test_sentiment_colours_are_allowed_colours(tmp_path: Path):
+    pal = _rules(tmp_path, SENTIMENT).palette
+    assert {"#00E000", "#00B7FF", "#8000FF"} <= pal.allowed
+
+
+def test_theme_then_check_passes_sentiment_and_a_wrong_one_is_found(report: Path, tmp_path: Path, capsys):
+    g = tmp_path / "g.yaml"
+    g.write_text("name: S\n" + SENTIMENT)
+    assert main(["theme", "--report", str(report), "--guidelines", str(g)]) == 0
+    written = json.loads((report / "StaticResources/RegisteredResources/blueprint-theme.json").read_text())
+    assert (written["good"], written["bad"]) == ("#00E000", "#8000FF")
+    capsys.readouterr()
+    main(["check", "--report", str(report), "--guidelines", str(g), "--json"])
+    findings = json.loads(capsys.readouterr().out)["findings"]
+    assert [f for f in findings if f["rule"] == "palette" and "sentiment" in f["message"]] == []
+
+    # the report's theme says #8000FF for bad; a guidelines file that wants another is a finding
+    g.write_text("name: S\npalette: {" + CATEGORICAL + ", good: '#00E000', bad: '#C2452D', neutral: '#00B7FF'}\n")
+    main(["check", "--report", str(report), "--guidelines", str(g), "--json"])
+    msgs = [f["message"] for f in json.loads(capsys.readouterr().out)["findings"] if f["rule"] == "palette"]
+    assert [m for m in msgs if "sentiment" in m] == [
+        "theme 'blueprint-theme.json' sentiment colour bad is #8000FF, palette says #C2452D"]
+
+
+def test_check_reports_a_sentiment_colour_the_theme_never_sets(report: Path, tmp_path: Path, capsys):
+    g = tmp_path / "g.yaml"
+    g.write_text("palette: {" + CATEGORICAL + ", good: '#00E000'}\n")
+    main(["check", "--report", str(report), "--guidelines", str(g), "--json"])
+    msgs = [f["message"] for f in json.loads(capsys.readouterr().out)["findings"] if f["rule"] == "palette"]
+    assert any("sentiment colour good is" in m and "palette says #00E000" in m for m in msgs)

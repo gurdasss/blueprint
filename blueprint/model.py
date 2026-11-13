@@ -90,6 +90,7 @@ class Theme:
     data_colors: tuple[str, ...] = ()  # uppercase hex
     foreground: str | None = None
     background: str | None = None
+    sentiment: dict[str, str] = field(default_factory=dict)  # good / neutral / bad (probe 42)
     text_classes: dict[str, TextClass] = field(default_factory=dict)  # title, label, callout, …
     # visualStyles defaults: "title"/"subTitle" from ["*"]["*"] (every visual) and "cardVisual.label"
     # from ["cardVisual"]["*"]. These outrank textClasses (probe 06: base theme title fontSize 15
