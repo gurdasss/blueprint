@@ -1109,6 +1109,43 @@ Blueprint's value and not probe 46's hand-written one.
 - Re-running `bp theme` and `bp apply` on the saved report: No changes. `bp check`: no `palette`
   finding (the one warning is the gallery page's 12 visuals against `max_visuals`, by design).
 
+**Verified 2026-11-13, Desktop 2.159.1231.0, probe 50** (`scripts/probe_hover.py`, captured with
+`scripts/hover_capture.ps1` and measured with `scripts/probe_pixels.py`; probe 48's report
+unchanged, nothing written and nothing saved, so there is **no evidence diff**: the result is the
+pixel counts here; captures local only). The five structural keys probes 46 and 48 saw no pixels of,
+in the states those probes could not reach. The bridge can only screenshot a report page, which
+never shows a transient state, so this probe drives the real cursor and photographs the whole
+screen (1536x864, where a bridge capture is 2834x1587).
+
+- **None of `foregroundNeutralLight` `#FF6A00`, `backgroundNeutral` `#3BFFD0`, `backgroundDark`
+  `#8A5A2B`, `tableAccent` `#0000FF` or `shapeStroke` `#FF0000` appeared in any state tried**:
+  zero exact pixels in all 15 captures (one stray near-match of `backgroundDark` was a single
+  pixel in the right-hand pane, Desktop chrome). Tried: **hover** over a table row, a matrix row, a
+  table header, a list slicer item, the dropdown slicer, a column bar, a bar, a line, a pie slice
+  and a multi-row card; **selection** of a slicer item and of a column bar; **focus** (Tab); a
+  table **style preset** ("Bold header"); and an inserted **rectangle shape** and **blank button**.
+- **The captures do catch these states**, so the zeros are evidence and not a missed state: hovering
+  a table row changed 3,089 px, a slicer item 7,097 px, a column bar 35,131 px (its tooltip), and
+  clicking a slicer item changed 45,145 px across the page (the cross-filter). A hover whose target
+  has no hover styling changed 0 px (the multi-row card).
+- What those states *do* use: the tooltip and hover chrome draw in dark greys (`#1D1D1D`,
+  `#292929`, this Desktop's dark UI theme) and a chart tooltip's body takes the theme's
+  **`background`** (18,755 px of `#F7F4EC` appeared when hovering a column bar).
+- **A table's "Bold header" style preset paints the header with the theme's `foreground`**
+  (`#1F2A33` sampled), not `tableAccent`.
+- **A shape's border defaults to the shape's own fill colour**, not `shapeStroke`: the inserted
+  rectangle's border was on by default (Format > Shape > Style > Border) and the same colour as the
+  fill (the first data colour).
+- Consistent with probe 47: the base theme styles `actionButton`, `pageNavigator`,
+  `bookmarkNavigator`, `textSlicer` and `advancedSlicerVisual` with `ThemeDataColor` references,
+  which resolve to **data colours**, not to structural keys. So a button or a new-style slicer
+  takes the palette, which is why inserting one showed none of the five.
+- **Still not seen, and still not "unused".** Not tried: a Power BI theme's modern structural key
+  names (`firstLevelElements`, `secondLevelElements`, `thirdLevelElements`, `fourthLevelElements`,
+  `secondaryBackground`), which may be the live names and these five the legacy aliases of a
+  retired slot — a hypothesis for a later probe, not evidence; conditional formatting; the
+  service rather than Desktop; and a light Desktop UI theme.
+
 **Verified 2026-11-10, probe 29** (`scripts/probe_aggregate_format.py`; evidence
 `docs/probes/29-aggregate-format.diff`, fixture 02, all content invented). Each aggregation was
 chosen on a **fresh** field, because an aggregation changed in place keeps the field's old
