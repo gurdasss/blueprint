@@ -34,6 +34,26 @@ entirely by `bp apply`, the way 33 followed 32. The contracts carry all of it no
 `legend` on pie and donut, `legend` on scatter and map, and a hierarchy in `matrix.rows` and
 `slicer.field`.
 
+## Deliberately not probed (reviewed 2026-11-13)
+
+The counterpart to the rules above: a probe nobody should write, until evidence arrives. Each was
+measured, not assumed — the counts come from a survey of the three sample reports (78 visuals),
+and the colour entries from probes that ran. The **reopen** column is what would change the answer;
+`docs/practitioner-survey.md` is the other route, because counting PBIR says what ended up in a
+file and not what somebody fixed by hand forty times.
+
+| Not probed | Why | Reopen when |
+|---|---|---|
+| Axis titles | 0 title properties on 24 `categoryAxis` objects | a report sets one, or a practitioner says they add them by hand |
+| A matrix's subtotals | 0 matrix visuals in the sample reports | a report contains a matrix at all |
+| A hierarchy in a matrix's `columns` | same: no matrix to put one in | as above (`matrix.rows` and `slicer.field` already take one, probes 39-40) |
+| Conditional formatting rules, data bars | 1 visual of 78 uses any `FillRule`; the core writes a colour-scale gradient already (probes 44-45) | a report uses rules or data bars |
+| What reads the theme's `neutral` | probes 42-43: Desktop keeps the key and shows it in its dialog, but a KPI draws `good` at or above goal and `bad` below, and one with no goal draws nothing | a visual type Blueprint does not build (a waterfall is the candidate) earns a contract |
+| `backgroundNeutral`, `foregroundNeutralLight`, `backgroundDark`, `tableAccent`, `shapeStroke` | probes 46, 48, 50, 51: zero pixels in static captures, hover, selection, focus, a table style preset, an inserted shape and an inserted button — and the modern names behave the same | the Power BI *service* rather than Desktop, or a visual type Blueprint cannot build, shows one |
+
+Closing a question is not answering it. The five structural keys and `neutral` are unresolved: four
+probes each failed to find them, which is evidence about cost, not about meaning.
+
 ## Running one, when you are at a Windows machine with Desktop
 
 Same as any probe in `scripts/` (CLAUDE.md, "Test data"):

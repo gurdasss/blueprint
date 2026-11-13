@@ -886,11 +886,25 @@ guidelines, written to the theme; a table column's conditional-format `gradient:
 the divergent colours. Verified as candidates in probes 42, 44 and 46 and accepted from Blueprint's
 own output in probes 43, 45 and 49 (done).
 
-**Next, each needing a Desktop probe first:** axis titles, the rest of conditional formatting
-(rules, data bars), a matrix's subtotals, and a hierarchy in a matrix's *columns*. A survey of the
-three sample reports (78 visuals) found no other gap worth a contract: Blueprint builds 91% of the
-visuals in them, and the commonest `objects` key it can't express, `categoryAxis.axisType`, is one
-Desktop writes for itself.
+**Nothing is queued, and that is a decision.** A survey of the three sample reports (78 visuals,
+2026-11-13) closed the backlog rather than ranking it. Blueprint builds **91%** of the visuals in
+them, and each remaining candidate was measured, not guessed:
+
+| Candidate | What the survey found | Verdict |
+|---|---|---|
+| Axis titles | **0** axis-title properties on 24 `categoryAxis` objects | closed |
+| `categoryAxis.axisType` | 22 uses, but Desktop writes it itself and re-apply preserves it | nothing to build |
+| A matrix's subtotals | **0** matrix (`pivotTable`) visuals in any of the three reports | closed |
+| A hierarchy in a matrix's *columns* | same: no matrix to put one in | closed |
+| Rules and data bars | **1** visual uses any `FillRule`; the core already writes a colour-scale gradient | closed |
+| The theme's `neutral` | probes 42, 43: written and kept, but nothing was ever seen to draw it | closed, unresolved |
+| Five structural theme keys | probes 46, 48, 50, 51: zero pixels in static, hover, selection, focus, a style preset, a shape and a button | closed, unresolved |
+
+"Closed" means no probe is planned, not that the answer is known. Each reopens on evidence: a real
+report that uses the feature, or a practitioner who says they hand-fix it
+(`docs/practitioner-survey.md`). Counting PBIR says what ended up in a file; it cannot say what
+somebody gave up on. Until one of those arrives, adding surface would widen the part of Blueprint
+nobody has used.
 
 **Later, in no particular order.** Bookmarks. Relative layout positioning. A `bp new` scaffold.
 Theme file generation (done: `bp theme`). CI action for `bp check` (done: [In CI](#in-ci)).
