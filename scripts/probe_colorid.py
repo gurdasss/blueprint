@@ -67,6 +67,16 @@ ColorId 0 and 1, so these numbers are hand-written into the shape Desktop wrote,
  F6  ColorId 0 / Percent 0.5 draws #FBFAF5 and ColorId 1 / Percent 0.5 draws #8F9599 (c + (255 - c) * .5)
      if F1 and F2 hold.
 
+RESULT OF THE FOLLOW-UP (sampled card fills): F1 and F2 WRONG: ColorId 0 is a fixed white
+(#FFFFFF; at Percent -0.5 #808080) and ColorId 1 a fixed black (#000000; at 0.5 #808080), NOT the
+theme's background/foreground. F3 held for ColorId 2 (#0B6E75). F5 held (#74521F; Desktop rounds
+half up). F3 failed for ColorId 11 and F4 for ColorId 12: both drew the card's default fill
+(#F7F4EC), so they did not resolve. Second follow-up, written before it is applied:
+
+ F7  The resolvable range ends before 11. ColorId 9 (= Theme color 8, #A66999) and ColorId 10 (=
+     Theme color 9, #3599B8) resolve; ColorId 11 (Theme color 10, #DFBFBF) does not again.
+     (Alternative: all three resolve and the first two follow-ups failed for another reason.)
+
 All content is the demo's financial sample.
 """
 
@@ -128,15 +138,16 @@ Tell Claude when it is saved, with the grid's layout.
 """
 
 # (card title, ColorId, Percent) written by hand into the shape Desktop saved for a picked cell
+FOLLOW_UP_2 = [("C1 R5", 9, 0), ("C1 R6", 10, 0), ("C3 R4", 11, 0)]
 FOLLOW_UP = [("R1 C3", 0, -0.5), ("R1 C4", 1, 0), ("R1 C5", 2, 0), ("R1 C6", 11, 0), ("R1 C7", 12, 0),
              ("R1 C8", 3, -0.5), ("C1 R2", 0, 0), ("C1 R3", 1, 0.5), ("C1 R4", 0, 0.5)]
 
 
-def candidate(dest: Path) -> None:
+def candidate(dest: Path, follow_up: list | None = None) -> None:
     """Hand-write the follow-up ThemeDataColor values, keeping Desktop's bytes everywhere else."""
     from blueprint.pbir import jsonfmt
 
-    wanted = {t: (cid, pct) for t, cid, pct in FOLLOW_UP}
+    wanted = {t: (cid, pct) for t, cid, pct in (follow_up or FOLLOW_UP)}
     done = set()
     for f in sorted(dest.glob("financial.Report/definition/pages/*/visuals/*/visual.json")):
         doc = jsonfmt.load(f)
@@ -159,8 +170,8 @@ def candidate(dest: Path) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 3 and sys.argv[1] == "candidate":
-        candidate(Path(sys.argv[2]))
+    if len(sys.argv) == 3 and sys.argv[1] in ("candidate", "candidate2"):
+        candidate(Path(sys.argv[2]), FOLLOW_UP_2 if sys.argv[1] == "candidate2" else None)
         sys.exit(0)
     if len(sys.argv) != 3:
         sys.exit(__doc__)
