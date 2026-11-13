@@ -1047,6 +1047,36 @@ original-resolution bridge captures, local only). `ThemeDataColor {ColorId, Perc
   fixed steps, and how a hierarchical theme with fewer than eight data colours resolves a high
   `ColorId`.
 
+**Verified 2026-11-13, Desktop 2.159.1231.0, probe 48** (`scripts/probe_gallery.py`, measured with
+`scripts/probe_pixels.py`; the financial demo PBIP, not fixture 02, so not replayed and there is no
+evidence diff: nothing was saved, the report is Blueprint's own output and the captures are local
+only). Where the structural keys paint. Probe 46's final theme already gave each unmapped key its
+own loud hex, so one capture of two pages built by `bp apply` from specs (Gallery A: table, matrix,
+list and dropdown slicers, column, bar, line, pie, donut, scatter, multi-row card, KPI; Gallery B:
+stacked column, 100% stacked column, stacked bar, area, card, list slicer) shows which key
+paints where: any pixel of a candidate colour proves the key draws it. Exact-colour pixel counts,
+with the bounding box of the near matches:
+
+- **`foregroundNeutralTertiary` (Fourth-level elements)** `#9B30FF`: 600 px, a 2 px vertical bar,
+  displayed x 1008, y 857-1030: the **multi-row card's left accent bars**.
+- **`backgroundLight` (Third-level elements)** `#4639FF` (the value the user set in probe 46): 721
+  exact px (1,323 within 6 per channel) at displayed x 1465-1898, y 271-312: the **dropdown
+  slicer's border** (the closed "All" box).
+- Both probe 46 findings repeat: `foregroundNeutralSecondary` (13,668 px on Gallery A, 11,647 on B,
+  the secondary grey text) and `disabledText` (3,144 px, the Filters pane's left edge).
+- **Nothing was seen of `foregroundNeutralLight`, `backgroundNeutral` (Secondary background),
+  `backgroundDark`, `tableAccent` and `shapeStroke`**: zero exact pixels and zero near pixels on
+  either page, though the pages hold a table, a matrix, a list slicer, every chart type above and a
+  KPI. Static captures only: hover, selection, focus, disabled and error states, and visual types
+  Blueprint doesn't build (buttons, shapes, images, text boxes) were not looked at, so this is
+  "not seen", never "unused". The list slicer's checkboxes, the table and matrix grid and rules, and
+  the chart axes and gridlines do not use any of the five.
+- Predictions: H1 held (two more keys paint). H2's guesses were wrong in detail: the slicer border is
+  `backgroundLight`, not `backgroundNeutral` or `shapeStroke`, and the table and matrix grids take no
+  `tableAccent`. H4 (a reload changes no `visual.json`) was not retested: the report was freshly
+  opened and nothing on disk changed.
+- Updates probe 46's "Not recorded" list: of the seven keys not seen painting there, two now are.
+
 **Verified 2026-11-10, probe 29** (`scripts/probe_aggregate_format.py`; evidence
 `docs/probes/29-aggregate-format.diff`, fixture 02, all content invented). Each aggregation was
 chosen on a **fresh** field, because an aggregation changed in place keeps the field's old
