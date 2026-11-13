@@ -991,12 +991,13 @@ hex (none elsewhere in the theme), so a readout maps a label to a key exactly.
   8,838 of 8,838 and 12,656 of 12,656 on two others): the secondary grey text (a visual's subtitle,
   axis labels, "Goal:" lines). `disabledText`: every pixel of a thin vertical line `#B3B3B3` became
   `#808000` (3,144 px on every page, at the Filters pane's left edge: Desktop's own chrome, not
-  report content). The other seven left no trace: their candidate colours appear nowhere. Six of
-  the seven do have their Fluent default colour on screen in the control, in large numbers
-  (`backgroundDark` `#E6E6E6` 13,618 px on one page, `backgroundNeutral` `#C7C7C7`, the two
-  foreground greys, `shapeStroke`), so something other than the theme key draws it, most likely
-  the base theme's own literal hex in `visualStyles`. `tableAccent` has no pixels in either
-  (no visual here shows it). "Unchanged" is not "ignores the key": a higher layer can pin it.
+  report content). The other seven left no trace: their candidate colours appear nowhere. Five of
+  the seven do have their Fluent default colour on screen in the control (`backgroundDark`
+  `#E6E6E6` 13,618 px on one page, `backgroundNeutral` `#C7C7C7`, `foregroundNeutralTertiary`,
+  `foregroundNeutralLight`, `shapeStroke`), so something other than the theme key draws it,
+  most likely the base theme's own literal hex in `visualStyles`. `backgroundLight` and
+  `tableAccent` have no pixels of their Fluent colour in the control and none of the candidate's
+  in the capture (no visual here shows them). "Unchanged" is not "ignores the key": a higher layer can pin it.
 - **Existing visuals follow the theme**: reloading changed no `visual.json`.
 - **A page's background is not the theme's `background`**: the pages draw `#F7F7F7` (sampled), not
   this theme's `#F7F4EC`. Not investigated.
