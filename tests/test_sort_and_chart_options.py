@@ -156,3 +156,19 @@ def test_reapplying_an_aggregated_sort_is_a_no_op(report: Path):
     before = {f: f.read_bytes() for f in report.rglob("*.json")}
     assert _apply(report, body) == 0
     assert before == {f: f.read_bytes() for f in report.rglob("*.json")}
+
+
+@pytest.mark.parametrize("aggregate, code", [("sum", 0), ("average", 1), ("distinctcount", 2),
+                                             ("min", 3), ("max", 4), ("count", 5)])
+def test_the_sort_carries_each_aggregates_function_code(report: Path, aggregate: str, code: int):
+    """probe 41: Count (5), Average (1), Max (4) and Count Distinct (2) each sorted with the same
+    Function as their projection; Sum (0) likewise. Min (3) follows the same rule."""
+    body = ("  - type: table\n    title: Detail\n    slots:\n      columns:\n"
+            "        - \"Sales[Country]\"\n"
+            f"        - {{field: \"Sales[Amount]\", aggregate: {aggregate}}}\n"
+            "    sort: {by: \"Sales[Amount]\", direction: descending}\n")
+    assert _apply(report, body) == 0
+    visual = _visual(report, "tableEx")["visual"]["query"]
+    [entry] = visual["sortDefinition"]["sort"]
+    assert entry["field"]["Aggregation"]["Function"] == code
+    assert entry["field"] == visual["queryState"]["Values"]["projections"][1]["field"]

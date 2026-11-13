@@ -40,3 +40,124 @@ index 26cbe47..d80892d 100644
      },
      "objects": {
 
+######## sort by count
+
+diff --git a/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json b/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json
+index d80892d..aae2289 100644
+--- a/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json
++++ b/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json
+@@ -56,12 +56,11 @@
+                       "Property": "Profit"
+                     }
+                   },
+-                  "Function": 0
++                  "Function": 5
+                 }
+               },
+               "queryRef": "Sum(financials.Profit)",
+-              "nativeQueryRef": "Sum of Profit",
+-              "format": "#,0"
++              "nativeQueryRef": "Count of Profit"
+             }
+           ]
+         }
+@@ -81,7 +80,7 @@
+                     "Property": "Profit"
+                   }
+                 },
+-                "Function": 0
++                "Function": 5
+               }
+             },
+             "direction": "Descending"
+
+######## sort by avg
+
+diff --git a/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json b/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json
+index aae2289..9419c59 100644
+--- a/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json
++++ b/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json
+@@ -56,11 +56,11 @@
+                       "Property": "Profit"
+                     }
+                   },
+-                  "Function": 5
++                  "Function": 1
+                 }
+               },
+               "queryRef": "Sum(financials.Profit)",
+-              "nativeQueryRef": "Count of Profit"
++              "nativeQueryRef": "Average of Profit"
+             }
+           ]
+         }
+@@ -80,7 +80,7 @@
+                     "Property": "Profit"
+                   }
+                 },
+-                "Function": 5
++                "Function": 1
+               }
+             },
+             "direction": "Descending"
+
+######## sort by max
+
+diff --git a/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json b/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json
+index 9419c59..75e25ea 100644
+--- a/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json
++++ b/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json
+@@ -56,11 +56,11 @@
+                       "Property": "Profit"
+                     }
+                   },
+-                  "Function": 1
++                  "Function": 4
+                 }
+               },
+               "queryRef": "Sum(financials.Profit)",
+-              "nativeQueryRef": "Average of Profit"
++              "nativeQueryRef": "Max of Profit"
+             }
+           ]
+         }
+@@ -80,7 +80,7 @@
+                     "Property": "Profit"
+                   }
+                 },
+-                "Function": 1
++                "Function": 4
+               }
+             },
+             "direction": "Descending"
+
+######## sort by count distinct
+
+diff --git a/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json b/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json
+index 75e25ea..9279854 100644
+--- a/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json
++++ b/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json
+@@ -56,11 +56,11 @@
+                       "Property": "Profit"
+                     }
+                   },
+-                  "Function": 4
++                  "Function": 2
+                 }
+               },
+               "queryRef": "Sum(financials.Profit)",
+-              "nativeQueryRef": "Max of Profit"
++              "nativeQueryRef": "Count of Profit"
+             }
+           ]
+         }
+@@ -80,7 +80,7 @@
+                     "Property": "Profit"
+                   }
+                 },
+-                "Function": 4
++                "Function": 2
+               }
+             },
+             "direction": "Descending"
+

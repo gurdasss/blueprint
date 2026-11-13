@@ -841,8 +841,10 @@ saved.
   the same `Function` code as the projection it sorts on (here Sum = 0), and no `isDefaultSort`
   (as probe 31). Before this, a spec `sort.by` on an aggregated column wrote the bare `Column`,
   which no Desktop save produced.
-- Only Sum (code 0) was exercised. The other codes are the projection's (probe 29) and the sort
-  reuses them; a Desktop save of a sort on each is not yet in evidence.
+- **Every aggregate follows the same rule.** Four more steps on the same table, each changing the
+  aggregate of the Profit column and sorting on it: Count (5), Average (1), Max (4) and Count
+  (Distinct) (2). In each, the sort's `Aggregation.Function` equals the projection's. Min (3) was
+  not run; it uses the same rule and probe 29's code.
 
 **Verified 2026-11-10, probe 29** (`scripts/probe_aggregate_format.py`; evidence
 `docs/probes/29-aggregate-format.diff`, fixture 02, all content invented). Each aggregation was
