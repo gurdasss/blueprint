@@ -845,6 +845,40 @@ saved.
   aggregate of the Profit column and sorting on it: Count (5), Average (1), Max (4), Count
   (Distinct) (2) and Min (3). In each, the sort's `Aggregation.Function` equals the projection's.
 
+**Verified 2026-11-13, Desktop 2.159.1231.0, probe 42** (by hand, on the financial demo PBIP, not
+fixture 02, so not replayed; predictions committed beforehand in the demo repo's `PROBE-42.md`;
+evidence `docs/probes/42-sentiment-colors.diff`; bridge captures local only). Sentiment colours in a
+custom theme:
+
+- **`good`, `neutral` and `bad` are top-level keys of a theme file**, beside `foreground` and
+  `background`, each a hex string. Fluent2's defaults are pastels (`good #9FD89F`, `neutral
+  #FDCFB4`, `bad #EEACB2`). A custom theme that sets them overrides them: after a bridge `reload`
+  of `blueprint-theme.json` with `good #00E000`, `neutral #00B7FF`, `bad #8000FF`, both KPIs
+  (each below its goal) changed from the pastel pink to violet `#8000FF`, the value, the "!"
+  marker and the trend area alike, with no `visual.json` change.
+- **Desktop keeps them as written.** Open and Ctrl+S, and *Customize current theme* (cancelled)
+  and Ctrl+S, wrote nothing. The dialog's sentiment colours showed Negative `#8000FF`, Positive
+  `#00E000` and Neutral `#00B7FF`.
+- **A KPI's direction is a visual object**: flipping it on one KPI wrote
+  `visual.objects.status[0].properties.direction = Literal "'Negative'"` and nothing else
+  (the `$schema` moved 2.13.0 → 2.14.0 and `pages.json` `activePageName` changed, as on any save).
+  Before the flip the visual has no `objects`, so "positive" (the default) is the absence of the
+  key. The user reported the colour prediction held (the flipped KPI took the other sentiment
+  colour); a second KPI was left alone. The predicted property name was wrong (`indicator.direction`).
+- **Desktop rewrote the theme when a colour was changed in the dialog** (the user changed `good`
+  to `#E8A33D`, a palette amber), as probe 03 found for any customisation: a new file
+  `Harbour_&_Finch_Reporting_Stan4755042702932635.json` (name truncated to 30 characters plus
+  digits) replaced `blueprint-theme.json`, which was deleted; `report.json` `customTheme.name` and
+  the `resourcePackages` item changed to the new name. The new file holds the overrides only:
+  `name`, `dataColors` (the five colours extended to **480**, the same expansion as probe 03),
+  `foreground`, `background`, **`good`, `neutral` and `bad`**, `textClasses` and `visualStyles`. It
+  wrote all three sentiment keys although only one changed, but they were already in the file
+  Desktop read. `minimum`, `center`, `maximum` and the other keys the file never set were not
+  added.
+- **Not observed:** `neutral` on screen (no KPI here equals its goal); a waterfall's increase and
+  decrease colours (no waterfall, no contract); whether Desktop writes sentiment keys it
+  wasn't given. `bp theme` doesn't know these keys and would drop them if it regenerated the file.
+
 **Verified 2026-11-10, probe 29** (`scripts/probe_aggregate_format.py`; evidence
 `docs/probes/29-aggregate-format.diff`, fixture 02, all content invented). Each aggregation was
 chosen on a **fresh** field, because an aggregation changed in place keeps the field's old
