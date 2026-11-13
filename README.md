@@ -554,7 +554,11 @@ The core file is small on purpose: `version`, `name`, `canvas` (width and height
 `body`) and `layouts`. Rule severities are fixed in code. `palette` also takes optional sentiment
 colours, `good`, `neutral` and `bad` (hex): `bp theme` writes them as the theme's own keys, a KPI
 draws `good` at or above its goal and `bad` below it (probes 42, 43; no probe has yet seen what
-draws `neutral`), and `bp check` compares them with the theme. Everything else
+draws `neutral`), and `bp check` compares them with the theme. Divergent colours `minimum`,
+`center` and `maximum` are written the same way: Desktop starts every new conditional-format
+gradient from them, but a saved gradient keeps its own hex colours (probe 44), so a spec says
+`{field: "T[Col]", aggregate: sum, gradient: 2|3}` on a table column and Blueprint writes the
+guidelines' colours into the visual. Everything else
 is opt-in under `extensions:`:
 
 ```yaml

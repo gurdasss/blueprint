@@ -115,8 +115,9 @@ def theme_from(layer: str, name: str, data: Any, builtin: bool = False) -> Theme
 
     data = data if isinstance(data, dict) else {}
     sentiment = {k: c for k in ("good", "neutral", "bad") if (c := one(data.get(k)))}
+    divergent = {k: c for k in ("minimum", "center", "maximum") if (c := one(data.get(k)))}
     return Theme(name, layer, False, builtin, hexes(data.get("dataColors")),
-                 one(data.get("foreground")), one(data.get("background")), sentiment,
+                 one(data.get("foreground")), one(data.get("background")), sentiment, divergent,
                  text_classes(data), visual_text(data))
 
 

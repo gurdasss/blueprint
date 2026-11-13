@@ -63,6 +63,9 @@ class Binding:
     level: str | None = None  # hierarchy_level only
     function: str | None = None  # aggregation only, a key of AGGREGATIONS (probe 29)
     format: str | None = None  # format string scoped to the visual (probe 29)
+    # Colour-scale stops, lowest first (2: min, max; 3: min, mid, max), already resolved from the
+    # guidelines' palette. A column's background formatting, not part of its identity (probe 44).
+    gradient: tuple[str, ...] | None = None
 
     def field(self) -> dict:
         source = {"SourceRef": {"Entity": self.table}}
@@ -93,6 +96,69 @@ class Binding:
         if active is not None:
             p["active"] = active
         return p
+
+
+GRADIENT_STOPS = {2: ("min", "max"), 3: ("min", "mid", "max")}
+
+
+def gradient_entry(binding: Binding) -> dict:
+    """One ``visual.objects.values`` entry colouring a column's background by value, as Desktop
+    saved a conditional-format gradient (probe 44): ``backColor`` a ``FillRule`` over the field,
+    its colours hex literals (the theme's divergent colours are only the defaults of a *new* rule),
+    ``nullColoringStrategy`` ``asZero``, and a selector naming the projection's ``queryRef``."""
+    stops = binding.gradient or ()
+    names = GRADIENT_STOPS[len(stops)]
+    rule = {name: {"color": {"Literal": {"Value": _quote(colour)}}} for name, colour in zip(names, stops, strict=True)}
+    rule["nullColoringStrategy"] = {"strategy": {"Literal": {"Value": "'asZero'"}}}
+    return {
+        "properties": {"backColor": {"solid": {"color": {"expr": {"FillRule": {
+            "Input": binding.field(),
+            "FillRule": {f"linearGradient{len(stops)}": rule}}}}}}},
+        "selector": {"data": [{"dataViewWildcard": {"matchingOption": 1}}],
+                     "metadata": binding.projection()["queryRef"]},
+    }
+
+
+def _gradient_ref(entry: Any) -> str | None:
+    """The ``queryRef`` a ``values`` entry's gradient is for, or None if it isn't a gradient."""
+    try:
+        if "FillRule" not in entry["properties"]["backColor"]["solid"]["color"]["expr"]:
+            return None
+        return entry["selector"]["metadata"]
+    except (KeyError, TypeError):
+        return None
+
+
+def _gradient_bindings(bindings: dict[str, list[Binding]]) -> list[Binding]:
+    return [b for _, fields in sorted(bindings.items()) for b in fields if b.gradient]
+
+
+def with_gradients(visual_doc: dict, bindings: dict[str, list[Binding]]) -> tuple[dict, list[str]]:
+    """``visual_doc`` with a gradient entry in ``objects.values`` for each bound field that asks
+    for one, replacing the entry for the same field if its colours differ, and every other
+    ``values`` entry (the user's font or colour choices) left as it is. Returns the document and
+    the ``queryRef`` of each gradient written or changed. A field the spec gives no gradient keeps
+    whatever gradient it has: that is Desktop's (or the user's) to change."""
+    wanted = _gradient_bindings(bindings)
+    body = dict(visual_doc.get("visual") or {})
+    objects = dict(body.get("objects") or {})
+    entries = list(objects.get("values") or [])
+    changed: list[str] = []
+    for b in wanted:
+        entry, ref = gradient_entry(b), b.projection()["queryRef"]
+        at = next((i for i, e in enumerate(entries) if _gradient_ref(e) == ref), None)
+        if at is None:
+            entries.append(entry)
+        elif entries[at] != entry:
+            entries[at] = entry
+        else:
+            continue
+        changed.append(ref)
+    if not changed:
+        return visual_doc, []
+    objects["values"] = entries
+    body["objects"] = objects
+    return {**visual_doc, "visual": body}, changed
 
 
 def _projections(role: str, fields: list[Binding], active_roles: frozenset[str],
@@ -258,6 +324,10 @@ def visual(name: str, visual_type: str, rect: Rect, z: int, tab_order: int, spec
         for obj, prop, literal in options:
             entry = (objects.setdefault(obj, [{"properties": {}}]))[0]
             entry.setdefault("properties", {})[prop] = _literal(literal)
+    if bindings:
+        gradients = [gradient_entry(b) for b in _gradient_bindings(bindings)]
+        if gradients:
+            body.setdefault("objects", {})["values"] = gradients
     if title is not None:
         body["visualContainerObjects"] = title_objects(title)
     return {
@@ -304,6 +374,17 @@ def with_bindings(visual_doc: dict, bindings: dict[str, list[Binding]],
             body["expansionStates"] = kept
         else:
             del body["expansionStates"]
+    values = (body.get("objects") or {}).get("values")
+    if isinstance(values, list):
+        # a gradient on a field that is no longer bound would name a projection that is gone
+        kept = [e for e in values if _gradient_ref(e) is None or _gradient_ref(e) in refs]
+        if len(kept) != len(values):
+            objects = dict(body["objects"])
+            if kept:
+                objects["values"] = kept
+            else:
+                del objects["values"]
+            body["objects"] = objects
     out = {**visual_doc, "visual": body}
     config = visual_doc.get("filterConfig")
     if isinstance(config, dict) and isinstance(config.get("filters"), list):

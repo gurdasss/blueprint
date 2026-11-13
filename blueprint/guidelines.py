@@ -105,6 +105,11 @@ class Palette:
     good: str | None = None
     neutral: str | None = None
     bad: str | None = None
+    # Divergent colours (probe 44): the theme's minimum/center/maximum, the defaults of every new
+    # conditional-format gradient, and the colours Blueprint writes into a spec's `gradient:`.
+    minimum: str | None = None
+    center: str | None = None
+    maximum: str | None = None
 
     @property
     def sentiment(self) -> dict[str, str]:
@@ -113,8 +118,22 @@ class Palette:
                                   ("bad", self.bad)) if v}
 
     @property
+    def divergent(self) -> dict[str, str]:
+        """The divergent colours the guidelines set, keyed by the theme's own key names."""
+        return {k: v for k, v in (("minimum", self.minimum), ("center", self.center),
+                                  ("maximum", self.maximum)) if v}
+
+    def gradient(self, colours: int) -> tuple[str, ...] | None:
+        """The stops of a two- (min, max) or three-colour (min, center, max) gradient, or None
+        when the guidelines don't set every one of them."""
+        keys = ("minimum", "maximum") if colours == 2 else ("minimum", "center", "maximum")
+        stops = tuple(getattr(self, k) for k in keys)
+        return stops if all(stops) else None
+
+    @property
     def allowed(self) -> frozenset[str]:
         return frozenset([*self.categorical, *self.extra, *self.sentiment.values(),
+                          *self.divergent.values(),
                           *(c for c in (self.background, self.text) if c)])
 
     @property
@@ -295,7 +314,7 @@ CORE_KEYS: dict[str, tuple[str, ...]] = {
     "spacing": ("grid", "margin", "gutter"),
     "page": ("max_visuals", "density_policy", "require_title", "title_region"),
     "palette": ("categorical", "background", "text", "extra", "enforce",
-                "good", "neutral", "bad"),
+                "good", "neutral", "bad", "minimum", "center", "maximum"),
     "typography": tuple(CORE_ROLES),
     "layouts": ("search_path", "default"),
 }
@@ -524,6 +543,9 @@ def _palette(raw: dict[str, Any]) -> Palette:
         good=_hex(_get(raw, "palette.good"), "palette.good", nullable=True),
         neutral=_hex(_get(raw, "palette.neutral"), "palette.neutral", nullable=True),
         bad=_hex(_get(raw, "palette.bad"), "palette.bad", nullable=True),
+        minimum=_hex(_get(raw, "palette.minimum"), "palette.minimum", nullable=True),
+        center=_hex(_get(raw, "palette.center"), "palette.center", nullable=True),
+        maximum=_hex(_get(raw, "palette.maximum"), "palette.maximum", nullable=True),
     )
 
 

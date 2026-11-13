@@ -43,7 +43,7 @@ class ApplyError(Exception):
 
 
 def _resolve(placements: list[layouts.Placement], report: Report, visual_dirs: tuple[Path, ...] = (),
-             ) -> tuple[dict[str, dict[str, list[render.Binding]]],
+             palette: guidelines.Palette | None = None) -> tuple[dict[str, dict[str, list[render.Binding]]],
                         dict[str, tuple[render.Binding, str]]]:
     """Spec field references -> PBIR bindings by query role, and each visual's sort, both checked
     against the semantic model."""
@@ -83,9 +83,18 @@ def _resolve(placements: list[layouts.Placement], report: Report, visual_dirs: t
                     problems.append(f"{at}: {exc}")
                     continue
                 if ref.aggregate:
+                    stops = None
+                    if ref.gradient:
+                        stops = palette.gradient(ref.gradient) if palette else None
+                        if stops is None:
+                            need = ("palette.minimum and palette.maximum" if ref.gradient == 2 else
+                                    "palette.minimum, palette.center and palette.maximum")
+                            problems.append(f"{at}: gradient: {ref.gradient} needs {need} in the "
+                                            "guidelines, which supply the colours")
+                            continue
                     roles.setdefault(slot.role, []).append(render.Binding(
                         "aggregation", table, ref.name,
-                        function=spec.AGGREGATIONS[ref.aggregate], format=ref.format))
+                        function=spec.AGGREGATIONS[ref.aggregate], format=ref.format, gradient=stops))
                 else:
                     roles.setdefault(slot.role, []).append(
                         render.Binding(ref.kind, table, ref.name, format=ref.format))
@@ -243,7 +252,7 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
                          "the page it builds. Fix the layout:\n  "
                          + "\n  ".join(clash))
     placements = layouts.place(page_spec, layout, rules.visuals)
-    bindings, sorts = _resolve(placements, report, rules.visuals)
+    bindings, sorts = _resolve(placements, report, rules.visuals, rules.palette)
     known = contracts(rules.visuals)
     plan = Plan(root=report.root)
     plan.warnings.extend(report.warnings)
@@ -325,6 +334,11 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
                     current.notes.append(f"rebind {_bindings_text(have)} -> {_bindings_text(_bound(want))}")
                 else:
                     current.notes.append("format changed")
+            # A gradient the spec asks for is written in place, or its colours rewritten when the
+            # guidelines' divergent colours changed; one it doesn't ask for is left alone.
+            current.source.data, regraded = render.with_gradients(current.source.data, want)
+            if regraded:
+                current.notes.append("gradient " + ", ".join(regraded))
             if want and (have != _bound(want) or edited):  # record what is bound now
                 mark = render.bindings_fingerprint(_bound(want))
                 current.source.data = render.with_annotations(current.source.data,

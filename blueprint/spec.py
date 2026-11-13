@@ -66,6 +66,7 @@ class FieldRef:
     table: str | None = None  # None for a measure until resolved against the model
     aggregate: str | None = None  # a key of AGGREGATIONS; columns only (long form)
     format: str | None = None  # a Power BI format string scoped to the visual (long form)
+    gradient: int | None = None  # 2 or 3: a colour-scale background on the column (long form)
 
     def __str__(self) -> str:
         ref = f"[{self.name}]" if self.table is None else f"{self.table}[{self.name}]"
@@ -126,7 +127,7 @@ def parse_field(text: Any) -> FieldRef | None:
     return None
 
 
-_SLOT_KEYS = ("field", "aggregate", "format")
+_SLOT_KEYS = ("field", "aggregate", "format", "gradient")
 
 
 def parse_slot(item: Any, at: str, problems: list[str]) -> FieldRef | None:
@@ -165,7 +166,20 @@ def parse_slot(item: Any, at: str, problems: list[str]) -> FieldRef | None:
     if fmt is not None and (not isinstance(fmt, str) or not fmt.strip()):
         problems.append(f"{at}.format: must be a Power BI format string, e.g. \"#,0.00\"")
         return None
-    return replace(ref, aggregate=aggregate, format=fmt.strip() if isinstance(fmt, str) else None)
+    gradient = item.get("gradient")
+    if gradient is not None:
+        if isinstance(gradient, bool) or gradient not in (2, 3):
+            problems.append(f"{at}.gradient: {gradient!r} must be 2 (lowest to highest) or 3 "
+                            "(lowest, middle, highest): the number of colours")
+            return None
+        if aggregate is None:
+            # Probe 44 saw a gradient on an aggregated column only; a plain column or a model
+            # measure as the rule's input is another shape no probe has produced.
+            problems.append(f"{at}.gradient: needs aggregate (probe 44 verified a gradient on an "
+                            f"aggregated column), e.g. {{field: {ref}, aggregate: sum, gradient: {gradient}}}")
+            return None
+    return replace(ref, aggregate=aggregate, format=fmt.strip() if isinstance(fmt, str) else None,
+                   gradient=gradient)
 
 
 def load(path: Path, visual_dirs: tuple[Path, ...] = ()) -> PageSpec:
@@ -350,7 +364,10 @@ def _slots(at: str, raw: Any, contract: Contract, problems: list[str]) -> dict[s
             # An aggregated column is a summarised value, so it belongs where a measure does
             # (probe 29 put one in a table's Values well beside measures), not where a plain
             # column does: a drill-down category of "Sum of Amount" isn't a thing.
-            if ref.aggregate and "measure" not in slot.accepts:
+            if ref.gradient and not slot.gradient:
+                problems.append(f"{item_at}: {contract.type}'s {name} takes no gradient "
+                                "(no Desktop probe has verified one there)")
+            elif ref.aggregate and "measure" not in slot.accepts:
                 problems.append(f"{item_at}: {name} takes {' or '.join(slot.accepts)}, so it can't "
                                 f"take an aggregation ({ref})")
             elif ref.aggregate:

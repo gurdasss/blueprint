@@ -53,6 +53,9 @@ class Slot:
     # `true` and each deeper one an explicit `false`. "all" is the slicer's Field, where every
     # level is `true` (probe 39). Another per-well fact, so it lives in the contract too.
     active_levels: str = "first"
+    # A field here may carry `gradient: 2|3`, a colour-scale background (probe 44: a table's
+    # Values). Another per-well fact about one visual type, so it lives in the contract.
+    gradient: bool = False
 
 
 @dataclass(frozen=True)
@@ -163,7 +166,8 @@ def _contract(data: dict, where: str, stem: str) -> Contract:
                 raise ContractError(f"{where}: slot {name}: active_levels needs active: true")
             slots[name] = Slot(name, spec["role"], accepts, bool(spec.get("required", False)),
                                bool(spec.get("ordered", False)), tuple(spec.get("list_excludes", ())),
-                               bool(spec.get("active", False)), levels)
+                               bool(spec.get("active", False)), levels,
+                               bool(spec.get("gradient", False)))
         options = {}
         for name, spec in (data.get("options") or {}).items():
             if not all(isinstance(k, str) for k in spec["values"]):

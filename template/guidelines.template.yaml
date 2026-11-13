@@ -70,6 +70,12 @@ page:
 #                 it yet. Optional (omit: the theme's own).
 #                 `bp check` compares them with the theme once `categorical`
 #                 is set (an empty palette isn't checked at all).
+#   minimum, center, maximum
+#                 Divergent colours: the lowest, middle and highest stop of a
+#                 colour scale. The theme gets them, so every gradient a person
+#                 adds in Desktop starts from them, and a spec's `gradient:` on a
+#                 table column writes them into the visual (a saved gradient does
+#                 not follow later theme changes). Optional.
 #   extra         Further approved colours (e.g. a shade picked from the
 #                 theme, which is stored as resolved hex). Optional.
 #   enforce       strict (error) | warn (warning) | off (skip check)
@@ -86,6 +92,9 @@ palette:
   good: "#59A14F"
   neutral: "#F28E2B"
   bad: "#E15759"
+  minimum: "#FCE4D6"
+  center: "#FAFAFA"
+  maximum: "#4E79A7"
   extra: []
   enforce: strict
 

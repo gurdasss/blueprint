@@ -34,6 +34,9 @@ palette:
   good: null           # sentiment colours, written to the theme (a KPI's good / neutral / bad);
   neutral: null        # null: leave the theme's default
   bad: null
+  minimum: null        # divergent colours: the theme's, and a spec's `gradient:` stops (lowest,
+  center: null         # middle, highest); null: the theme's default, and no gradient in a spec
+  maximum: null
   extra: []            # other allowed colours, e.g. approved shades (theme shades picked for
                        # textbox text are stored as resolved hex and must be listed here)
   enforce: strict      # strict: violations are errors | warn: warnings | off

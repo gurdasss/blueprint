@@ -211,7 +211,7 @@ def effective_theme(themes: list[Theme]) -> Theme | None:
     for t in found[1:]:
         eff = Theme(t.name, t.layer, False, t.builtin, t.data_colors or eff.data_colors,
                     t.foreground or eff.foreground, t.background or eff.background,
-                    {**eff.sentiment, **t.sentiment},
+                    {**eff.sentiment, **t.sentiment}, {**eff.divergent, **t.divergent},
                     _merge(eff.text_classes, t.text_classes), _merge(eff.visual_text, t.visual_text))
     return eff
 
@@ -283,11 +283,13 @@ def _check_theme(theme: Theme, pal, c: _Collector) -> None:
                                  ("foreground", theme.foreground, pal.text)):
         if expected and got != expected:
             c.add("palette", f"theme {theme.name!r} {label} is {got}, palette says {expected}")
-    for key, expected in pal.sentiment.items():
-        got = theme.sentiment.get(key)
-        if got != expected:
-            c.add("palette", f"theme {theme.name!r} sentiment colour {key} is "
-                             f"{got or 'not set'}, palette says {expected}")
+    for kind, wanted, have in (("sentiment", pal.sentiment, theme.sentiment),
+                               ("divergent", pal.divergent, theme.divergent)):
+        for key, expected in wanted.items():
+            got = have.get(key)
+            if got != expected:
+                c.add("palette", f"theme {theme.name!r} {kind} colour {key} is "
+                                 f"{got or 'not set'}, palette says {expected}")
 
 
 # --- typography --------------------------------------------------------------------------

@@ -5,7 +5,10 @@ type: table
 visual_type: tableEx
 region: main
 slots:
-  columns: { role: Values, accepts: [column, measure, hierarchy], required: true, ordered: true }
+  # Probe 44: a measure column (an aggregated column) can carry a colour-scale background, stored
+  # in objects.values (gradient: 2 or 3 colours, from the guidelines' palette.minimum|center|maximum).
+  columns: { role: Values, accepts: [column, measure, hierarchy], required: true, ordered: true,
+             gradient: true }
 options:
   # Probe 32: `objects.total[0].properties.totals = false` removes the Total row, `true` and no
   # object show it (Desktop's default is on). Kept as written through a save.
