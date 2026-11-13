@@ -47,6 +47,18 @@ PREDICTIONS (written before the probe is opened; counted exact and within 6 per 
      to the legacy form. Alternatives: it keeps the modern name (then `guidelines.STRUCTURAL`
      should write modern names), or it writes both.
 
+ RESULT (recorded after N1-N6, before the follow-up below): modern names ARE read; `disabledText`
+ removed, the Filters pane edge took `fourthLevelElements` (not Fluent's grey: N2 wrong);
+ `secondaryBackground` and `tableAccent` painted nothing (N3, N4 held); and on a dialog edit of
+ Third-level to #FF0000 Desktop **appended the legacy `backgroundLight`** and **kept**
+ `thirdLevelElements: #00FF00`, so the file holds both. With both present the slicer border drew
+ #FF0000: the legacy value won. But `backgroundLight` is also the **last** key in the file, so
+ "legacy wins" and "last wins" are not yet separated.
+
+ N7  (follow-up, written before it is applied) Moving `backgroundLight` **above**
+     `thirdLevelElements` in the saved theme keeps the border red: the legacy name wins **by name**,
+     whatever the order. Alternative: it turns green, and what wins is simply the last key read.
+
 All content is the demo's financial sample.
 """
 
