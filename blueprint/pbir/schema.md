@@ -1077,6 +1077,38 @@ with the bounding box of the near matches:
   opened and nothing on disk changed.
 - Updates probe 46's "Not recorded" list: of the seven keys not seen painting there, two now are.
 
+**Verified 2026-11-13, Desktop 2.159.1231.0, probe 49** (`scripts/probe_accept_structural.py`,
+measured with `scripts/probe_pixels.py`; evidence `docs/probes/49-accept-structural.diff`; the
+financial demo PBIP, not fixture 02, so not replayed; bridge captures local only). The acceptance
+half of probes 46 and 48: the theme was written by `bp theme --replace-theme` from
+`palette.second_level|third_level|fourth_level|disabled_text`, nothing by hand. Set E was chosen at
+Chebyshev distance >= 59 from every colour used in this theme before, so a drawn pixel proves
+Blueprint's value and not probe 46's hand-written one.
+
+- **Desktop draws what `bp theme` wrote, in the places probe 48 measured.** Exact pixel counts on
+  Gallery A: `second_level` `#00E5FF` 13,681 px of secondary text (13,668 in probe 48),
+  `third_level` `#FF00FF` 721 px of the dropdown slicer's border and `fourth_level` `#7CFC00`
+  600 px of the multi-row card's accent bars (both the same count **and the same bounding box** as
+  probe 48), `disabled_text` `#8B008B` 3,144 px of the Filters pane edge. **Zero** pixels of all
+  four hand-written values remain.
+- **The dialog shows them**: First-level `#1F2A33`, Second-level `#00E5FF`, Third-level `#FF00FF`,
+  Fourth-level `#7CFC00`, Background `#F7F4EC`.
+- **A key the guidelines don't set falls back to the base theme**: `bp theme` regenerates the whole
+  file, so probe 46's hand-written `foregroundNeutralLight`, `backgroundNeutral`, `backgroundDark`,
+  `tableAccent` and `shapeStroke` were not written again, and the dialog showed Secondary
+  background as Fluent2's `#C7C7C7`. Dropping them changed nothing visible, which is what probe 48's
+  zero pixel counts predicted.
+- **Ctrl+S kept `blueprint-theme.json` byte for byte** and wrote no second theme file. Desktop
+  deleted the old, no-longer-referenced theme file that `--replace-theme` leaves behind and removed
+  its `resourcePackages` item (as in probes 43 and 45), and rewrote `pages.json` `activePageName`.
+- **One `visual.json` changed, for a reason that is not about colour**: the scatter chart's `X`
+  projection gained `"active": true`, which Desktop adds itself on save (probes 34, 36; the one flag
+  Blueprint leaves to it). No visual gained any colour property: a structural colour is not stored
+  in a visual. This refuted the prediction "changes no `visual.json`", which overlooked the known
+  scatter behaviour.
+- Re-running `bp theme` and `bp apply` on the saved report: No changes. `bp check`: no `palette`
+  finding (the one warning is the gallery page's 12 visuals against `max_visuals`, by design).
+
 **Verified 2026-11-10, probe 29** (`scripts/probe_aggregate_format.py`; evidence
 `docs/probes/29-aggregate-format.diff`, fixture 02, all content invented). Each aggregation was
 chosen on a **fresh** field, because an aggregation changed in place keeps the field's old
