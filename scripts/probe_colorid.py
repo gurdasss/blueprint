@@ -44,6 +44,29 @@ PREDICTIONS (written before the probe is opened):
  C7  Desktop keeps the theme file byte for byte; the only files that change are the 14 cards'
      `visual.json` and `pages.json` `activePageName`.
 
+ RESULT OF THE PICKER STEP (recorded after the user's picks; C1-C7 above are NOT all kept):
+ the picker's grid is 10 columns x 6 rows of **data colours only** (hover: "#7A9E3B, Theme color 5,
+ 20% lighter"); no background/foreground swatch. Saved: R1 C1 = "Theme color 2, 40% lighter"
+ -> `ColorId 3, Percent 0.4`; R1 C2 = "Theme color 7, 20% lighter" -> `ColorId 8, Percent 0.2`,
+ both in `objects.fillCustom[].properties.fillColor`, selector `{id: default}` (the card's own fill,
+ not the container background). Drawn: #F1C88B and #FEAB85, exactly the data colours tinted
+ toward white by c + (255 - c) * p. So ColorId n = dataColors[n - 2] (the cited mapping) and a
+ positive Percent is lighter. Hover for "Theme color 2, 50% darker" read #74521F = c * (1 - p).
+
+FOLLOW-UP PREDICTIONS (written before the candidate below is applied; the picker can't reach
+ColorId 0 and 1, so these numbers are hand-written into the shape Desktop wrote, with a reload):
+
+ F1  ColorId 0 resolves to the theme's `background` (#F7F4EC), so ColorId 0 / Percent -0.5 draws
+     #7C7A76 (each channel halved). Alternative: a fixed white (#FFFFFF) or black.
+ F2  ColorId 1 resolves to `foreground` (#1F2A33).  Alternative: a fixed black.
+ F3  ColorId 2 is dataColors[0] (#0B6E75) and ColorId 11 is dataColors[9] (#DFBFBF).
+ F4  ColorId 12, beyond the picker's 10 columns, is dataColors[10] (#4AC5BB): the reference is
+     an index into the whole data-colour list, not into what the picker shows.
+ F5  A negative Percent darkens by c * (1 + p): ColorId 3 / Percent -0.5 draws #74521F, the
+     value Desktop's own hover showed for "Theme color 2, 50% darker".
+ F6  ColorId 0 / Percent 0.5 draws #FBFAF5 and ColorId 1 / Percent 0.5 draws #8F9599 (c + (255 - c) * .5)
+     if F1 and F2 hold.
+
 All content is the demo's financial sample.
 """
 
@@ -104,7 +127,41 @@ first. You only:
 Tell Claude when it is saved, with the grid's layout.
 """
 
+# (card title, ColorId, Percent) written by hand into the shape Desktop saved for a picked cell
+FOLLOW_UP = [("R1 C3", 0, -0.5), ("R1 C4", 1, 0), ("R1 C5", 2, 0), ("R1 C6", 11, 0), ("R1 C7", 12, 0),
+             ("R1 C8", 3, -0.5), ("C1 R2", 0, 0), ("C1 R3", 1, 0.5), ("C1 R4", 0, 0.5)]
+
+
+def candidate(dest: Path) -> None:
+    """Hand-write the follow-up ThemeDataColor values, keeping Desktop's bytes everywhere else."""
+    from blueprint.pbir import jsonfmt
+
+    wanted = {t: (cid, pct) for t, cid, pct in FOLLOW_UP}
+    done = set()
+    for f in sorted(dest.glob("financial.Report/definition/pages/*/visuals/*/visual.json")):
+        doc = jsonfmt.load(f)
+        title = (((doc["visual"].get("visualContainerObjects") or {}).get("title") or [{}])[0]
+                 .get("properties", {}).get("text", {}).get("expr", {}).get("Literal", {}).get("Value"))
+        key = title.strip("'") if isinstance(title, str) else None
+        if key not in wanted or key in done:
+            continue
+        cid, pct = wanted[key]
+        doc["visual"].setdefault("objects", {})["fillCustom"] = [{
+            "properties": {"fillColor": {"solid": {"color": {"expr": {"ThemeDataColor": {
+                "ColorId": cid, "Percent": pct}}}}}},
+            "selector": {"id": "default"}}]
+        f.write_bytes(jsonfmt.dump_bytes(doc))
+        done.add(key)
+    missing = set(wanted) - done
+    if missing:
+        sys.exit(f"no card titled {sorted(missing)}")
+    print(f"wrote {len(done)} ThemeDataColor fills by hand")
+
+
 if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "candidate":
+        candidate(Path(sys.argv[2]))
+        sys.exit(0)
     if len(sys.argv) != 3:
         sys.exit(__doc__)
     dest, base = Path(sys.argv[1]), Path(sys.argv[2])
