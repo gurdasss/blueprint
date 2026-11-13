@@ -162,7 +162,7 @@ def test_reapplying_an_aggregated_sort_is_a_no_op(report: Path):
                                              ("min", 3), ("max", 4), ("count", 5)])
 def test_the_sort_carries_each_aggregates_function_code(report: Path, aggregate: str, code: int):
     """probe 41: Count (5), Average (1), Max (4) and Count Distinct (2) each sorted with the same
-    Function as their projection; Sum (0) likewise. Min (3) follows the same rule."""
+    Function as their projection; Sum (0) and Min (3) likewise."""
     body = ("  - type: table\n    title: Detail\n    slots:\n      columns:\n"
             "        - \"Sales[Country]\"\n"
             f"        - {{field: \"Sales[Amount]\", aggregate: {aggregate}}}\n"

@@ -161,3 +161,33 @@ index 75e25ea..9279854 100644
              },
              "direction": "Descending"
 
+######## sort by min
+
+diff --git a/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json b/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json
+index 9279854..34098ba 100644
+--- a/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json
++++ b/financial.Report/definition/pages/8bd063df7c35f012ce2e/visuals/1c25cd35b25f1da386ef/visual.json
+@@ -56,11 +56,11 @@
+                       "Property": "Profit"
+                     }
+                   },
+-                  "Function": 2
++                  "Function": 3
+                 }
+               },
+               "queryRef": "Sum(financials.Profit)",
+-              "nativeQueryRef": "Count of Profit"
++              "nativeQueryRef": "Min of Profit"
+             }
+           ]
+         }
+@@ -80,7 +80,7 @@
+                     "Property": "Profit"
+                   }
+                 },
+-                "Function": 2
++                "Function": 3
+               }
+             },
+             "direction": "Descending"
+
