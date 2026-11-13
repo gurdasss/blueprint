@@ -1146,6 +1146,40 @@ screen (1536x864, where a bridge capture is 2834x1587).
   retired slot — a hypothesis for a later probe, not evidence; conditional formatting; the
   service rather than Desktop; and a light Desktop UI theme.
 
+**Verified 2026-11-13, Desktop 2.159.1231.0, probe 51** (`scripts/probe_modern_structural.py`,
+measured with `scripts/probe_pixels.py`; evidence `docs/probes/51-modern-structural.diff`; probe
+49's report, the financial demo PBIP, not fixture 02, so not replayed; captures local only).
+Power BI's **modern** structural key names, and which form Desktop writes. The four legacy keys
+`bp theme` had written were replaced by modern names with new loud colours, and `disabledText`
+was dropped and not replaced.
+
+- **Desktop reads the modern names.** `secondLevelElements` `#0000D2` drew 14,932 px of secondary
+  text, `thirdLevelElements` `#00FF00` 721 px of the dropdown slicer's border (the same bounding
+  box and count as the legacy key in probes 48 and 49) and `fourthLevelElements` `#F000A5` the
+  multi-row card's 600 px of accent bars. The dialog showed all of them. So
+  `foregroundNeutralSecondary` = `secondLevelElements`, `backgroundLight` = `thirdLevelElements`
+  and `foregroundNeutralTertiary` = `fourthLevelElements` are alias pairs, which is why probe 46's
+  dialog labels looked mismatched against the legacy names.
+- **`secondaryBackground` `#00FF69` and `tableAccent` `#5AFF5A` still paint nothing**, as their
+  legacy forms did (probes 48, 50). Modern names reach no element the legacy ones didn't.
+- **`disabledText` is a narrower override of `fourthLevelElements`.** With `disabledText` gone, the
+  Filters pane's left edge drew `fourthLevelElements`, 3,144 px: the exact count `disabledText`
+  drew in probes 48, 49 and 46. So that element falls back from `disabledText` to the fourth-level
+  colour, rather than to the base theme.
+- **Desktop writes the legacy name.** Setting Third-level to `#FF0000` in *Customize current theme*
+  saved `"backgroundLight": "#FF0000"` **appended at the very end of the file, after
+  `visualStyles`**, while **keeping** `thirdLevelElements: "#00FF00"`. A theme file can therefore
+  hold both forms of one colour with different values.
+- **The legacy name wins, by name and not by file order.** With both present the slicer border drew
+  `#FF0000` (721 px, modern green zero), both when `backgroundLight` was last in the file and after
+  it was moved above `thirdLevelElements`.
+- **So writing the legacy names is right** (`guidelines.STRUCTURAL`): they are what Desktop itself
+  writes, and what wins if a hand-edited theme carries both. Writing modern names would work until
+  someone touched the dialog, after which Blueprint's value would be shadowed by Desktop's.
+- Not probed: `firstLevelElements` (`bp theme` pins every text class's colour from `palette.text`,
+  which would mask it), the modern names in the service rather than Desktop, and whether a
+  `hyperlink`, `null` or `shapeStroke` modern alias exists.
+
 **Verified 2026-11-10, probe 29** (`scripts/probe_aggregate_format.py`; evidence
 `docs/probes/29-aggregate-format.diff`, fixture 02, all content invented). Each aggregation was
 chosen on a **fresh** field, because an aggregation changed in place keeps the field's old
