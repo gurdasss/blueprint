@@ -217,6 +217,7 @@ visuals:
 #       field: "Sales[Amount]"
 #       aggregate: sum             # summarise the column in this visual
 #       format: "#,0.00"           # a Power BI format string
+#       gradient: 2                # colour the cell background by value
 #
 # ── aggregate (a column summarised in the visual) ──
 #
@@ -245,5 +246,26 @@ visuals:
 #   symbol, so a shorthand would mean Blueprint inventing one.
 #   A measure's own format lives in the model (TMDL formatString) and
 #   is a different thing; this one is per visual.
+#
+# ── gradient (a colour scale on a table column) ──
+#
+#   gradient: 2                    lowest → highest
+#   gradient: 3                    lowest → middle → highest
+#
+#   The number is how many colours the scale uses. They come from your
+#   guidelines (`palette.minimum`, `palette.center`, `palette.maximum`),
+#   so the scale matches the standard instead of being picked by hand,
+#   and `apply` refuses the spec if the colours it needs are not set.
+#
+#   Only on a `table` column, and only with `aggregate`: probe 44 saw
+#   Desktop save a gradient on an aggregated column and nowhere else.
+#   Changing the guideline colours and re-applying rewrites the scale in
+#   place. Dropping `gradient` from the spec leaves the one already in
+#   the report: removing it is then Desktop's to do, not Blueprint's.
+#
+#   This is the one piece of conditional formatting Blueprint writes.
+#   A gradient someone adds in Desktop keeps its own colours and does
+#   not follow a later theme change (probe 44), which is why the colours
+#   are written into the visual rather than left to the theme.
 #
 # ─────────────────────────────────────────────────────────────────────
