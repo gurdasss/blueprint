@@ -879,6 +879,32 @@ custom theme:
   decrease colours (no waterfall, no contract); whether Desktop writes sentiment keys it
   wasn't given. `bp theme` doesn't know these keys and would drop them if it regenerated the file.
 
+**Verified 2026-11-13, Desktop 2.159.1231.0, probe 43** (`scripts/probe_accept_sentiment.py`;
+evidence `docs/probes/43-accept-sentiment.diff`; the financial demo PBIP, not fixture 02, so not
+replayed; bridge captures local only). The acceptance half of probe 42: everything was written by
+Blueprint (`bp theme --replace-theme` with `palette.good|neutral|bad`, then `bp apply`), nothing by
+hand.
+
+- **Desktop draws and keeps what `bp theme` wrote.** The theme (`good #2E9E4F`, `neutral
+  #F0C419`, `bad #B3124B`, none in the palette or Fluent2's pastels) opened with no error. A KPI
+  below its goal drew crimson with the "!" marker, one above its goal drew green with a check mark,
+  in value, marker and trend area. After Ctrl+S `blueprint-theme.json` was unchanged, `report.json`
+  still names it as the custom theme, no second theme file appeared, and no `visual.json`
+  changed (not even a `$schema` bump). What did change: `pages.json` `activePageName`, and Desktop
+  **deleted the old, no-longer-referenced theme file** that `bp theme --replace-theme` had left
+  behind (it keeps the old file) and removed its `resourcePackages` item. Re-running `bp theme`
+  and `bp apply` on the saved report: No changes. `bp check` with the same guidelines: 0 errors,
+  0 warnings.
+- **A KPI level with its goal (+0%) draws `good`**, not `neutral`: "at or above goal" is good.
+  This disproved the prediction that it would be neutral.
+- **A KPI with no goal draws no sentiment colour at all**: the value is in the text colour and the
+  trend area plain light grey. This also disproved the prediction that it would be neutral. (Seen
+  after a bridge reload of a Blueprint-built page; Desktop didn't save that page.)
+- **`neutral` has not been seen on screen** in either probe: not on a KPI below, at or above its
+  goal, and not on one without a goal. Open candidates: a waterfall's total bar and conditional
+  formatting. Blueprint still writes the key (Desktop keeps it and shows it in the Customize
+  dialog, probe 42), so a client's `neutral` is stored, but no probe has yet shown what reads it.
+
 **Verified 2026-11-10, probe 29** (`scripts/probe_aggregate_format.py`; evidence
 `docs/probes/29-aggregate-format.diff`, fixture 02, all content invented). Each aggregation was
 chosen on a **fresh** field, because an aggregation changed in place keeps the field's old
