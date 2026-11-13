@@ -93,6 +93,20 @@ class PageRules:
     title_region: str | None  # the region role that header must be in; None: any
 
 
+# Structural colours (probes 46, 48): the guideline key -> the theme key Desktop writes and keeps.
+# The guideline keys are the labels of Desktop's *Customize current theme* dialog (First-level is
+# `palette.text`, Background is `palette.background`); `disabled_text` has no entry there, so it is
+# the theme's own name. What each paints, in the static states captured: second_level the secondary
+# grey text, third_level the dropdown slicer's border, fourth_level the multi-row card's accent
+# bars, disabled_text the Filters pane's left edge.
+STRUCTURAL = {
+    "second_level": "foregroundNeutralSecondary",
+    "third_level": "backgroundLight",
+    "fourth_level": "foregroundNeutralTertiary",
+    "disabled_text": "disabledText",
+}
+
+
 @dataclass(frozen=True)
 class Palette:
     categorical: tuple[str, ...]  # uppercase hex; empty = palette rule inactive
@@ -110,6 +124,16 @@ class Palette:
     minimum: str | None = None
     center: str | None = None
     maximum: str | None = None
+    second_level: str | None = None
+    third_level: str | None = None
+    fourth_level: str | None = None
+    disabled_text: str | None = None
+
+    @property
+    def structural(self) -> dict[str, str]:
+        """The structural colours the guidelines set, keyed by the *theme's* key names."""
+        return {theme_key: value for key, theme_key in STRUCTURAL.items()
+                if (value := getattr(self, key))}
 
     @property
     def sentiment(self) -> dict[str, str]:
@@ -133,7 +157,7 @@ class Palette:
     @property
     def allowed(self) -> frozenset[str]:
         return frozenset([*self.categorical, *self.extra, *self.sentiment.values(),
-                          *self.divergent.values(),
+                          *self.divergent.values(), *self.structural.values(),
                           *(c for c in (self.background, self.text) if c)])
 
     @property
@@ -314,7 +338,8 @@ CORE_KEYS: dict[str, tuple[str, ...]] = {
     "spacing": ("grid", "margin", "gutter"),
     "page": ("max_visuals", "density_policy", "require_title", "title_region"),
     "palette": ("categorical", "background", "text", "extra", "enforce",
-                "good", "neutral", "bad", "minimum", "center", "maximum"),
+                "good", "neutral", "bad", "minimum", "center", "maximum",
+                *STRUCTURAL),
     "typography": tuple(CORE_ROLES),
     "layouts": ("search_path", "default"),
 }
@@ -546,6 +571,7 @@ def _palette(raw: dict[str, Any]) -> Palette:
         minimum=_hex(_get(raw, "palette.minimum"), "palette.minimum", nullable=True),
         center=_hex(_get(raw, "palette.center"), "palette.center", nullable=True),
         maximum=_hex(_get(raw, "palette.maximum"), "palette.maximum", nullable=True),
+        **{key: _hex(_get(raw, f"palette.{key}"), f"palette.{key}", nullable=True) for key in STRUCTURAL},
     )
 
 

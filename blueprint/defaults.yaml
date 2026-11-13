@@ -37,6 +37,10 @@ palette:
   minimum: null        # divergent colours: the theme's, and a spec's `gradient:` stops (lowest,
   center: null         # middle, highest); null: the theme's default, and no gradient in a spec
   maximum: null
+  second_level: null   # structural colours, written to the theme as Desktop's dialog labels them:
+  third_level: null    # second_level (secondary grey text), third_level (dropdown slicer border),
+  fourth_level: null   # fourth_level (multi-row card accent bars), disabled_text (the Filters
+  disabled_text: null  # pane's left edge). First-level is `text`. null: the theme's default
   extra: []            # other allowed colours, e.g. approved shades (theme shades picked for
                        # textbox text are stored as resolved hex and must be listed here)
   enforce: strict      # strict: violations are errors | warn: warnings | off

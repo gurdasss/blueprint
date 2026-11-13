@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from blueprint import grid
-from blueprint.guidelines import ROLE_LABEL, Guidelines
+from blueprint.guidelines import ROLE_LABEL, STRUCTURAL, Guidelines
 from blueprint.model import ColorUse, FontUse, Page, Rect, Report, TextClass, Theme, Visual
 from blueprint.policies import DENSITY
 
@@ -212,6 +212,7 @@ def effective_theme(themes: list[Theme]) -> Theme | None:
         eff = Theme(t.name, t.layer, False, t.builtin, t.data_colors or eff.data_colors,
                     t.foreground or eff.foreground, t.background or eff.background,
                     {**eff.sentiment, **t.sentiment}, {**eff.divergent, **t.divergent},
+                    {**eff.structural, **t.structural},
                     _merge(eff.text_classes, t.text_classes), _merge(eff.visual_text, t.visual_text))
     return eff
 
@@ -290,6 +291,12 @@ def _check_theme(theme: Theme, pal, c: _Collector) -> None:
             if got != expected:
                 c.add("palette", f"theme {theme.name!r} {kind} colour {key} is "
                                  f"{got or 'not set'}, palette says {expected}")
+    for key, theme_key in STRUCTURAL.items():  # findings name the client's key, then the theme's
+        expected = getattr(pal, key)
+        got = theme.structural.get(theme_key)
+        if expected and got != expected:
+            c.add("palette", f"theme {theme.name!r} structural colour {key} ({theme_key}) is "
+                             f"{got or 'not set'}, palette says {expected}")
 
 
 # --- typography --------------------------------------------------------------------------

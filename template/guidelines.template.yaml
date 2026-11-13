@@ -78,6 +78,14 @@ page:
 #                 not follow later theme changes). Optional.
 #   extra         Further approved colours (e.g. a shade picked from the
 #                 theme, which is stored as resolved hex). Optional.
+#   second_level, third_level, fourth_level, disabled_text
+#                 Structural colours, named as Power BI's own "Customize
+#                 current theme" dialog labels them (First-level is `text`,
+#                 Background is `background`). `bp theme` writes them to the
+#                 theme. What each was seen to paint: second_level the
+#                 secondary grey text (subtitles, axis labels), third_level a
+#                 dropdown slicer's border, fourth_level a multi-row card's
+#                 accent bars, disabled_text the Filters pane edge. Optional.
 #   enforce       strict (error) | warn (warning) | off (skip check)
 
 palette:
@@ -95,6 +103,10 @@ palette:
   minimum: "#FCE4D6"
   center: "#FAFAFA"
   maximum: "#4E79A7"
+  second_level: "#666666"
+  third_level: "#4E79A7"
+  fourth_level: "#76B7B2"
+  disabled_text: "#B3B3B3"
   extra: []
   enforce: strict
 

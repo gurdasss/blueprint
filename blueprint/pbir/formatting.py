@@ -22,6 +22,10 @@ from typing import Any
 from blueprint.model import ColorUse, FontUse, TextClass, Theme
 
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
+# The theme keys the guidelines' structural palette keys write (probe 46). `guidelines.STRUCTURAL`
+# names them from the other side; a test keeps the two lists equal.
+STRUCTURAL_KEYS = ("foregroundNeutralSecondary", "backgroundLight", "foregroundNeutralTertiary",
+                   "disabledText")
 # Path segments that carry no meaning for a reader of the finding.
 _NOISE = {"visual", "objects", "visualContainerObjects", "properties", "general", "paragraphs",
           "textRuns"}
@@ -116,9 +120,10 @@ def theme_from(layer: str, name: str, data: Any, builtin: bool = False) -> Theme
     data = data if isinstance(data, dict) else {}
     sentiment = {k: c for k in ("good", "neutral", "bad") if (c := one(data.get(k)))}
     divergent = {k: c for k in ("minimum", "center", "maximum") if (c := one(data.get(k)))}
+    structural = {k: c for k in STRUCTURAL_KEYS if (c := one(data.get(k)))}
     return Theme(name, layer, False, builtin, hexes(data.get("dataColors")),
                  one(data.get("foreground")), one(data.get("background")), sentiment, divergent,
-                 text_classes(data), visual_text(data))
+                 structural, text_classes(data), visual_text(data))
 
 
 # --- fonts (probe 03) ----------------------------------------------------------------------

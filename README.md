@@ -558,7 +558,10 @@ draws `neutral`), and `bp check` compares them with the theme. Divergent colours
 `center` and `maximum` are written the same way: Desktop starts every new conditional-format
 gradient from them, but a saved gradient keeps its own hex colours (probe 44), so a spec says
 `{field: "T[Col]", aggregate: sum, gradient: 2|3}` on a table column and Blueprint writes the
-guidelines' colours into the visual. Everything else
+guidelines' colours into the visual. Four structural colours, `second_level`, `third_level`,
+`fourth_level` and `disabled_text`, are named as Power BI's "Customize current theme" dialog labels
+them (first-level is `text`, background is `background`) and go to the theme the same way; probes
+46 and 48 measured what each one paints. Everything else
 is opt-in under `extensions:`:
 
 ```yaml

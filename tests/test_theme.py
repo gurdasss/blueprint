@@ -308,3 +308,78 @@ def test_check_reports_a_sentiment_colour_the_theme_never_sets(report: Path, tmp
     main(["check", "--report", str(report), "--guidelines", str(g), "--json"])
     msgs = [f["message"] for f in json.loads(capsys.readouterr().out)["findings"] if f["rule"] == "palette"]
     assert any("sentiment colour good is" in m and "palette says #00E000" in m for m in msgs)
+
+
+# --- structural colours (probes 46, 48) ---------------------------------------------------
+
+STRUCTURAL = ("palette: {second_level: '#FF2D95', third_level: '#4639FF', "
+              "fourth_level: '#9B30FF', disabled_text: '#808000'}\n")
+
+
+def test_structural_colours_are_written_under_the_themes_own_key_names(tmp_path: Path):
+    doc, _ = theme.build(_rules(tmp_path, "name: S\n" + STRUCTURAL))
+    # the client writes the dialog's labels; the theme gets Desktop's key names (probe 46)
+    assert doc == {"name": "S", "foregroundNeutralSecondary": "#FF2D95", "backgroundLight": "#4639FF",
+                   "foregroundNeutralTertiary": "#9B30FF", "disabledText": "#808000"}
+
+
+def test_the_guideline_and_theme_key_lists_agree():
+    from blueprint.guidelines import STRUCTURAL as mapping
+    from blueprint.pbir.formatting import STRUCTURAL_KEYS
+
+    assert set(mapping.values()) == set(STRUCTURAL_KEYS)
+    assert set(mapping) <= set(guidelines.CORE_KEYS["palette"])
+
+
+def test_unset_structural_colours_are_left_to_the_theme(tmp_path: Path):
+    doc, _ = theme.build(_rules(tmp_path, "palette: {third_level: '#4639FF', text: '#333333'}\n"))
+    assert doc["backgroundLight"] == "#4639FF"
+    assert not {"foregroundNeutralSecondary", "foregroundNeutralTertiary", "disabledText"} & set(doc)
+    doc, _ = theme.build(guidelines.load(GUIDE))
+    assert not set(guidelines.STRUCTURAL.values()) & set(doc)
+
+
+@pytest.mark.parametrize("body", ["palette: {second_level: grey}\n", "palette: {disabled_text: '#FFF'}\n"])
+def test_a_bad_structural_colour_is_refused(tmp_path: Path, body: str):
+    with pytest.raises(guidelines.GuidelinesError,
+                       match=r"palette\.(second_level|disabled_text) must be a #RRGGBB"):
+        _rules(tmp_path, body)
+
+
+def test_a_misspelt_structural_key_is_refused_with_the_real_one(tmp_path: Path):
+    with pytest.raises(guidelines.GuidelinesError, match="did you mean third_level"):
+        _rules(tmp_path, "palette: {third_levl: '#4639FF'}\n")
+    # the theme's own key name is not the client's key: it must not load silently either
+    with pytest.raises(guidelines.GuidelinesError, match="unknown key palette.foregroundNeutralSecondary"):
+        _rules(tmp_path, "palette: {foregroundNeutralSecondary: '#FF2D95'}\n")
+
+
+def test_structural_colours_can_be_set_from_the_command_line_and_are_allowed(tmp_path: Path):
+    f = tmp_path / "g.yaml"
+    f.write_text("palette: {second_level: '#FF2D95'}\n")
+    rules = guidelines.load(f, overrides=guidelines.overrides_from(["palette.fourth_level=#9B30FF"]))
+    assert rules.palette.structural == {"foregroundNeutralSecondary": "#FF2D95",
+                                        "foregroundNeutralTertiary": "#9B30FF"}
+    assert {"#FF2D95", "#9B30FF"} <= rules.palette.allowed
+
+
+def test_theme_then_check_passes_structural_and_a_wrong_one_names_both_keys(report: Path, tmp_path: Path,
+                                                                            capsys):
+    g = tmp_path / "g.yaml"
+    g.write_text("name: S\npalette: {categorical: ['#4E79A7'], second_level: '#FF2D95', "
+                 "third_level: '#4639FF', fourth_level: '#9B30FF', disabled_text: '#808000'}\n")
+    assert main(["theme", "--report", str(report), "--guidelines", str(g)]) == 0
+    written = json.loads((report / "StaticResources/RegisteredResources/blueprint-theme.json").read_text())
+    assert written["foregroundNeutralSecondary"] == "#FF2D95" and written["disabledText"] == "#808000"
+
+    def structural_findings(guide: Path) -> list[str]:
+        capsys.readouterr()
+        main(["check", "--report", str(report), "--guidelines", str(guide), "--json"])
+        found = json.loads(capsys.readouterr().out)["findings"]
+        return [f["message"] for f in found if f["rule"] == "palette" and "structural" in f["message"]]
+
+    assert structural_findings(g) == []
+    g.write_text("name: S\npalette: {categorical: ['#4E79A7'], third_level: '#B6FF3B'}\n")
+    assert structural_findings(g) == [
+        ("theme 'blueprint-theme.json' structural colour third_level (backgroundLight) is #4639FF, "
+         "palette says #B6FF3B")]

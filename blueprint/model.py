@@ -92,6 +92,8 @@ class Theme:
     background: str | None = None
     sentiment: dict[str, str] = field(default_factory=dict)  # good / neutral / bad (probe 42)
     divergent: dict[str, str] = field(default_factory=dict)  # minimum / center / maximum (probe 44)
+    # the structural keys the palette can set (probe 46), by the theme's key name
+    structural: dict[str, str] = field(default_factory=dict)
     text_classes: dict[str, TextClass] = field(default_factory=dict)  # title, label, callout, …
     # visualStyles defaults: "title"/"subTitle" from ["*"]["*"] (every visual) and "cardVisual.label"
     # from ["cardVisual"]["*"]. These outrank textClasses (probe 06: base theme title fontSize 15
