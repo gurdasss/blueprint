@@ -71,14 +71,17 @@ def test_a_core_spacing_key_cannot_be_widened_to_a_mapping(tmp_path: Path, key: 
 
 # --- section 3: the page spec is not an open dict -------------------------------------------
 
-def test_a_slot_mapping_refuses_an_unknown_key_and_names_the_three(tmp_path: Path):
+def test_a_slot_mapping_refuses_an_unknown_key_and_names_the_allowed_ones(tmp_path: Path):
     """docs/extensions.md section 3 is the one extension point in it that needs a core change,
     and says so: a misspelt `fromat` has to be an error, not something that silently does
-    nothing, so a new long-form key means editing `spec._SLOT_KEYS`."""
+    nothing, so a new long-form key means editing `spec._SLOT_KEYS`.
+
+    `gradient` (v0.10.0, probe 44) is that core change having been made: the key list grew, and
+    this test grew with it, which is the cost the doc promises."""
     problems: list[str] = []
     assert spec.parse_slot({"field": "Sales[Amount]", "fromat": "#,0"}, "at", problems) is None
-    assert "field, aggregate, format" in problems[0]
-    assert spec._SLOT_KEYS == ("field", "aggregate", "format")
+    assert "field, aggregate, format, gradient" in problems[0]
+    assert spec._SLOT_KEYS == ("field", "aggregate", "format", "gradient")
 
 
 # --- section 4: an option is a line of YAML -------------------------------------------------

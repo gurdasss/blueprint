@@ -130,17 +130,20 @@ model never agreed to (`docs/plan.md`). Sorting is not here either —
 it is `sort: {by, direction}` on the visual, where Desktop keeps it.
 
 **How it works:**
-- The core owns `field`, `aggregate` and `format`, and **refuses any other
-  key**, naming the three it takes. A page spec is not an open dict: a
+- The core owns `field`, `aggregate`, `format` and `gradient`, and **refuses any
+  other key**, naming the ones it takes. A page spec is not an open dict: a
   misspelt `fromat` has to be an error, or it silently does nothing
 - So an extension key here is the one extension point in this document that
   needs a core change — a small one (the key goes in `spec._SLOT_KEYS` and is
-  carried on `FieldRef`), but it is not free the way an `extensions:` sub-key is
+  carried on `FieldRef`), but it is not free the way an `extensions:` sub-key is.
+  `gradient` (v0.10.0, probes 44-45) is that change having been made once: it
+  cost those two lines plus a `gradient: true` on the slot in `table.yaml`
 - The short form (`value: "[Revenue]"`) still works — the long form is only
   needed when something beside the field is being said
 
 **What extensions add here:**
-- Conditional formatting
+- The rest of conditional formatting (rules, data bars; the core writes a
+  colour-scale `gradient` on a table column)
 - Display units and decimal places
 
 ### 4. Page spec — visual options
