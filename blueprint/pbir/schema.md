@@ -965,6 +965,46 @@ sum, gradient: 2}` and `{aggregate: sum, gradient: 3}`), nothing by hand.
   refuses both: probe 44 saw an aggregated column only), a gradient on a matrix's values, a rules
   or field-value conditional format, data bars, and `null`.
 
+**Verified 2026-11-13, Desktop 2.159.1231.0, probe 46** (`scripts/probe_theme_structural.py`;
+evidence `docs/probes/46-structural-colors.diff`; the financial demo PBIP, not fixture 02, so not
+replayed; by hand, the theme edit is a candidate; bridge captures local only). Structural colours:
+the theme keys that are neither data, sentiment nor divergent. Each of nine keys got its own loud
+hex (none elsewhere in the theme), so a readout maps a label to a key exactly.
+
+- **The Structural section of *Customize current theme* shows six entries**, labelled and mapped
+  (read by the user): **First-level elements** = `foreground`, **Second-level elements** =
+  `foregroundNeutralSecondary`, **Third-level elements** = **`backgroundLight`**, **Fourth-level
+  elements** = `foregroundNeutralTertiary`, **Background** = `background`, **Secondary background**
+  = `backgroundNeutral`. (The third and fourth levels are not what their names suggest: the third
+  is a *background* key and the fourth a *foreground* one.)
+- **Five keys have no entry in the dialog**: `foregroundNeutralLight`, `backgroundDark`,
+  `tableAccent`, `shapeStroke`, `disabledText`. Desktop still **keeps them**, as written and in the
+  order written, when it saves: the user changed one colour in the dialog, and the new theme file
+  carried all nine keys plus the sentiment and divergent ones, nothing added or dropped.
+- **Desktop writes a structural key under the base theme's JSON name**: Third-level changed from
+  `#B6FF3B` to `#4639FF` was saved as `"backgroundLight": "#4639FF"`. As in probes 03, 42 and 45 a
+  save from the dialog replaced `blueprint-theme.json` by a new custom theme file (name truncated
+  to 30 characters plus digits) and repointed `report.json`.
+- **Only two of the nine keys changed anything on the four pages captured.** Judged by exact
+  pixel counts of control against candidate captures (a page with 4.5 million pixels):
+  `foregroundNeutralSecondary`: every `#616161` pixel became `#FF2D95` (9,866 of 9,866 on one page,
+  8,838 of 8,838 and 12,656 of 12,656 on two others): the secondary grey text (a visual's subtitle,
+  axis labels, "Goal:" lines). `disabledText`: every pixel of a thin vertical line `#B3B3B3` became
+  `#808000` (3,144 px on every page, at the Filters pane's left edge: Desktop's own chrome, not
+  report content). The other seven left no trace: their candidate colours appear nowhere. Six of
+  the seven do have their Fluent default colour on screen in the control, in large numbers
+  (`backgroundDark` `#E6E6E6` 13,618 px on one page, `backgroundNeutral` `#C7C7C7`, the two
+  foreground greys, `shapeStroke`), so something other than the theme key draws it, most likely
+  the base theme's own literal hex in `visualStyles`. `tableAccent` has no pixels in either
+  (no visual here shows it). "Unchanged" is not "ignores the key": a higher layer can pin it.
+- **Existing visuals follow the theme**: reloading changed no `visual.json`.
+- **A page's background is not the theme's `background`**: the pages draw `#F7F7F7` (sampled), not
+  this theme's `#F7F4EC`. Not investigated.
+- Not recorded: whether a plain open-and-save leaves the theme file alone (the step was not
+  committed on its own); where `foregroundNeutralLight`, `backgroundLight`, `backgroundNeutral`,
+  `backgroundDark`, `foregroundNeutralTertiary`, `tableAccent` and `shapeStroke` paint; and
+  `ColorId` (probe 47).
+
 **Verified 2026-11-10, probe 29** (`scripts/probe_aggregate_format.py`; evidence
 `docs/probes/29-aggregate-format.diff`, fixture 02, all content invented). Each aggregation was
 chosen on a **fresh** field, because an aggregation changed in place keeps the field's old
