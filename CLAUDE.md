@@ -8,6 +8,8 @@ Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power 
 
 **Released as v0.10.0 on 2026-11-13** (commit `785394a` on `main`, pushed; the ten feature branches are merged and deleted. tagged `v0.10.0`, tag pushed). The whole theme-colour palette landed in one fast-forward of 37 commits (probes 42-51): `palette.good|neutral|bad`, `palette.minimum|center|maximum`, `palette.second_level|third_level|fourth_level|disabled_text`, and a table column's `gradient: 2|3`. Sentiment, divergent and structural each have a Desktop acceptance probe (43, 45, 49). See "Theme colours" under Design rules.
 
+**Published to PyPI as `blueprint-pbi` 0.10.1 on 2026-11-14** (commit `7703bf8` on `main`, tagged `v0.10.1`, both pushed; <https://pypi.org/project/blueprint-pbi/>). Packaging only, no behaviour change: `pip install blueprint-pbi` gives `bp`, the 18 visual contracts, `defaults.yaml` and the vendored schemas, and nothing else (`MANIFEST.in` prunes `tests/` from the sdist: it needs `fixtures/` and the probe evidence a release artifact doesn't carry). Layouts and guidelines stay files the client writes — deliberately not bundled, as `layouts.find`'s error message says. Releases go through `.github/workflows/publish.yml` (PyPI Trusted Publishing, OIDC, **no token stored anywhere**): a `v*` tag is the only route to PyPI and the run checks the tag against `blueprint.__version__`, TestPyPI is a manual `workflow_dispatch`, and the `pypi` GitHub environment holds a required-reviewer gate. Verified from both indexes: the wheel and the pruned sdist each install into a fresh venv and run `inspect`/`check`/`describe`/`apply`/`theme`/`manifest` on a fixture copy from outside the repo. A PyPI version can never be reused, so the next release bumps `blueprint/__init__.py` (a golden manifest pins the version: `BLUEPRINT_UPDATE_GOLDEN=1`), adds a CHANGELOG entry, then tags.
+
 ## Commands
 
 Environment: WSL2 Ubuntu, Python 3.12, venv at `.venv/`.
@@ -30,6 +32,13 @@ python scripts/vendor_schemas.py <$schema URL>    # vendor a schema + its $refs 
 rm -rf build *.egg-info && python -m build       # always clean first: setuptools never removes a
                                                   # file from build/lib, so a stale one ships (it shipped
                                                   # the archived visual contracts as core); a test guards it
+twine check --strict dist/*                      # what PyPI will accept; CI runs it too
+
+# Release (PyPI). Bump blueprint/__init__.py, add a CHANGELOG entry, regenerate the golden
+# manifest (it pins the version), commit, then tag -- the tag is the only route to PyPI:
+BLUEPRINT_UPDATE_GOLDEN=1 pytest tests/test_apply_golden.py
+git tag -a v0.10.2 -m "..." && git push origin v0.10.2
+gh workflow run publish.yml --ref main -f target=testpypi   # optional dry run, TestPyPI only
 ```
 
 ## Architecture
