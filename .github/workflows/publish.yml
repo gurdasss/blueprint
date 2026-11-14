@@ -2,8 +2,10 @@
 # PyPI is told to trust this repository, workflow file and environment, and mints a
 # short-lived credential per run.
 #
-#   TestPyPI  Actions -> publish -> Run workflow, target: testpypi (any branch).
+#   TestPyPI  Actions -> publish -> Run workflow (the button appears only once this file
+#             is on the default branch; it can then be run from any branch).
 #   PyPI      push a tag:  git tag -a v0.10.1 -m "..." && git push origin v0.10.1
+#             A tag is the only route to PyPI, so every upload passes the tag check below.
 #
 # One-time setup, once per index (https://pypi.org/manage/account/publishing/, and the
 # same page on test.pypi.org), as a "pending publisher" before the first release:
@@ -17,9 +19,9 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: Which index to publish to
+        description: Which index to publish to (PyPI is tag-only)
         type: choice
-        options: [testpypi, pypi]
+        options: [testpypi]
         default: testpypi
 
 permissions:
@@ -55,20 +57,20 @@ jobs:
           version=$(python -c "import blueprint; print(blueprint.__version__)")
           tag="${GITHUB_REF_NAME#v}"
           test "$version" = "$tag" || { echo "tag $tag != __version__ $version"; exit 1; }
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist/
 
   testpypi:
     needs: build
-    if: github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment: testpypi
     permissions:
       id-token: write        # mint the OIDC token Trusted Publishing exchanges
     steps:
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
@@ -78,13 +80,13 @@ jobs:
 
   pypi:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.target == 'pypi')
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
