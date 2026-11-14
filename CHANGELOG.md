@@ -4,6 +4,14 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
+## v0.10.1 (2026-11-14)
+
+Packaging only; no behaviour change. First release published to PyPI as `blueprint-pbi`:
+`pip install blueprint-pbi` gives the `bp` command, the 18 visual contracts, `defaults.yaml`
+and the vendored PBIR schemas, and nothing else. Release metadata (SPDX licence, classifiers,
+keywords, project URLs) and a `MANIFEST.in` that keeps the test suite out of the sdist, since
+it needs `fixtures/` and the probe evidence that a release artifact doesn't carry.
+
 ## v0.10.0 (2026-11-13)
 
 The rest of a Power BI theme's colour palette, and the one piece of conditional formatting a

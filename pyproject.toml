@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,12 +7,30 @@ name = "blueprint-pbi"
 dynamic = ["version"]
 description = "Declarative, deterministic Power BI (PBIP/PBIR) report layouts."
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
+keywords = ["power-bi", "powerbi", "pbip", "pbir", "report-layout", "linter", "yaml"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Quality Assurance",
+]
 dependencies = [
     "PyYAML>=6.0",
     "jsonschema>=4.21",
 ]
+
+[project.urls]
+Homepage = "https://github.com/gurdasss/blueprint"
+Source = "https://github.com/gurdasss/blueprint"
+Changelog = "https://github.com/gurdasss/blueprint/blob/main/CHANGELOG.md"
+Issues = "https://github.com/gurdasss/blueprint/issues"
 
 [project.optional-dependencies]
 dev = [

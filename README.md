@@ -128,6 +128,16 @@ off permanently.
 Built and tested on **WSL2 (Ubuntu) + Python 3.12**.
 
 ```bash
+pip install blueprint-pbi
+```
+
+That gives you the `bp` command, the 18 visual contracts and the vendored PBIR schemas.
+Layouts and guidelines are files you write (the repository ships examples under
+`guidelines/`, and a starting point under `template/`).
+
+To work on Blueprint itself, or to run the fixtures and probe replays:
+
+```bash
 git clone https://github.com/gurdasss/blueprint.git
 cd blueprint
 

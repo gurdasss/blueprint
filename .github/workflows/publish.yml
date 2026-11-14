@@ -1,0 +1,91 @@
+# Publishing to PyPI, via Trusted Publishing (OIDC): no API token is stored anywhere.
+# PyPI is told to trust this repository, workflow file and environment, and mints a
+# short-lived credential per run.
+#
+#   TestPyPI  Actions -> publish -> Run workflow, target: testpypi (any branch).
+#   PyPI      push a tag:  git tag -a v0.10.1 -m "..." && git push origin v0.10.1
+#
+# One-time setup, once per index (https://pypi.org/manage/account/publishing/, and the
+# same page on test.pypi.org), as a "pending publisher" before the first release:
+#   PyPI project name: blueprint-pbi | owner: gurdasss | repository: blueprint
+#   workflow: publish.yml            | environment: pypi  (testpypi on TestPyPI)
+name: publish
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Which index to publish to
+        type: choice
+        options: [testpypi, pypi]
+        default: testpypi
+
+permissions:
+  contents: read
+
+jobs:
+  # The release artifacts are built once and published unchanged, so what is tested
+  # is byte for byte what is uploaded.
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install
+        run: pip install -e ".[dev]" build twine
+      - name: Lint
+        run: ruff check .
+      - name: Test
+        run: pytest -q
+      # setuptools never removes a file from build/lib, so a stale one would ship.
+      - name: Build
+        run: rm -rf build dist *.egg-info && python -m build
+      - name: Check metadata
+        run: twine check --strict dist/*
+      # A tag must match blueprint.__version__, or the release would be mislabelled.
+      - name: Tag matches the version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version=$(python -c "import blueprint; print(blueprint.__version__)")
+          tag="${GITHUB_REF_NAME#v}"
+          test "$version" = "$tag" || { echo "tag $tag != __version__ $version"; exit 1; }
+      - uses: actions/upload-artifact@v5
+        with:
+          name: dist
+          path: dist/
+
+  testpypi:
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi'
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write        # mint the OIDC token Trusted Publishing exchanges
+    steps:
+      - uses: actions/download-artifact@v6
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  pypi:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.target == 'pypi')
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v6
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

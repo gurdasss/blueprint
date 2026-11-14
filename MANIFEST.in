@@ -1,0 +1,9 @@
+# The sdist carries the package, its data files and the licence/readme only. Tests need
+# fixtures/, probe evidence and conftest.py, none of which belong in a release artifact,
+# so they are pruned rather than shipped half-working. Clone the repo to run them.
+include LICENSE
+include README.md
+include CHANGELOG.md
+prune tests
+global-exclude *.py[cod]
+global-exclude __pycache__
