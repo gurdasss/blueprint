@@ -171,3 +171,28 @@ def test_spec_keys_that_are_numbers_or_null(card_chart_fixture, tmp_path, capsys
     assert main(["apply", str(spec), "--report", str(proj), "--guidelines", str(GUIDE)]) == 2
     err = capsys.readouterr().err
     assert "1: unknown key" in err and "None: unknown key" in err and "visuals[0].zz: unknown key" in err
+
+
+def test_broken_pbip_is_a_clear_error(tmp_path: Path, capsys):
+    """A .pbip passed as --report is parsed before any report file; bad JSON there is unreadable
+    input (exit 2), not a traceback."""
+    pbip = tmp_path / "Broken.pbip"
+    pbip.write_bytes(b'{"version": "1.0", broken')
+    assert main(["inspect", "--report", str(pbip)]) == 2
+    err = capsys.readouterr().err
+    assert "bp: error:" in err and "invalid JSON" in err and "Traceback" not in err
+
+
+@pytest.mark.parametrize("text, expect", [
+    (b"type: waterfall\nvisual_type: waterfallChart\ninherits: gauge\n", "inherits unknown type 'gauge'"),
+    (b"type: [unclosed\n", "not a readable YAML contract"),
+    ("type: café\n".encode("utf-16"), "not a readable YAML contract"),
+], ids=["unknown parent", "invalid YAML", "not UTF-8"])
+def test_broken_custom_contract_is_a_clear_error(tmp_path: Path, capsys, text, expect):
+    """A client's own --visuals contract that can't be loaded is a clear error (exit 2)."""
+    mine = tmp_path / "my-visuals"
+    mine.mkdir()
+    (mine / "waterfall.yaml").write_bytes(text)
+    assert main(["describe", "--guidelines", str(GUIDE), "--visuals", str(mine)]) == 2
+    err = capsys.readouterr().err
+    assert err.startswith("bp: error: waterfall.yaml:") and expect in err, err

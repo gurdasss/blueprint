@@ -21,6 +21,7 @@ from blueprint.pbir.registry import RegistryError
 from blueprint.pbir.semantic import ModelError
 from blueprint.pbir.theme import ThemeError
 from blueprint.pbir.writer import WriteError
+from blueprint.slots import ContractError
 from blueprint.spec import SpecError
 
 REPORT_HELP = "a .Report folder, a .pbip file, or a folder containing one .Report"
@@ -135,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
             raise GuidelinesError(f"--grid was replaced by --set spacing.grid={args.grid}")
         return args.func(args)
     except (ReportFormatError, GuidelinesError, WriteError, SpecError, LayoutError, ModelError,
-            RegistryError, ThemeError, apply_cmd.ApplyError) as exc:
+            RegistryError, ThemeError, ContractError, apply_cmd.ApplyError) as exc:
         print(f"bp: error: {exc}", file=sys.stderr)
         return 2
     except OSError as exc:  # e.g. permission denied, read-only folder, disk full

@@ -102,7 +102,10 @@ class Contract:
 
 def _read(path: Path) -> dict:
     """The raw YAML of one contract file, before ``inherits:`` is resolved."""
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    except (yaml.YAMLError, UnicodeDecodeError) as exc:
+        raise ContractError(f"{path.name}: not a readable YAML contract: {exc}") from exc
     if not isinstance(data, dict):
         raise ContractError(f"{path.name}: top level must be a mapping")
     return data

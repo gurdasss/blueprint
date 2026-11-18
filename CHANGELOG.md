@@ -4,6 +4,14 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
+## Unreleased
+
+- A broken input file is a clear error (`bp: error: ...`, exit 2) instead of a Python
+  traceback with exit 1, which the exit-code contract reserves for findings. This covers a
+  custom visual contract (`--visuals` or `extensions.custom_visuals`) that isn't valid YAML,
+  isn't UTF-8 or inherits an unknown type, and a `.pbip` passed as `--report` that isn't valid
+  JSON.
+
 ## v0.11.0 (2026-11-19)
 
 Blueprint as an MCP server, for any MCP client. No change to the core: guidelines keys, visual

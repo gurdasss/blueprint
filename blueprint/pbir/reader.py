@@ -73,7 +73,10 @@ def find_report_dir(path: Path) -> Path:
     """Accept a ``*.Report`` folder, a ``*.pbip`` file, or a folder holding exactly one ``*.Report``."""
     path = path.resolve()
     if path.is_file() and path.suffix == ".pbip":
-        doc = jsonfmt.load(path)
+        try:
+            doc = jsonfmt.load(path)
+        except ValueError as exc:  # invalid JSON, a duplicate key, or not UTF-8
+            raise ReportFormatError(f"{path}: invalid JSON: {exc}") from exc
         try:
             rel = doc["artifacts"][0]["report"]["path"]
         except (KeyError, IndexError, TypeError) as exc:
