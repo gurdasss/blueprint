@@ -4,6 +4,16 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
+## Unreleased
+
+- **`bp mcp`**: every command as an MCP tool over stdio, through the optional extra
+  `pip install "blueprint-pbi[mcp]"` (the official `mcp` SDK, 2.x). One tool per command, every
+  flag a parameter (a test fails if a new flag isn't one), and each tool returns exactly what
+  the CLI prints. A plain install is unchanged and never imports `mcp`.
+- A standalone Windows `bp.exe` (PyInstaller; engine, interpreter and the MCP server in one
+  file) built in CI by `.github/workflows/windows-exe.yml` and gated against the pip-installed
+  `bp`, byte for byte, with no Python on PATH. Not published anywhere yet.
+
 ## v0.10.1 (2026-11-14)
 
 Packaging only; no behaviour change. First release published to PyPI as `blueprint-pbi`:

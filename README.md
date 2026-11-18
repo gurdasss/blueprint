@@ -205,6 +205,7 @@ Then open the report in Power BI Desktop and look at it.
 | `bp apply <spec>...` | Create or update pages from page specs (files or folders of them). All are checked before anything is written. |
 | `bp manifest` | (Re)generate the manifest from the report's current state. |
 | `bp theme` | Write a custom theme from the guidelines (palette, text colour, sentiment colours, title/callout/card label fonts) and make the report use it. |
+| `bp mcp` | Serve every command above as an MCP tool over stdio, for agents. Needs the optional extra: `pip install "blueprint-pbi[mcp]"`. See below. |
 
 `--dry-run` is available on every mutating command and prints the planned file writes
 without performing them. `inspect`, `check` and `describe` take `--json`; `check` also takes `--github`.
@@ -225,6 +226,25 @@ this and now names its replacement.
 vocabulary in one call: which types, slots, layouts and fields exist, written the way a spec uses
 them. `bp apply` reports every problem with its location (`visuals[2].slots.value: …`), and
 `bp check --json` validates the result.
+
+**As an MCP server:** `bp mcp` serves the seven commands as MCP tools over stdio
+(`describe`, `inspect`, `check`, `apply`, `fmt`, `theme`, `manifest`). Each tool takes the
+command's flags as parameters, named after them (`dry_run`, `overwrite_edits`, `overrides` for
+`--set`), runs the command and returns `{exit_code, stdout, stderr, argv}`: exactly what the CLI
+prints, so exit 1 from `check` is a result (findings), while exit 2 comes back as a tool error
+with the CLI's message. `--json` is always on; `--github` (CI annotations) is not offered.
+Specs are file paths: a spec's identity is its file name, so pass the same file to update the
+page it built. The server's working directory is wherever the client starts it, so pass
+absolute paths (relative ones are made absolute against it, and the result's `argv` shows
+them), and set `BLUEPRINT_GUIDELINES` to give every call a default guidelines file. To add it
+to Claude Code:
+
+```bash
+pip install "blueprint-pbi[mcp]"
+claude mcp add blueprint -e BLUEPRINT_GUIDELINES=/path/to/guidelines.yaml -- bp mcp
+```
+
+The `mcp` package stays an optional extra: a plain `pip install blueprint-pbi` never imports it.
 
 ### In CI
 

@@ -33,9 +33,16 @@ Changelog = "https://github.com/gurdasss/blueprint/blob/main/CHANGELOG.md"
 Issues = "https://github.com/gurdasss/blueprint/issues"
 
 [project.optional-dependencies]
+# `bp mcp`: serve every bp command as an MCP tool over stdio. Optional, so a plain
+# `pip install blueprint-pbi` still gives `bp` and nothing else. Written against mcp 2.3.0's
+# MCPServer (mcp 2.x renamed FastMCP), hence the major-version bound.
+mcp = [
+    "mcp>=2.3,<3",
+]
 dev = [
     "pytest>=8",
     "ruff>=0.5",
+    "mcp>=2.3,<3",
 ]
 
 [project.scripts]
