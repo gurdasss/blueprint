@@ -135,6 +135,12 @@ That gives you the `bp` command, the 18 visual contracts and the vendored PBIR s
 Layouts and guidelines are files you write (the repository ships examples under
 `guidelines/`, and a starting point under `template/`).
 
+For agents, add the MCP server (`bp mcp`, see [Commands](#commands)) with
+`pip install "blueprint-pbi[mcp]"`. **On Windows with VS Code you don't need Python at all**:
+the [Blueprint for Power BI](https://marketplace.visualstudio.com/items?itemName=gurdasss.blueprint-pbi)
+extension bundles the engine as a standalone `bp.exe` and registers it as an MCP server for
+Copilot; its command *Blueprint: Set Up for Other MCP Clients* gives other clients the same exe.
+
 To work on Blueprint itself, or to run the fixtures and probe replays:
 
 ```bash

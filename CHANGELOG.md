@@ -4,15 +4,24 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
-## Unreleased
+## v0.11.0 (2026-11-19)
+
+Blueprint as an MCP server, for any MCP client. No change to the core: guidelines keys, visual
+contracts, the PBIR layer, layouts, validation and the manifest are as in 0.10.1, and a plain
+`pip install blueprint-pbi` installs the same dependencies as before.
 
 - **`bp mcp`**: every command as an MCP tool over stdio, through the optional extra
-  `pip install "blueprint-pbi[mcp]"` (the official `mcp` SDK, 2.x). One tool per command, every
-  flag a parameter (a test fails if a new flag isn't one), and each tool returns exactly what
-  the CLI prints. A plain install is unchanged and never imports `mcp`.
-- A standalone Windows `bp.exe` (PyInstaller; engine, interpreter and the MCP server in one
-  file) built in CI by `.github/workflows/vscode-extension.yml` and gated against the pip-installed
-  `bp`, byte for byte, with no Python on PATH. Not published anywhere yet.
+  `pip install "blueprint-pbi[mcp]"` (the official `mcp` SDK, 2.x). One tool per command
+  (`describe`, `inspect`, `check`, `apply`, `fmt`, `theme`, `manifest`), every flag a parameter
+  (a test fails if a new flag isn't one), and each tool returns exactly what the CLI prints,
+  with its exit code: exit 1 from `check` is a result, exit 2 a tool error. Paths are made
+  absolute and echoed in the result. A plain install never imports `mcp`.
+- **Windows without Python**: the VS Code extension
+  [Blueprint for Power BI](https://marketplace.visualstudio.com/items?itemName=gurdasss.blueprint-pbi)
+  (`gurdasss.blueprint-pbi`, released separately on `ext-v*` tags) bundles a standalone `bp.exe`
+  (PyInstaller: engine, interpreter and the MCP server in one file) and registers it as an MCP
+  server for Copilot. It keeps a copy at a stable path for other MCP clients. CI builds the exe
+  and checks it against the pip-installed `bp`, byte for byte, with no Python on PATH.
 
 ## v0.10.1 (2026-11-14)
 
