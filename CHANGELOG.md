@@ -11,7 +11,7 @@ code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, eviden
   flag a parameter (a test fails if a new flag isn't one), and each tool returns exactly what
   the CLI prints. A plain install is unchanged and never imports `mcp`.
 - A standalone Windows `bp.exe` (PyInstaller; engine, interpreter and the MCP server in one
-  file) built in CI by `.github/workflows/windows-exe.yml` and gated against the pip-installed
+  file) built in CI by `.github/workflows/vscode-extension.yml` and gated against the pip-installed
   `bp`, byte for byte, with no Python on PATH. Not published anywhere yet.
 
 ## v0.10.1 (2026-11-14)

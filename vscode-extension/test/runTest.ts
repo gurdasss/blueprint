@@ -4,7 +4,7 @@
 // Needs, in the environment: BP_TEST_WORKSPACE, a folder holding the exe gate's inputs
 // (guidelines/, sales-overview.yaml, report/), opened as the workspace; and BP_TEST_SESSION, a
 // recorded MCP session (packaging/windows/mcp-session-*.jsonl) to replay into the server the
-// extension defines. bin/bp.exe must be in place (the windows-exe workflow copies it there).
+// extension defines. bin/bp.exe must be in place (the vscode-extension workflow copies it there).
 import * as path from "path";
 import { runTests } from "@vscode/test-electron";
 

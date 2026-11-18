@@ -1,5 +1,5 @@
 // Blueprint for VS Code: a courier for the bundled engine. It registers bin/bp.exe (built by
-// the repository's windows-exe workflow) as an MCP server, `bp.exe mcp`, and keeps a copy at a
+// the repository's vscode-extension workflow) as an MCP server, `bp.exe mcp`, and keeps a copy at a
 // stable path for other MCP clients. No engine logic lives here.
 //
 // API (verified in vscode.d.ts at tags 1.101.0 and 1.146.0): contributes.mcpServerDefinitionProviders

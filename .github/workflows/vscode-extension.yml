@@ -1,13 +1,31 @@
-name: windows-exe
+name: vscode-extension
 
-# Builds the standalone bp.exe (engine + interpreter, PyInstaller one-file) and gates it:
-# the exe must behave byte for byte like the pip-installed bp when run with no Python on PATH
-# and the source package moved out of the way, and `bp.exe mcp` must answer a recorded MCP
-# client session in both protocol eras. Builds and uploads an artifact only; it
-# publishes nothing.
+# The VS Code extension and the engine it carries, built and checked on Windows, and published
+# to the Visual Studio Marketplace only from a tag, after a reviewer approves.
+#
+# build    Builds the standalone bp.exe (engine + interpreter, PyInstaller one-file) and gates
+#          it: byte for byte like the pip-installed bp with no Python on PATH and the source
+#          package moved away, and `bp.exe mcp` answering recorded MCP client sessions in both
+#          protocol eras. Then the extension's integration test inside real VS Code (1.101.0
+#          and stable), and the win32-x64 .vsix, packaged from that same exe.
+# publish  Only for a tag ext-v<version> (ext-, not v: the PyPI workflow owns v* tags, and
+#          "vscode-v..." would match its v* too). Publishes the .vsix the build job just
+#          produced and tested, unchanged, through Trusted Publishing (OIDC): no token is
+#          stored anywhere. Waits for approval in the vscode-marketplace environment.
+#
+#   Release  bump vscode-extension/package.json "version", commit, then
+#            git tag -a ext-v0.1.0 -m "..." && git push origin ext-v0.1.0
+#
+# One-time setup:
+#   GitHub      Settings -> Environments -> New environment "vscode-marketplace", with
+#               "Required reviewers" (as for the pypi environment).
+#   Marketplace https://marketplace.visualstudio.com/manage -> publisher gurdasss ->
+#               Trusted Publishing -> Create: owner gurdasss, repository blueprint,
+#               workflow vscode-extension.yml, environment vscode-marketplace.
 on:
   push:
     branches: [feat/vscode-mcp-extension]
+    tags: ["ext-v*"]
 
 permissions:
   contents: read
@@ -127,3 +145,48 @@ jobs:
           # The gate's written report includes dot-files (.platform, .blueprint.manifest.json),
           # which upload-artifact leaves out by default (action.yml: include-hidden-files 'false').
           include-hidden-files: true
+
+  publish:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/ext-v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: vscode-marketplace
+    permissions:
+      contents: read
+      id-token: write        # mint the OIDC token Trusted Publishing exchanges
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      # The pinned vsce from the lockfile. --ignore-scripts: vsce-sign's install script fetches
+      # a signing binary that only `vsce package --sign-tool` uses.
+      - name: Install vsce
+        working-directory: vscode-extension
+        run: npm ci --ignore-scripts
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: blueprint-vsix
+          path: vsix/
+
+      # The tag, package.json and the .vsix manifest must all name the same version, or the
+      # Marketplace release would be mislabelled.
+      - name: Tag matches the extension version
+        run: |
+          tag="${GITHUB_REF_NAME#ext-v}"
+          version=$(node -p "require('./vscode-extension/package.json').version")
+          vsix=$(ls vsix/*.vsix)
+          test "$(ls vsix/*.vsix | wc -l)" = 1 || { echo "expected one .vsix: $(ls vsix)"; exit 1; }
+          test "$vsix" = "vsix/blueprint-pbi-win32-x64-$version.vsix" || { echo "unexpected $vsix"; exit 1; }
+          test "$version" = "$tag" || { echo "tag $tag != package.json version $version"; exit 1; }
+          echo "publishing $vsix ($version)"
+
+      # --packagePath with a pre-built platform package, as the publishing docs describe;
+      # vsce 4.1.1 allows --oidc with it (publish.js refuses --oidc only with --pat or
+      # --azure-credential, and --packagePath only with --target or a version).
+      - name: Publish to the Visual Studio Marketplace
+        working-directory: vscode-extension
+        run: npx vsce publish --packagePath "$(ls ../vsix/*.vsix)" --oidc
