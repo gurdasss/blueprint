@@ -24,8 +24,9 @@ name: vscode-extension
 #               workflow vscode-extension.yml, environment vscode-marketplace.
 on:
   push:
-    branches: [feat/vscode-mcp-extension]
+    branches: [main]
     tags: ["ext-v*"]
+  pull_request:
 
 permissions:
   contents: read
