@@ -2,7 +2,8 @@ name: windows-exe
 
 # Builds the standalone bp.exe (engine + interpreter, PyInstaller one-file) and gates it:
 # the exe must behave byte for byte like the pip-installed bp when run with no Python on PATH
-# and the source package moved out of the way. Builds and uploads an artifact only; it
+# and the source package moved out of the way, and `bp.exe mcp` must answer a recorded MCP
+# client session in both protocol eras. Builds and uploads an artifact only; it
 # publishes nothing.
 on:
   push:
@@ -26,8 +27,9 @@ jobs:
           cache: pip
 
       # Non-editable, so the exe is built from the installed package -- what the wheel carries.
+      # With the [mcp] extra: the exe always includes `bp mcp`, and the reference run needs it.
       - name: Install Blueprint and PyInstaller
-        run: pip install . pyinstaller==6.22.3 pyinstaller-hooks-contrib==2026.10
+        run: pip install ".[mcp]" pyinstaller==6.22.3 pyinstaller-hooks-contrib==2026.10
 
       - name: Build bp.exe
         # Work dir outside the tree: `pip install .` leaves its own build/ there.

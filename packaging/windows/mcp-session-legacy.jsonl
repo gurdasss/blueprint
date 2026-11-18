@@ -1,0 +1,11 @@
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"mcp","version":"0.1.0"}}}
+{"jsonrpc":"2.0","method":"notifications/initialized"}
+{"jsonrpc":"2.0","id":2,"method":"tools/list"}
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"describe","arguments":{"report":"report","guidelines":"guidelines/example.yaml"}}}
+{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"inspect","arguments":{"report":"report"}}}
+{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"check","arguments":{"report":"report","guidelines":"guidelines/example.yaml"}}}
+{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"apply","arguments":{"spec":["sales-overview.yaml"],"report":"report","guidelines":"guidelines/example.yaml"}}}
+{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"fmt","arguments":{"report":"report","guidelines":"guidelines/example.yaml"}}}
+{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"theme","arguments":{"report":"report","guidelines":"guidelines/example.yaml","dry_run":true}}}
+{"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"manifest","arguments":{"report":"report","guidelines":"guidelines/example.yaml","dry_run":true}}}
+{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"inspect","arguments":{"report":"no-such-report"}}}

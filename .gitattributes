@@ -4,3 +4,6 @@
 fixtures/** -text
 tests/golden/** -text
 docs/probes/** -text
+# Recorded MCP client sessions (packaging/windows/record_mcp_sessions.py): the SDK's own bytes,
+# replayed into bp.exe by the Windows gate.
+packaging/windows/*.jsonl -text

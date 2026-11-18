@@ -1,7 +1,11 @@
 # PyInstaller spec for the standalone `bp` executable (one file: engine + interpreter).
 #
-# Build from the repository root, with Blueprint installed (non-editable) beside PyInstaller:
-#     pyinstaller --noconfirm --clean packaging/windows/bp.spec
+# Build from the repository root, with Blueprint and its [mcp] extra installed (non-editable)
+# beside PyInstaller, so the exe also serves `bp mcp`:
+#     pip install ".[mcp]" && pyinstaller --noconfirm --clean packaging/windows/bp.spec
+# cli.py imports the MCP server inside a function; PyInstaller still finds it (its module graph
+# reads every import in the bytecode), and the gate replays a real MCP session into the exe.
+# anyio's back-ends and opentelemetry's entry points come from their hooks-contrib hooks.
 # Output: dist/bp.exe on Windows (dist/bp elsewhere, used only to test this spec locally).
 #
 # Data files. The engine finds its data from each module's own __file__

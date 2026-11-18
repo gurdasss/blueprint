@@ -6,7 +6,10 @@ Passes only if
   * the exe's `describe` lists exactly the visual contracts in blueprint/visuals/ (the data
     files made it into the bundle and resolve from it),
   * every command's stdout, stderr and exit code match the reference byte for byte, and
-  * the report the exe wrote is byte-identical to the one the reference wrote.
+  * the report the exe wrote is byte-identical to the one the reference wrote, and
+  * `bp mcp` answered every request of each recorded client session (both protocol eras):
+    all seven tools listed and each one called successfully, with the reference's exit codes,
+    `describe` listing every visual type, and a missing report coming back as a tool error.
 Run it from the repository root, after gate.sh has run both ways.
 """
 
@@ -17,6 +20,75 @@ import sys
 from pathlib import Path
 
 COMMANDS = ["version", "describe", "describe-report", "apply", "reapply", "check", "inspect"]
+MCP_MODES = ["legacy", "auto"]  # the sessions record_mcp_sessions.py records
+SESSIONS = Path(__file__).resolve().parent
+
+
+def replies(path: Path) -> dict[int, dict]:
+    out = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        msg = json.loads(line)
+        if "id" in msg:
+            out[msg["id"]] = msg
+    return out
+
+
+def mcp_problems(mode: str, exe_dir: Path, ref_dir: Path, types: list[str],
+                 tools: list[str], version: str) -> list[str]:
+    """The exe's replies to a recorded session. The requests are read back from the session
+    file (record_mcp_sessions.py): the handshake, tools/list, then one call per tool and a call
+    on a missing report, which must be a tool error. Exit codes must match the reference's."""
+    where = f"mcp {mode}"
+    requests = {m["id"]: m for m in map(json.loads, (SESSIONS / f"mcp-session-{mode}.jsonl")
+                                        .read_text(encoding="utf-8").splitlines()) if "id" in m}
+    try:
+        got, ref = replies(exe_dir / f"mcp-{mode}.out"), replies(ref_dir / f"mcp-{mode}.out")
+    except (OSError, ValueError) as exc:
+        err = (exe_dir / f"mcp-{mode}.err").read_text(errors="replace")[-300:]
+        return [f"{where}: no usable replies ({exc}); stderr: {err}"]
+    if sorted(got) != sorted(requests):
+        return [f"{where}: replies to requests {sorted(got)}, expected {sorted(requests)}"]
+    errors = [f"{where}: request {i} failed: {m['error']}" for i, m in got.items() if "error" in m]
+    if errors:
+        return errors
+
+    problems = []
+    called = set()
+    for rid, req in sorted(requests.items()):
+        result = got[rid]["result"]
+        if req["method"] in ("initialize", "server/discover"):
+            info = result.get("serverInfo")
+            if req["method"] == "initialize" and (info or {}).get("name") != "blueprint":
+                problems.append(f"{where}: serverInfo {info}")
+            if info is not None and info.get("version") != version:
+                problems.append(f"{where}: server version {info.get('version')} != {version}")
+        elif req["method"] == "tools/list":
+            listed = sorted(t["name"] for t in result["tools"])
+            if listed != tools:
+                problems.append(f"{where}: tools {listed} != {tools}")
+            if result["tools"] != ref[rid]["result"]["tools"]:
+                problems.append(f"{where}: tools/list differs from the reference")
+        elif req["method"] == "tools/call":
+            name, args = req["params"]["name"], req["params"]["arguments"]
+            label = f"{where}: {name} (request {rid})"
+            if args.get("report") == "no-such-report":
+                if not result.get("isError") or "bp: error" not in result["content"][0]["text"]:
+                    problems.append(f"{label}: a missing report was not a tool error")
+                continue
+            sc = result.get("structuredContent") or {}
+            ok = {0, 1} if name == "check" else {0}
+            if result.get("isError") or sc.get("exit_code") not in ok:
+                problems.append(f"{label}: failed: {str(result)[:300]}")
+                continue
+            if sc["exit_code"] != (ref[rid]["result"].get("structuredContent") or {}).get("exit_code"):
+                problems.append(f"{label}: exit {sc['exit_code']} differs from the reference")
+            if name == "describe" and sorted(json.loads(sc["stdout"])["types"]) != types:
+                problems.append(f"{label}: visual types differ from blueprint/visuals")
+            called.add(name)
+    if called != set(tools):
+        problems.append(f"{where}: tools never called successfully: {sorted(set(tools) - called)}")
+    print(f"{where}: {len(got)}/{len(requests)} replies; tools answered: {', '.join(sorted(called))}")
+    return problems
 
 
 def tree(root: Path) -> dict[str, bytes]:
@@ -46,6 +118,13 @@ def main(exe_dir: Path, ref_dir: Path) -> int:
             if a.read_bytes() != b.read_bytes():
                 problems.append(f"{name}.{ext} differs from the reference")
         print(f"{name}: exit {(exe_dir / f'{name}.code').read_text().strip()}")
+
+    from blueprint import cli  # the installed package: the tools are its subcommands but mcp
+    sub = next(a for a in cli.build_parser()._actions if a.__class__.__name__ == "_SubParsersAction")
+    tools = sorted(set(sub.choices) - {"mcp"})
+    version = (exe_dir / "version.out").read_text().split()[-1]
+    for mode in MCP_MODES:
+        problems += mcp_problems(mode, exe_dir, ref_dir, expected, tools, version)
 
     got, want = tree(exe_dir / "work"), tree(ref_dir / "work")
     for path in sorted(set(got) | set(want)):
