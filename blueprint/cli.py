@@ -120,7 +120,7 @@ def _run_mcp(args: argparse.Namespace) -> int:
     try:
         from blueprint.commands import mcp_server
     except ModuleNotFoundError as exc:
-        if exc.name is None or not exc.name.split(".")[0] in {"mcp", "pydantic"}:
+        if exc.name is None or exc.name.split(".")[0] not in {"mcp", "pydantic"}:
             raise
         print(f"bp: error: bp mcp needs the optional MCP extra ({exc.name} is not installed): "
               "pip install 'blueprint-pbi[mcp]'", file=sys.stderr)
