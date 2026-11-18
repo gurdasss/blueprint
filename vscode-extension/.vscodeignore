@@ -1,0 +1,12 @@
+# Ship only what runs: out/src (the compiled extension), bin/bp.exe, and the manifest,
+# README, CHANGELOG and LICENSE. Sources, tests and tooling stay out.
+src/**
+test/**
+out/test/**
+node_modules/**
+.vscode-test/**
+tsconfig.json
+package-lock.json
+.gitignore
+**/*.map
+*.vsix

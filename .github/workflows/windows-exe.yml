@@ -91,6 +91,24 @@ jobs:
             echo "::endgroup::"
           done
 
+      # The installable extension, from the exe the gate and the integration test just passed.
+      # Packaged only: publishing is a separate, manual decision.
+      - name: Extension -- package the .vsix (win32-x64)
+        working-directory: vscode-extension
+        run: |
+          # --out names the file unless the folder already exists (vsce package.js: stat, isDirectory)
+          mkdir -p "$RUNNER_TEMP/vsix"
+          npx vsce package --target win32-x64 --out "$RUNNER_TEMP/vsix"
+          vsix=$(ls "$RUNNER_TEMP"/vsix/*.vsix)
+          echo "packaged: $vsix"
+          python -I -c "import hashlib, sys, zipfile; z = zipfile.ZipFile(sys.argv[1]); print(sorted(z.namelist())); a = hashlib.sha256(z.read('extension/bin/bp.exe')).hexdigest(); b = hashlib.sha256(open(sys.argv[2], 'rb').read()).hexdigest(); print('bin/bp.exe', a); sys.exit(0 if a == b else 'the exe in the .vsix is not the one the gate tested')" "$vsix" ../dist/bp.exe
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: blueprint-vsix
+          path: ${{ runner.temp }}/vsix/*.vsix
+          if-no-files-found: error
+
       - name: Show the exe's describe output
         if: always()
         run: |
