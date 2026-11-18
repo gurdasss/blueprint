@@ -4,7 +4,9 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
-## Unreleased
+## v0.11.1 (2026-11-19)
+
+Error handling only; no other behaviour change.
 
 - A broken input file is a clear error (`bp: error: ...`, exit 2) instead of a Python
   traceback with exit 1, which the exit-code contract reserves for findings. This covers a
