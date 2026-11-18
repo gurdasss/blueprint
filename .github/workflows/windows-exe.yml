@@ -81,3 +81,6 @@ jobs:
             ${{ runner.temp }}/gate-exe
             ${{ runner.temp }}/gate-ref
           if-no-files-found: warn
+          # The gate's written report includes dot-files (.platform, .blueprint.manifest.json),
+          # which upload-artifact leaves out by default (action.yml: include-hidden-files 'false').
+          include-hidden-files: true
