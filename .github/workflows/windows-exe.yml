@@ -1,0 +1,83 @@
+name: windows-exe
+
+# Builds the standalone bp.exe (engine + interpreter, PyInstaller one-file) and gates it:
+# the exe must behave byte for byte like the pip-installed bp when run with no Python on PATH
+# and the source package moved out of the way. Builds and uploads an artifact only; it
+# publishes nothing.
+on:
+  push:
+    branches: [feat/vscode-mcp-extension]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      # Non-editable, so the exe is built from the installed package -- what the wheel carries.
+      - name: Install Blueprint and PyInstaller
+        run: pip install . pyinstaller==6.22.3 pyinstaller-hooks-contrib==2026.10
+
+      - name: Build bp.exe
+        # Work dir outside the tree: `pip install .` leaves its own build/ there.
+        run: pyinstaller --noconfirm --clean --workpath "$RUNNER_TEMP/pyi-build" packaging/windows/bp.spec
+
+      - name: Prepare gate inputs
+        run: |
+          mkdir -p "$RUNNER_TEMP/inputs"
+          cp -r guidelines "$RUNNER_TEMP/inputs/"
+          cp examples/sales-overview.yaml "$RUNNER_TEMP/inputs/"
+          cp -r fixtures/02-card-and-chart "$RUNNER_TEMP/inputs/report"
+          cp dist/bp.exe "$RUNNER_TEMP/bp.exe"
+
+      # The exe runs from outside the checkout, with the source package renamed and a PATH
+      # that holds only Git Bash's coreutils and System32. The step fails if any Python is
+      # reachable on that PATH.
+      - name: Gate -- run the exe with no Python
+        run: |
+          mv blueprint blueprint.hidden
+          export PATH="/usr/bin:/c/Windows/System32"
+          for p in python python3 py; do
+            if command -v "$p"; then echo "::error::$p is on the gate PATH"; exit 1; fi
+          done
+          echo "no Python on PATH: $PATH"
+          bash packaging/windows/gate.sh "$RUNNER_TEMP/bp.exe" "$RUNNER_TEMP/inputs" "$RUNNER_TEMP/gate-exe"
+          mv blueprint.hidden blueprint
+
+      # The exe forces UTF-8 on stdout/stderr (bp_entry.py); the pip-installed bp would write a
+      # redirected stream in the ANSI code page, so the reference gets UTF-8 mode to compare
+      # like with like. This is test setup only: the PyPI bp on Windows is deliberately unchanged.
+      - name: Gate -- reference run with the pip-installed bp
+        env:
+          PYTHONUTF8: "1"
+        run: bash packaging/windows/gate.sh bp "$RUNNER_TEMP/inputs" "$RUNNER_TEMP/gate-ref"
+
+      - name: Gate -- compare
+        run: python packaging/windows/verify_gate.py "$RUNNER_TEMP/gate-exe" "$RUNNER_TEMP/gate-ref"
+
+      - name: Show the exe's describe output
+        if: always()
+        run: |
+          cat "$RUNNER_TEMP/gate-exe/version.out" || true
+          python -c "import json,sys; d=json.load(open(sys.argv[1],encoding='utf-8')); print(len(d['types']), 'types:', ', '.join(d['types']))" "$RUNNER_TEMP/gate-exe/describe.out" || true
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: bp-windows-exe
+          path: |
+            dist/bp.exe
+            ${{ runner.temp }}/gate-exe
+            ${{ runner.temp }}/gate-ref
+          if-no-files-found: warn
