@@ -1,0 +1,6 @@
+# The engine is a build artifact (the windows-exe workflow), never committed.
+bin/
+out/
+node_modules/
+.vscode-test/
+*.vsix

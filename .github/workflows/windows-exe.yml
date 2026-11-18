@@ -15,7 +15,7 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     defaults:
       run:
         shell: bash
@@ -67,6 +67,29 @@ jobs:
 
       - name: Gate -- compare
         run: python packaging/windows/verify_gate.py "$RUNNER_TEMP/gate-exe" "$RUNNER_TEMP/gate-ref"
+
+      # The VS Code extension, in a real VS Code: the oldest version it declares (engines ^1.101.0)
+      # and the latest stable. It activates, defines bp.exe as an MCP server, and the definition
+      # it returns is started and answers a recorded client session; plus the stable copy for
+      # other MCP clients. Each run gets a fresh copy of the gate inputs as its workspace.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Extension -- integration test in VS Code
+        working-directory: vscode-extension
+        env:
+          BP_TEST_SESSION: ${{ github.workspace }}/packaging/windows/mcp-session-legacy.jsonl
+        run: |
+          npm ci
+          mkdir -p bin && cp ../dist/bp.exe bin/
+          for v in 1.101.0 stable; do
+            echo "::group::VS Code $v"
+            ws="$RUNNER_TEMP/ext-ws-$v"
+            rm -rf "$ws" && cp -r "$RUNNER_TEMP/inputs" "$ws"
+            BP_TEST_WORKSPACE="$ws" VSCODE_VERSION="$v" npm test
+            echo "::endgroup::"
+          done
 
       - name: Show the exe's describe output
         if: always()
