@@ -15,7 +15,7 @@ function replay(def: vscode.McpStdioServerDefinition, session: string): Promise<
   const want = requests.filter((m) => "id" in m).length;
   return new Promise((resolve, reject) => {
     const child = spawn(def.command, def.args, {
-      cwd: def.cwd?.fsPath,
+      cwd: vscode.workspace.workspaceFolders?.[0].uri.fsPath, // the session's relative paths
       env: { ...process.env, ...(def.env as Record<string, string>) },
     });
     const replies = new Map<number, any>();
@@ -55,17 +55,33 @@ function replay(def: vscode.McpStdioServerDefinition, session: string): Promise<
 export async function run(): Promise<void> {
   const ext = vscode.extensions.all.find((e) => e.packageJSON.name === "blueprint-pbi");
   assert.ok(ext, "the extension under test is loaded");
-  const api = (await ext.activate()) as BlueprintApi;
+  // VS Code must activate it by itself (onStartupFinished): a Copilot harness session never runs
+  // the MCP discovery that onMcpCollection waits for, so without this the server stays unknown.
+  // Checked before anything here calls activate(), which would hide a missing activation event.
+  for (let i = 0; i < 300 && !ext.isActive; i++) {
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  assert.ok(ext.isActive, "VS Code activated the extension on its own within 30 s of startup");
+  const api = (await ext.activate()) as BlueprintApi; // already active: returns its API
+
+  if (process.platform !== "win32") {
+    // Off Windows (e.g. a Remote-WSL window) the bundled engine can't run: no server, no copy.
+    assert.deepStrictEqual(api.definitions(), []);
+    assert.strictEqual(await api.syncStableCopy(), undefined);
+    console.log(`${process.platform}: activated on its own, no server definition (as documented)`);
+    return;
+  }
 
   // The command and the provider are contributed and registered.
   assert.ok((await vscode.commands.getCommands(true)).includes("blueprint.setUpOtherClients"));
 
-  // The definition: the bundled exe, `mcp`, the open folder as cwd, no guidelines by default.
+  // The definition: the bundled exe, `mcp`, no cwd (the Copilot harness only partly supports
+  // one), no guidelines by default.
   let [def] = api.definitions();
   assert.ok(def, "one server definition on Windows");
   assert.strictEqual(def.command, vscode.Uri.joinPath(ext.extensionUri, "bin", "bp.exe").fsPath);
   assert.deepStrictEqual(def.args, ["mcp"]);
-  assert.strictEqual(def.cwd?.fsPath, vscode.workspace.workspaceFolders?.[0].uri.fsPath);
+  assert.strictEqual(def.cwd, undefined);
   assert.strictEqual(def.version, ext.packageJSON.version);
   assert.deepStrictEqual(def.env, {});
 

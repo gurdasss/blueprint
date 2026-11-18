@@ -4,10 +4,16 @@
 //
 // API (verified in vscode.d.ts at tags 1.101.0 and 1.146.0): contributes.mcpServerDefinitionProviders
 // in package.json, vscode.lm.registerMcpServerDefinitionProvider(id, provider), and
-// new McpStdioServerDefinition(label, command, args?, env?, version?) with a settable cwd. The
-// contribution generates the activation event onMcpCollection:<id> (mcpConfiguration.ts), and the
-// command generates onCommand:<id> (menusExtensionPoint.ts), so package.json needs no
-// activationEvents.
+// new McpStdioServerDefinition(label, command, args?, env?, version?).
+//
+// Activation: package.json declares onStartupFinished, deliberately. The contribution alone only
+// gives VS Code a *lazy* collection, activated by onMcpCollection:<id> when something runs MCP
+// discovery, and in 1.146 chat runs that discovery only for native VS Code sessions
+// (chatServiceImpl.ts: "MCP autostart: only run for native VS Code sessions"). A Copilot harness
+// session never does, so it saw no Blueprint server (DefinitionNotLoaded in
+// agentHostMcpServerSupport.ts). Activating at startup registers the provider, which publishes
+// the definition at once ($upsertMcpCollection) and replaces the lazy placeholder (mcpRegistry.ts:
+// "Incoming collections replace the 'lazy' versions").
 
 import * as crypto from "crypto";
 import * as fs from "fs";
@@ -50,12 +56,10 @@ export function activate(context: vscode.ExtensionContext): BlueprintApi {
       env.BLUEPRINT_GUIDELINES = guidelines;
     }
     const version = String(context.extension.packageJSON.version);
-    const def = new vscode.McpStdioServerDefinition("Blueprint", bundled, ["mcp"], env, version);
-    const folder = vscode.workspace.workspaceFolders?.[0];
-    if (folder && folder.uri.scheme === "file") {
-      def.cwd = folder.uri; // so a tool's relative paths mean the open folder
-    }
-    return [def];
+    // No cwd, deliberately: the Copilot harness marks a stdio server with a cwd only "partially
+    // supported" ("Working directory settings cannot be migrated", agentHostMcpServerSupport.ts
+    // getPartialSupportReasons). Tools ask for absolute paths and echo the resolved argv.
+    return [new vscode.McpStdioServerDefinition("Blueprint", bundled, ["mcp"], env, version)];
   }
 
   /** Copy the bundled exe to a stable path (globalStorage/bin/bp.exe) for other MCP clients.
@@ -106,7 +110,6 @@ export function activate(context: vscode.ExtensionContext): BlueprintApi {
         changed.fire();
       }
     }),
-    vscode.workspace.onDidChangeWorkspaceFolders(() => changed.fire()),
     vscode.commands.registerCommand("blueprint.setUpOtherClients", async () => {
       const exe = await syncStableCopy();
       if (!exe) {

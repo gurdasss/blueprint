@@ -10,8 +10,8 @@ import { runTests } from "@vscode/test-electron";
 
 async function main(): Promise<void> {
   const workspace = process.env.BP_TEST_WORKSPACE;
-  if (!workspace || !process.env.BP_TEST_SESSION) {
-    throw new Error("set BP_TEST_WORKSPACE and BP_TEST_SESSION");
+  if (!workspace || (process.platform === "win32" && !process.env.BP_TEST_SESSION)) {
+    throw new Error("set BP_TEST_WORKSPACE (and, on Windows, BP_TEST_SESSION)");
   }
   const root = path.resolve(__dirname, "..", "..");
   await runTests({

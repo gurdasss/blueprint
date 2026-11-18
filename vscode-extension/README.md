@@ -38,7 +38,9 @@ Power BI Desktop, accept **Apply external changes** after a write.
   a call names its own. See the
   [guidelines documentation](https://github.com/gurdasss/blueprint#guidelines-and-layering).
 
-Tools resolve relative paths against the first folder open in VS Code. Absolute paths are safest.
+Give tools absolute paths: the server's working directory is chosen by the editor or Copilot
+runtime that starts it, so a relative path may not mean your open folder. Each result echoes
+the resolved command line (`argv`), so you can see which file was used.
 
 ## Using the engine from other MCP clients
 
