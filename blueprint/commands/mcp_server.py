@@ -42,7 +42,12 @@ EXCLUDED = {
 
 # Parameters that are file or folder paths: made absolute before the CLI sees them, because the
 # server's working directory is wherever the client started it, not the user's shell.
-PATH_PARAMS = {"report", "guidelines", "visuals", "spec"}
+PATH_PARAMS = {"report", "guidelines", "visuals", "spec", "dir"}
+
+# Parameters a tool requires although the CLI defaults them, and why. The CLI's `bp init`
+# writes into the current folder, but a server's working directory is whatever the client
+# started it in, so a tool call must say where.
+REQUIRED_IN_MCP = {"init": {"dir"}}
 
 INSTRUCTIONS = """\
 Blueprint builds and checks Power BI PBIP/PBIR report pages from YAML page specs and a
@@ -144,6 +149,15 @@ Strs = list[str] | None
 
 def build_server() -> MCPServer:
     server = MCPServer(name="blueprint", version=__version__, instructions=INSTRUCTIONS)
+
+    @server.tool(name="init", description=_sub_help("init") + ". Pass an absolute folder: the "
+                 "server's working directory is not necessarily yours",
+                 annotations=ToolAnnotations(read_only_hint=False, destructive_hint=False,
+                                             idempotent_hint=False, open_world_hint=False))
+    def init(
+        dir: Annotated[str, _p("init", "dir", ...)],  # named after the CLI's dest
+    ) -> dict[str, Any]:
+        return run_tool("init", locals())
 
     @server.tool(name="describe", description=_sub_help("describe"), annotations=READ_ONLY)
     def describe(

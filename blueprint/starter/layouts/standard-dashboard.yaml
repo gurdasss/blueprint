@@ -1,0 +1,161 @@
+# ─────────────────────────────────────────────────────────────────────
+# Blueprint Layout — Core Template
+# ─────────────────────────────────────────────────────────────────────
+# A layout is a named arrangement of regions on a canvas. Each region
+# is a rectangle that a visual fills. `bp apply` places visuals into
+# regions by matching their role.
+#
+# ── Copy this file as `layouts/standard-dashboard.yaml` ──────────────
+# The file name (without .yaml) must equal the `name:` key below, and the
+# file must sit in a directory on the guidelines' `layouts.search_path`.
+# Copying it under its own name gives you:
+#
+#   layout 'standard-dashboard' not found in <your layouts dir>
+#
+# `search_path` entries resolve relative to the **guidelines file**, not
+# your current directory, so this works:
+#
+#   my-guidelines.yaml          layouts: {search_path: ["layouts"]}
+#   layouts/
+#     standard-dashboard.yaml   name: standard-dashboard
+#   overview.yaml               layout: standard-dashboard
+#
+# ── You may not need to write one at all ─────────────────────────────
+# Blueprint ships several layouts. `bp describe` lists every one on your
+# search path with its region counts — check that before writing a new
+# one. Write your own when none has the regions you need, or when your
+# canvas is a different size.
+#
+# Pixels are the only unit in this version. The client states every
+# coordinate; Blueprint never derives one. That means a little arithmetic
+# up front (worked out for you at the bottom of this file) in exchange for
+# a layout that is exactly what it says. Relative positioning — rows and
+# column counts that Blueprint turns into pixels — is a later version; see
+# docs/extensions.md.
+#
+# Rules enforced by `bp apply`:
+#   - Every region must sit on the guidelines grid.
+#   - Every region must be inside the guidelines margin.
+#   - Every pair of regions must be at least the guidelines gutter apart.
+#   - Violating any of these refuses the layout, not the spec.
+#
+# And one warning, not a refusal:
+#   - A `kpi-row` region under 160px gets a warning and is applied anyway.
+#     At 120px Desktop clips a KPI visual's goal line and a titled card's
+#     label (measured); see the row heights at the bottom of this file.
+# ─────────────────────────────────────────────────────────────────────
+
+
+# ── Identity ─────────────────────────────────────────────────────────
+# The name must match the file name. This is what a page spec writes
+# in its `layout:` field.
+
+name: standard-dashboard
+
+
+# ── Canvas ───────────────────────────────────────────────────────────
+# The page size `bp apply` gives a page built from this layout. Keep it
+# equal to the guidelines canvas: nothing refuses a mismatch outright,
+# but `bp check` then reports every such page under the `page-size`
+# rule ("page is 1280x720, guidelines say 1920x1080"), and on a re-run
+# `apply` errors if the page it finds isn't the size of this canvas
+# (it never scales a layout).
+
+canvas:
+  width: 1280
+  height: 720
+
+
+# ── Regions ──────────────────────────────────────────────────────────
+# An ordered list of named rectangles. Visuals fill regions of their
+# role in declaration order: the first `main` visual gets the first
+# `main` region, the second gets the second, and so on.
+#
+# **Declaration order is the only order.** Nothing reads a region's x or
+# y to decide what goes in it, so if you declare the right-hand region
+# first, the first visual of that role lands on the right. Declare
+# regions in reading order — left to right, top to bottom — and the
+# page comes out the way the list looks.
+#
+# Each region has:
+#   role   What kind of visual fills it. Core roles:
+#            header   — the page title textbox
+#            kpi-row  — KPI cards and small summary visuals
+#            main     — charts, tables, matrices — everything else
+#   x, y   Top-left corner in pixels (must be on the grid)
+#   w, h   Width and height in pixels (edges must be on the grid)
+#
+# Running out of regions is an error. Unfilled regions are gaps
+# (a warning, never a reflow).
+#
+# Nothing here is trusted: `bp apply` refuses the layout and names the
+# breakage before it writes anything, e.g.
+#   region main#2 is off the 8px grid (right=1277.55)
+#   region header#1 is inside the 16px margin (left)
+#   regions main#1 and main#2 are 8px apart, less than the 16px gutter
+
+regions:
+  - { role: header,  x: 16,  y: 16,  w: 1248, h: 64 }
+  - { role: kpi-row, x: 16,  y: 96,  w: 616,  h: 160 }
+  - { role: kpi-row, x: 648, y: 96,  w: 616,  h: 160 }
+  - { role: main,    x: 16,  y: 272, w: 616,  h: 432 }
+  - { role: main,    x: 648, y: 272, w: 616,  h: 432 }
+
+
+# ── Doing the arithmetic (not parsed) ───────────────────────────────
+# This layout assumes the template guidelines: canvas 1280x720,
+# grid: 8, margin: 16, gutter: 16.
+#
+# Step 0 — can a region sit flush against the margin? Grid lines are
+# multiples of the grid, and the page edges always count as grid lines,
+# so a region starting exactly at the margin needs:
+#
+#   margin % grid == 0                 ->  16 % 8 == 0         ok
+#   (1280 - 2x16) % 8 == 0             ->  1248 usable width   ok
+#   ( 720 - 2x16) % 8 == 0             ->   688 usable height  ok
+#
+#   If that fails you have not run out of options - only flush-to-margin
+#   ones. With grid 10 and margin 16, x: 16 is off the grid, but a region
+#   at x: 20, w: 1240 passes every rule; the margin is effectively 20.
+#   Either keep the grid dividing the margin, or start at the first grid
+#   line outside it.
+#
+# Step 1 — columns. Only three things are enforced: on the grid, inside
+# the margin, at least the gutter apart. Any numbers that satisfy them
+# are accepted - 6 columns of 192 with 16px gaps is as valid as the
+# table below, it just leaves the slack at the right edge.
+#
+# The convention the shipped layouts follow is tidier: equal columns,
+# equal gaps, every number a multiple of the grid, each gap at least the
+# gutter, filling the usable width exactly. For 1248 usable and a 16px
+# gutter that gives:
+#
+#   columns   width each   gap     check
+#   1         1248         -       1248
+#   2          616         16      2x616 + 16      = 1248
+#   3          400         24      3x400 + 2x24    = 1248
+#   4          288         32      4x288 + 3x32    = 1248
+#   5          224         32      5x224 + 4x32    = 1248
+#   6          168         48      6x168 + 5x48    = 1248
+#
+#   x positions: margin, then + width + gap each time.
+#   2 columns -> 16, 648.   3 -> 16, 440, 864.   4 -> 16, 336, 656, 976.
+#
+#   Note the gap grows past the 16px gutter at three columns and more.
+#   That is what exact fill costs: the gutter is a minimum, so a wider
+#   gap is always allowed. Prefer narrow gaps instead and the slack ends
+#   up at the right edge - also fine, just less even.
+#
+# Step 2 — rows. Same idea vertically, using the heights you need:
+#
+#   header  64   (a 20pt title textbox)
+#   kpi-row 160  (at 120px Desktop clips a KPI's goal line and a
+#                 titled card's label - measured, not a guess)
+#   main    rest = 688 - 64 - 160 - 2x16 = 432
+#
+#   y positions: 16, then + height + gutter: 16, 96, 272.
+#
+# Step 3 — hand it to Blueprint. `bp apply` re-checks all of it against
+# the guidelines actually in force and refuses the layout if any edge is
+# off. The numbers above are a starting point, not an authority.
+# ─────────────────────────────────────────────────────────────────────

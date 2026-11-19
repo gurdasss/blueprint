@@ -1,0 +1,8 @@
+# A header over two full-height main regions: for pages with no KPI row, which standard-4-up
+# would leave as an empty 160px band. Columns are 616px with a 16px gap (1248 = 2 x 616 + 16).
+name: two-up
+canvas: { width: 1280, height: 720 }
+regions:
+  - { role: header, x: 16,  y: 16, w: 1248, h: 64 }
+  - { role: main,   x: 16,  y: 96, w: 616,  h: 608 }
+  - { role: main,   x: 648, y: 96, w: 616,  h: 608 }

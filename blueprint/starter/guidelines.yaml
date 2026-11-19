@@ -1,0 +1,194 @@
+# ─────────────────────────────────────────────────────────────────────
+# Blueprint Guidelines — Core Template
+# ─────────────────────────────────────────────────────────────────────
+# This is the minimum a client provides. Every key here is enforced by
+# `bp check`. Keys that are absent fall back to built-in defaults.
+# Anything outside the core is opt-in under `extensions:`, which today
+# reads five sub-keys — per-rule severity, decorative types, a resize
+# limit, extra typography roles and visual contracts of your own. See
+# "Extensions" at the foot of this file.
+#
+# Usage:
+#   bp check  --report <path> --guidelines this-file.yaml
+#   bp apply  spec.yaml --report <path> --guidelines this-file.yaml
+#   bp fmt    --report <path> --guidelines this-file.yaml
+# ─────────────────────────────────────────────────────────────────────
+
+version: 1
+name: "<Client> Reporting Standard"
+
+
+# ── Canvas ───────────────────────────────────────────────────────────
+# Fixed page dimensions in pixels. Every page in the report must match.
+# Power BI default is 1280×720; widescreen is 1920×1080.
+
+canvas:
+  width: 1280
+  height: 720
+
+
+# ── Spacing ──────────────────────────────────────────────────────────
+# Grid, margin and gutter — the three numbers that govern alignment.
+#
+#   grid    Pixel snap increment. Every visual edge lands on a multiple.
+#   margin  Minimum distance from any visual edge to the page edge.
+#   gutter  Minimum gap between neighbouring visuals.
+
+spacing:
+  grid: 8
+  margin: 16
+  gutter: 16
+
+
+# ── Page rules ───────────────────────────────────────────────────────
+# Constraints that apply to every page built from a spec.
+#
+#   max_visuals     Upper bound on visuals per page.
+#   density_policy  How visuals are counted: all | visible | data
+#   require_title   Every spec page must have a `type: header` visual.
+#   title_region    The region role that header must sit in (null: any).
+#                   Hand-built pages are never checked: nothing marks
+#                   which textbox is their title.
+
+page:
+  max_visuals: 8
+  density_policy: data
+  require_title: true
+  title_region: header
+
+
+# ── Palette ──────────────────────────────────────────────────────────
+# Approved colours. `bp check` flags any colour outside this set.
+#
+#   categorical   Ordered series colours for charts.
+#   background    Page / visual background colour.
+#   text          Default text colour.
+#   good, neutral, bad
+#                 Sentiment colours. A KPI draws `good` when it is at or above
+#                 its goal and `bad` below it. `neutral` is stored in the
+#                 theme, but nothing Blueprint builds has been seen to draw
+#                 it yet. Optional (omit: the theme's own).
+#                 `bp check` compares them with the theme once `categorical`
+#                 is set (an empty palette isn't checked at all).
+#   minimum, center, maximum
+#                 Divergent colours: the lowest, middle and highest stop of a
+#                 colour scale. The theme gets them, so every gradient a person
+#                 adds in Desktop starts from them, and a spec's `gradient:` on a
+#                 table column writes them into the visual (a saved gradient does
+#                 not follow later theme changes). Optional.
+#   extra         Further approved colours (e.g. a shade picked from the
+#                 theme, which is stored as resolved hex). Optional.
+#   second_level, third_level, fourth_level, disabled_text
+#                 Structural colours, named as Power BI's own "Customize
+#                 current theme" dialog labels them (First-level is `text`,
+#                 Background is `background`). `bp theme` writes them to the
+#                 theme. What each was seen to paint: second_level the
+#                 secondary grey text (subtitles, axis labels), third_level a
+#                 dropdown slicer's border, fourth_level a multi-row card's
+#                 accent bars, disabled_text the Filters pane edge. Optional.
+#   enforce       strict (error) | warn (warning) | off (skip check)
+
+palette:
+  categorical:
+    - "#4E79A7"
+    - "#F28E2B"
+    - "#E15759"
+    - "#76B7B2"
+    - "#59A14F"
+  background: "#FFFFFF"
+  text: "#333333"
+  good: "#59A14F"
+  neutral: "#F28E2B"
+  bad: "#E15759"
+  minimum: "#FCE4D6"
+  center: "#FAFAFA"
+  maximum: "#4E79A7"
+  second_level: "#666666"
+  third_level: "#4E79A7"
+  fourth_level: "#76B7B2"
+  disabled_text: "#B3B3B3"
+  extra: []
+  enforce: strict
+
+
+# ── Typography ───────────────────────────────────────────────────────
+# Approved font and size per text role. Three roles cover the core:
+#
+#   page_title     The big header text (`type: header` visuals).
+#   visual_title   Chart, card, table and matrix titles.
+#   body           Any other textbox.
+#
+# Further roles (a card's value, the new card's label, subtitles) are
+# extension roles: see "Extensions" below. Labels and data labels are
+# not checked yet.
+#
+# Font names must match Power BI Desktop's font list exactly.
+# A weight is part of the face name (e.g. "Segoe UI Semibold"),
+# not a separate property.
+#
+# `font` and `size` each take one value or a list:
+#
+#   page_title: { font: [Segoe UI Semibold, Segoe UI Bold], size: [18, 20] }
+#
+# A list is an allowed set. `bp check` passes any listed font and any
+# listed size, and the two are checked independently (either font may
+# go with either size). It is not a fallback chain.
+#
+# What Blueprint itself writes (the header textbox from `bp apply`, the
+# theme from `bp theme`) uses the FIRST entry only, so put your
+# preferred value first. A role you leave out, or an empty list, allows
+# anything. There is one rule per role, not per visual type or page.
+
+typography:
+  page_title:   { font: Segoe UI Semibold, size: 18 }
+  visual_title: { font: Segoe UI, size: 12 }
+  body:         { font: Segoe UI, size: 10 }
+
+
+# ── Layouts ──────────────────────────────────────────────────────────
+# Where to find layout files and which one a spec uses by default.
+# Paths are relative to this file.
+
+layouts:
+  search_path: ["layouts"]
+  default: standard-dashboard   # the name of a layout file on the search_path
+
+
+# ── Extensions ───────────────────────────────────────────────────────
+# Opt-in settings outside the core. Five sub-keys are implemented today:
+#
+# extensions:
+#   severity: {grid: warning}         # rule severity (error | warning | off)
+#   decorative_types: [image, shape]  # exempt from the margin and gutter rules
+#   max_resize: 0.25                  # bp fmt skips a bigger resize; null: no limit
+#   typography:                       # text roles beyond the core three
+#     subtitle:   { font: Segoe UI, size: 12 }
+#     callout:    { font: Segoe UI Light, size: 32 }
+#     card_label: { font: Segoe UI, size: 12 }
+#   custom_visuals:                   # visual contracts of your own, beyond the 18
+#     search_path:                    # probe-verified types the core ships. Relative
+#       - "my-visuals"                # entries resolve against this file.
+#
+# Those five are the whole of what the core reads. Anything else here is
+# passed through untouched, for an extension's own code to read: there is
+# no registry, so a key nothing reads has no effect and is not refused.
+#
+# The shapes below are **not implemented**. Nothing in Blueprint reads
+# them; they are here as sketches of where such settings would go, so
+# writing one changes nothing about your report. Each needs a survey of
+# real reports and a Desktop probe before it is built.
+#
+# extensions:
+#   four_sided_margin:                # not implemented
+#     top: 16
+#     right: 24
+#     bottom: 16
+#     left: 24
+#   brand_colors:                     # not implemented
+#     primary: "#0F2027"
+#     secondary: "#203A43"
+#   approved_visual_types: [card, column, bar, line, pie, table, matrix]
+#   visual_containers:                # not implemented
+#     background_color: "#FFFFFF"
+#     border: { enabled: true, color: "#E1DFDD", width: 1 }
+#     corner_radius: 4

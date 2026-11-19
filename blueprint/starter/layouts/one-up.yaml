@@ -1,0 +1,6 @@
+# A header over one full-width main region: a page with a single chart or a large table.
+name: one-up
+canvas: { width: 1280, height: 720 }
+regions:
+  - { role: header, x: 16, y: 16, w: 1248, h: 64 }
+  - { role: main,   x: 16, y: 96, w: 1248, h: 608 }

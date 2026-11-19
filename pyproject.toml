@@ -55,7 +55,7 @@ version = { attr = "blueprint.__version__" }
 include = ["blueprint*"]
 
 [tool.setuptools.package-data]
-blueprint = ["*.yaml", "visuals/*.yaml", "pbir/schemas/**/*.json"]
+blueprint = ["*.yaml", "visuals/*.yaml", "starter/*.yaml", "starter/layouts/*.yaml", "starter/pages/*.yaml", "pbir/schemas/**/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

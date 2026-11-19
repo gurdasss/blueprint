@@ -11,6 +11,7 @@ from blueprint.commands import apply as apply_cmd
 from blueprint.commands import check as check_cmd
 from blueprint.commands import describe as describe_cmd
 from blueprint.commands import fmt as fmt_cmd
+from blueprint.commands import init as init_cmd
 from blueprint.commands import inspect as inspect_cmd
 from blueprint.commands import manifest as manifest_cmd
 from blueprint.commands import theme as theme_cmd
@@ -48,6 +49,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="bp", description=__doc__)
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
+
+    p = sub.add_parser("init", help="write starter guidelines, layouts and a page spec to edit "
+                                    "(never overwrites)")
+    p.add_argument("dir", type=Path, nargs="?", default=Path("."),
+                   help="folder to write them into (default: the current folder; created if missing)")
+    p.set_defaults(func=init_cmd.run)
 
     p = sub.add_parser("inspect", help="print pages, visuals, IDs and positions (read-only)")
     p.add_argument("--report", type=Path, required=True, help=REPORT_HELP)
@@ -136,7 +143,8 @@ def main(argv: list[str] | None = None) -> int:
             raise GuidelinesError(f"--grid was replaced by --set spacing.grid={args.grid}")
         return args.func(args)
     except (ReportFormatError, GuidelinesError, WriteError, SpecError, LayoutError, ModelError,
-            RegistryError, ThemeError, ContractError, apply_cmd.ApplyError) as exc:
+            RegistryError, ThemeError, ContractError, apply_cmd.ApplyError,
+            init_cmd.InitError) as exc:
         print(f"bp: error: {exc}", file=sys.stderr)
         return 2
     except OSError as exc:  # e.g. permission denied, read-only folder, disk full

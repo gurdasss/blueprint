@@ -20,7 +20,8 @@ from PyInstaller.utils.hooks import collect_data_files
 
 datas = collect_data_files(
     "blueprint",
-    includes=["*.yaml", "visuals/*.yaml", "pbir/schemas/**/*.json"],
+    includes=["*.yaml", "visuals/*.yaml", "starter/*.yaml", "starter/layouts/*.yaml",
+              "starter/pages/*.yaml", "pbir/schemas/**/*.json"],
 )
 
 a = Analysis(

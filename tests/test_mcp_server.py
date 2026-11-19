@@ -64,8 +64,9 @@ def test_required_parameters_match_the_cli():
     for command, actions in _subcommands().items():
         if command == "mcp":
             continue
-        required = {d for d, a in actions.items()
-                    if d not in mcp_server.EXCLUDED and (a.required or not a.option_strings)}
+        required = {d for d, a in actions.items() if d not in mcp_server.EXCLUDED
+                    and (a.required or (not a.option_strings and a.nargs not in ("?", "*")))}
+        required |= mcp_server.REQUIRED_IN_MCP.get(command, set())  # declared, with a reason
         assert set(tools[command].input_schema.get("required", [])) == required, command
 
 
@@ -79,6 +80,7 @@ def test_read_only_tools_are_marked_read_only():
     tools = _tools()
     assert {n for n, t in tools.items() if t.annotations.read_only_hint} == {
         "describe", "inspect", "check"}
+    assert tools["init"].annotations.destructive_hint is False  # it refuses to overwrite
 
 
 # --- a tool does what the CLI does, byte for byte --------------------------------------------
@@ -143,6 +145,17 @@ def test_each_tool_matches_the_cli_byte_for_byte(card_chart_fixture, tmp_path, c
     assert codes[2] == 1 and codes[-1] == 1  # check's findings are a result, not an error
     assert via_tools[4][1] != via_tools[3][1]  # apply wrote; the dry run did not
     assert via_tools[5][1] == via_tools[4][1]  # re-apply is a no-op (the idempotent hint)
+
+
+def test_init_tool_matches_the_cli(tmp_path, capsys):
+    target = tmp_path / "starter"
+    tool = mcp_server.run_tool("init", {"dir": str(target)})
+    written = _tree(target)
+    shutil.rmtree(target)
+    capsys.readouterr()
+    assert cli.main(tool["argv"]) == tool["exit_code"] == 0
+    assert capsys.readouterr().out == tool["stdout"]
+    assert _tree(target) == written and len(written) == 9
 
 
 def test_paths_are_made_absolute(card_chart_fixture, tmp_path, monkeypatch):
@@ -222,5 +235,5 @@ def test_stdio_session_against_bp_mcp():
             r = await client.call_tool("describe", {"guidelines": str(GUIDELINES)})
             return tools, r
     tools, r = asyncio.run(go())
-    assert len(tools) == 7
+    assert len(tools) == 8
     assert sorted(json.loads(r.structured_content["stdout"])["types"]) == CORE_TYPES

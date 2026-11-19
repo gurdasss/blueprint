@@ -1,0 +1,271 @@
+# ─────────────────────────────────────────────────────────────────────
+# Blueprint Page Spec — Core Template
+# ─────────────────────────────────────────────────────────────────────
+# A page spec is the input a human or LLM agent writes. It describes
+# intent — which visuals go on a page and what data they show — not
+# pixel coordinates.
+#
+# Copy this file per page, e.g. `overview.yaml`. Then, before applying:
+#
+#   - Replace every field name below. `[Total Revenue]`, `Geography[Region]`
+#     and the rest are invented, to show the syntax. They are not in your
+#     model, and you get one error per field if you leave them.
+#   - Point `layout:` at a layout that exists. See `bp describe`.
+#
+# Discover what you can write (types, slots, options, layouts, and your
+# model's own fields):
+#   bp describe --report <path> --guidelines <path> [--json]
+#
+# Usage:
+#   bp apply this-file.yaml --report <path> --guidelines <path> [--dry-run]
+#
+# See template/README.md for the whole path from here to a built page.
+# ─────────────────────────────────────────────────────────────────────
+
+
+# ── Page identity ────────────────────────────────────────────────────
+# `page:` is the display name shown in Power BI Desktop's page tab.
+# The spec's identity (for re-apply matching) is the file name, or
+# an explicit `id:` if you need to rename the file without creating
+# a new page.
+
+page: Sales Overview
+layout: standard-dashboard
+
+
+# ── Visuals ──────────────────────────────────────────────────────────
+# An ordered list. Each visual fills the next free region of its role.
+#
+# ── How that decides where a visual lands ──────────────────────────
+#
+# Not top-to-bottom, and not left-to-right. Role first, then order
+# within that role:
+#
+#   1. Each visual has a role — its own `region:` if it sets one, else
+#      the role its type declares (`header` -> header, `kpi` ->
+#      kpi-row, every other type -> main).
+#   2. Each role is a separate queue. The Nth visual of a role, in the
+#      order written here, takes the Nth region of that role, in the
+#      order the layout file declares them.
+#   3. A `blueprint: ignore` visual is skipped and takes no region.
+#
+# So the order of this list only matters *within* one role. Listing a
+# card before a KPI does not put the card higher up the page. On the
+# shipped `dashboard-6` layout, this list:
+#
+#     header, card, kpi, table, kpi, kpi
+#
+# places like this — the card is second in the list and lands at the
+# bottom of the page, because its role is `main`:
+#
+#     header  -> header#1    x= 16 y= 16
+#     card    -> main#1      x= 16 y=272      <- 2nd listed, bottom row
+#     kpi     -> kpi-row#1   x= 16 y= 96      <- 3rd listed, top row
+#     table   -> main#2      x=440 y=272
+#     kpi     -> kpi-row#2   x=440 y= 96
+#     kpi     -> kpi-row#3   x=864 y= 96
+#
+# Reading left-to-right and top-to-bottom is a convention of the
+# shipped layouts, which declare their regions in that order. Nothing
+# in Blueprint looks at a region's x or y to decide what goes in it.
+#
+# Too many visuals of one role is an error naming the layout and its
+# region count — never a rearrangement. A region left over is a gap:
+# `bp apply` warns and names layouts that would fill every region.
+#
+# Required per visual:
+#   type     A Blueprint visual type (see `bp describe` for the list).
+#            The only key every visual needs.
+#
+# Required by some types:
+#   title    The header's text, so a `type: header` visual needs one.
+#            Every other type's title is optional.
+#   slots    Data bindings — which fields go into which slot. Each type's
+#            contract marks the slots it requires (`bp describe` lists
+#            them); a header has none.
+#
+# Optional per visual:
+#   id         Stable identity within the page, for re-apply matching.
+#              Lowercase letters, digits and hyphens, max 40.
+#              Default: `<type>-<n>`, counting that type in spec order.
+#              Re-apply matches on this id, so anything that renumbers
+#              one type moves its visuals around:
+#                - adding a second card *after* the first renumbers
+#                  nothing; the new one is card-2 and is created.
+#                - adding one *before* it makes the new entry card-1,
+#                  which takes over the card already on the page, while
+#                  the old entry is now card-2 and is created fresh.
+#                - swapping two cards makes each take over the other's.
+#              A takeover rebinds the fields in place and reports it; it
+#              isn't refused, because Blueprint wrote both visuals and
+#              neither looks edited in Desktop. Set `id:` on any type you
+#              use more than once and none of this applies.
+#   region     Override the visual type's default region role.
+#   options    Formatting choices the visual type declares (e.g. labels,
+#              legend position). See `bp describe` for available options.
+#   sort       { by: <field>, direction: ascending | descending }
+#              The field must be one this visual binds. Left out, the
+#              visual keeps Desktop's own default sort.
+#   blueprint  The one accepted value is `ignore`: this visual is placed
+#              and bound by hand in Desktop on purpose. Blueprint never
+#              creates, moves or binds it, and it takes no region — so
+#              the entry is a note to Blueprint, not a visual it builds.
+#              Its slots, options and sort are dropped if you write any.
+#              Use it to keep a hand-made visual's id listed in the spec:
+#              that stops `bp apply` warning that a Blueprint visual by
+#              that id is no longer in the spec.
+
+visuals:
+
+  # ── Header ─────────────────────────────────────────────────────
+  # Required when guidelines say require_title: true.
+  - type: header
+    title: Sales Overview
+
+  # ── KPI — short form slots (just the field) ────────────────────
+  - type: kpi
+    title: Revenue vs Target
+    slots:
+      value: "[Total Revenue]"
+      trend: "Calendar[Month]"
+      target: "[Revenue Target]"
+
+  # ── Card ───────────────────────────────────────────────────────
+  - type: card
+    title: Total Revenue
+    region: kpi-row
+    slots:
+      value: "[Total Revenue]"
+
+  # ── Column chart with options ──────────────────────────────────
+  # `id:` is optional, but it pins this visual's identity across
+  # re-applies no matter what is added above it.
+  - type: column
+    id: revenue-by-region
+    title: Revenue by Region
+    options: { labels: "on" }
+    sort: { by: "[Total Revenue]", direction: descending }
+    slots:
+      category: "Geography[Region]"
+      value: "[Total Revenue]"
+
+  # ── Table — an ordered list is the column order, left to right ─
+  - type: table
+    title: Order Detail
+    slots:
+      columns:
+        - "Geography[Region]"
+        - "Product[Category]"
+        - "[Total Revenue]"
+        - "[Order Count]"
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Slot syntax reference
+# ─────────────────────────────────────────────────────────────────────
+#
+# ── A slot holds a field ──
+#
+#   value: "[Total Revenue]"          a measure
+#   value: "Table[Column]"            a column
+#   value: "Table[Hierarchy]"         a model hierarchy (binds all levels)
+#
+#   One way to write one thing: a field is a string. Anything a slot
+#   needs beyond the field is a mapping key — see "the long form" below.
+#
+#
+# ── Drill-down paths (ordered lists) ──
+#
+#   An ordered list in a slot creates a drill-down hierarchy in the
+#   visual. The user clicks through levels in Power BI Desktop.
+#   This is core functionality — every analytical page uses it.
+#
+#   category:
+#     - "Geography[Country]"
+#     - "Geography[State]"
+#     - "Geography[City]"
+#
+#   A list in a `value` slot means one series per measure instead
+#   (probe 20). `bp describe` marks which slots take a list.
+#
+#
+# ── Sorting a visual ──
+#
+#   sort: { by: "[Total Revenue]", direction: descending }
+#   sort: { by: "Geography[Region]", direction: ascending }
+#
+#   To sort on a column the visual summarises, name the column; it
+#   follows the aggregate the visual shows (probe 41). Or say which:
+#   sort: { by: { field: "Sales[Amount]", aggregate: sum }, direction: descending }
+#
+#   One sort per visual, on a field the visual shows — that is what
+#   Desktop stores (probe 31). Leave `sort` out and Desktop's own
+#   default stands; a sort you set in Desktop is left alone too.
+#
+#
+# ── Saying more about a field: the long form ──
+#
+#   A slot entry can be a mapping instead of a string. The two forms
+#   mean the same thing when only `field` is set:
+#
+#     value: "Sales[Amount]"
+#     value: { field: "Sales[Amount]" }
+#
+#   The mapping is the only way to add a per-slot decision:
+#
+#     value:
+#       field: "Sales[Amount]"
+#       aggregate: sum             # summarise the column in this visual
+#       format: "#,0.00"           # a Power BI format string
+#       gradient: 2                # colour the cell background by value
+#
+# ── aggregate (a column summarised in the visual) ──
+#
+#   sum  average  min  max         as the names say
+#   count                          Desktop's "Count": non-null values
+#   distinctcount                  Desktop's "Count (Distinct)"
+#
+#   Only where the slot takes a measure: an aggregated column is a
+#   value, so `category: {aggregate: sum}` is refused.
+#   Use a measure when the calculation is reusable business logic;
+#   use `aggregate` for a one-off summary in one visual.
+#
+#   Codes come from probe 29, where each was chosen on a fresh field
+#   in Desktop. Two fields Desktop would name alike (count and
+#   distinct count of one column) are refused rather than guessed.
+#
+# ── format (a format string scoped to the visual) ──
+#
+#   format: "#,0"                  1,234
+#   format: "#,0.00"               1,234.56
+#   format: "0.00%"                45.20%
+#   format: '"$" #,0.00;("$" #,0.00);"$" #,0.00'      $1,234.56
+#
+#   The string is written exactly as given. Blueprint has no `currency`
+#   shorthand on purpose: probe 29 showed Desktop writes the *locale's*
+#   symbol, so a shorthand would mean Blueprint inventing one.
+#   A measure's own format lives in the model (TMDL formatString) and
+#   is a different thing; this one is per visual.
+#
+# ── gradient (a colour scale on a table column) ──
+#
+#   gradient: 2                    lowest → highest
+#   gradient: 3                    lowest → middle → highest
+#
+#   The number is how many colours the scale uses. They come from your
+#   guidelines (`palette.minimum`, `palette.center`, `palette.maximum`),
+#   so the scale matches the standard instead of being picked by hand,
+#   and `apply` refuses the spec if the colours it needs are not set.
+#
+#   Only on a `table` column, and only with `aggregate`: probe 44 saw
+#   Desktop save a gradient on an aggregated column and nowhere else.
+#   Changing the guideline colours and re-applying rewrites the scale in
+#   place. Dropping `gradient` from the spec leaves the one already in
+#   the report: removing it is then Desktop's to do, not Blueprint's.
+#
+#   This is the one piece of conditional formatting Blueprint writes.
+#   A gradient someone adds in Desktop keeps its own colours and does
+#   not follow a later theme change (probe 44), which is why the colours
+#   are written into the visual rather than left to the theme.
+#
+# ─────────────────────────────────────────────────────────────────────

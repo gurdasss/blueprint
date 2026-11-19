@@ -302,5 +302,5 @@ def test_changing_a_visuals_region_moves_it_on_re_apply(tmp_path: Path, capsys):
 
 
 def test_an_empty_search_path_says_where_layouts_come_from():
-    with pytest.raises(layouts.LayoutError, match="layouts.search_path is empty.*guidelines/layouts/"):
+    with pytest.raises(layouts.LayoutError, match="layouts.search_path is empty.*`bp init`"):
         layouts.find("two-up", ())

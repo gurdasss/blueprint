@@ -6,7 +6,7 @@ import * as fs from "fs";
 import * as vscode from "vscode";
 import type { BlueprintApi } from "../../src/extension";
 
-const TOOLS = ["apply", "check", "describe", "fmt", "inspect", "manifest", "theme"];
+const TOOLS = ["apply", "check", "describe", "fmt", "init", "inspect", "manifest", "theme"];
 
 /** Replay a recorded MCP session into a server the way a client does: keep stdin open until
  * every request has its reply (the server stops reading at end of input). */
