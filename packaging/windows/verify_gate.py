@@ -19,7 +19,8 @@ import json
 import sys
 from pathlib import Path
 
-COMMANDS = ["version", "describe", "describe-report", "apply", "reapply", "check", "inspect"]
+COMMANDS = ["version", "describe", "describe-report", "apply", "reapply", "check", "inspect",
+            "init", "describe-model"]
 MCP_MODES = ["legacy", "auto"]  # the sessions record_mcp_sessions.py records
 SESSIONS = Path(__file__).resolve().parent
 
@@ -82,8 +83,11 @@ def mcp_problems(mode: str, exe_dir: Path, ref_dir: Path, types: list[str],
                 continue
             if sc["exit_code"] != (ref[rid]["result"].get("structuredContent") or {}).get("exit_code"):
                 problems.append(f"{label}: exit {sc['exit_code']} differs from the reference")
-            if name == "describe" and sorted(json.loads(sc["stdout"])["types"]) != types:
+            out = json.loads(sc["stdout"]) if name == "describe" else {}
+            if "types" in out and sorted(out["types"]) != types:
                 problems.append(f"{label}: visual types differ from blueprint/visuals")
+            if args.get("section") and list(out) != args["section"]:
+                problems.append(f"{label}: --section {args['section']} returned {list(out)}")
             called.add(name)
     if called != set(tools):
         problems.append(f"{where}: tools never called successfully: {sorted(set(tools) - called)}")

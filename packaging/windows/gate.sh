@@ -37,6 +37,8 @@ run apply    apply sales-overview.yaml --report report --guidelines guidelines/e
 run reapply  apply sales-overview.yaml --report report --guidelines guidelines/example.yaml
 run check    check --report report --guidelines guidelines/example.yaml
 run inspect  inspect --report report
+run init     init starter
+run describe-model describe --report report --guidelines guidelines/example.yaml --json --section model
 
 # `bp mcp`: replay each recorded client session (record_mcp_sessions.py: the SDK client's own
 # bytes, in both connection modes) and keep stdin open until every request has its reply,

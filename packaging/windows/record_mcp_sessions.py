@@ -36,6 +36,8 @@ CALLS = [
     ("fmt", {"report": "report", **G}),
     ("theme", {"report": "report", **G, "dry_run": True}),
     ("manifest", {"report": "report", **G, "dry_run": True}),
+    ("init", {"dir": "starter-{mode}"}),  # one folder per session: init never overwrites
+    ("describe", {"report": "report", **G, "section": ["model"]}),
     ("inspect", {"report": "no-such-report"}),
 ]
 
@@ -51,6 +53,8 @@ async def record(mode: str, inputs: Path) -> None:
         async with Client(params, mode=mode) as client:
             await client.list_tools()
             for name, args in CALLS:
+                args = {k: v.replace("{mode}", mode) if isinstance(v, str) else v
+                        for k, v in args.items()}
                 await client.call_tool(name, args)
     print(f"recorded {out.name}: {len(out.read_text().splitlines())} message(s)")
 

@@ -8,4 +8,6 @@
 {"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"fmt","arguments":{"report":"report","guidelines":"guidelines/example.yaml"}}}
 {"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"theme","arguments":{"report":"report","guidelines":"guidelines/example.yaml","dry_run":true}}}
 {"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"manifest","arguments":{"report":"report","guidelines":"guidelines/example.yaml","dry_run":true}}}
-{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"inspect","arguments":{"report":"no-such-report"}}}
+{"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"init","arguments":{"dir":"starter-legacy"}}}
+{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"describe","arguments":{"report":"report","guidelines":"guidelines/example.yaml","section":["model"]}}}
+{"jsonrpc":"2.0","id":12,"method":"tools/call","params":{"name":"inspect","arguments":{"report":"no-such-report"}}}
