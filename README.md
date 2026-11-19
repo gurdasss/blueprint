@@ -134,8 +134,8 @@ pip install blueprint-pbi
 ```
 
 That gives you the `bp` command, the 18 visual contracts and the vendored PBIR schemas.
-Layouts and guidelines are files you write (the repository ships examples under
-`guidelines/`, and a starting point under `template/`).
+Layouts and guidelines are files you write: `bp init` writes a starter set to edit (the
+repository's `template/` and `guidelines/layouts/`, copied into the folder you name).
 
 For agents, add the MCP server (`bp mcp`, see [Commands](#commands)) with
 `pip install "blueprint-pbi[mcp]"`.
@@ -213,10 +213,11 @@ Then open the report in Power BI Desktop and look at it.
 
 | Command | What it does |
 |---|---|
+| `bp init [dir]` | Write a starter set to edit: guidelines with every core key, seven layouts and a page spec. Never overwrites. |
 | `bp inspect` | Print the report's pages, visuals, IDs and positions. Read-only. |
 | `bp check` | Validate against guidelines. Read-only. Non-zero exit on violations. |
 | `bp fmt` | Snap existing visuals to the grid (each edge to the nearest line). Idempotent. |
-| `bp describe` | Everything a spec can use: spec syntax, visual types and slots, layouts and regions, guideline limits, and with `--report`, the model's fields in spec syntax and the pages specs built. Read-only. |
+| `bp describe` | Everything a spec can use: spec syntax, visual types and slots, layouts and regions, guideline limits, and with `--report`, the model's fields in spec syntax (with each field's type, sort-by column, summarization and format string, and the relationships) and the pages specs built. `--section` keeps only the named parts. Read-only. |
 | `bp apply <spec>...` | Create or update pages from page specs (files or folders of them). All are checked before anything is written. |
 | `bp manifest` | (Re)generate the manifest from the report's current state. |
 | `bp theme` | Write a custom theme from the guidelines (palette, text colour, sentiment colours, title/callout/card label fonts) and make the report use it. |
@@ -237,13 +238,21 @@ A key outside the core is refused there as in a file, naming the closest real on
 (`--set spacing.margn=4` → `did you mean margin?`). `--grid` was the earlier, single-key form of
 this and now names its replacement.
 
-**For agents writing specs:** run `bp describe --report <report> --json` first. It's the whole
-vocabulary in one call: which types, slots, layouts and fields exist, written the way a spec uses
-them. `bp apply` reports every problem with its location (`visuals[2].slots.value: …`), and
-`bp check --json` validates the result.
+**For agents writing specs:** start with `bp init` in an empty folder for a working set of
+guidelines, layouts and a page spec to edit, then run `bp describe --report <report> --json`.
+That's the whole vocabulary in one call: which types, slots, layouts and fields exist, written the
+way a spec uses them. When the output is too large, ask for parts: `--section model` (repeatable;
+`spec`, `guidelines`, `types`, `layouts`, `model`, `pages`). The model section gives every field's
+`data_type`, `sort_by` (a month column sorted by its number shows as names), `summarize_by` and
+`format_string`, and the relationships. A property the model doesn't set is an explicit `null`,
+meaning "there is none", never a missing key. `bp apply` reports every problem with its location
+(`visuals[2].slots.value: …`), and says when a spec summarises a column, which is as far as a spec
+goes: year-over-year, % of total, running totals and Top N need a measure in the model.
+`bp check --json` validates the result. A finding about the report's theme says to run
+`bp theme`, since no spec can change a theme.
 
-**As an MCP server:** `bp mcp` serves the seven commands as MCP tools over stdio
-(`describe`, `inspect`, `check`, `apply`, `fmt`, `theme`, `manifest`). Each tool takes the
+**As an MCP server:** `bp mcp` serves the eight commands as MCP tools over stdio
+(`init`, `describe`, `inspect`, `check`, `apply`, `fmt`, `theme`, `manifest`). Each tool takes the
 command's flags as parameters, named after them (`dry_run`, `overwrite_edits`, `overrides` for
 `--set`), runs the command and returns `{exit_code, stdout, stderr, argv}`: exactly what the CLI
 prints, so exit 1 from `check` is a result (findings), while exit 2 comes back as a tool error
@@ -714,8 +723,9 @@ blueprint/
 │   ├── cli.py                  # argparse entry points; one module per command in commands/
 │   ├── defaults.yaml           # built-in guideline defaults (layer 1)
 │   │
-│   ├── commands/               # inspect, check, fmt, apply, describe, manifest, theme,
+│   ├── commands/               # init, inspect, check, fmt, apply, describe, manifest, theme,
 │   │                           # and mcp_server.py (bp mcp: each command as an MCP tool)
+│   ├── starter/                # what `bp init` copies out: template/ + guidelines/layouts/
 │   │
 │   ├── pbir/                   # everything that knows the on-disk format
 │   │   ├── reader.py           # report dir -> in-memory model

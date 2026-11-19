@@ -4,6 +4,31 @@ Blueprint is pre-alpha: anything can change between releases. Every Power BI for
 code relies on was verified in Desktop first (`blueprint/pbir/schema.md`, evidence in
 `docs/probes/`).
 
+## Unreleased
+
+Tell the agent more, earlier: six fixes from a real run in which an LLM agent drove `bp` and
+struggled. Nothing about what `apply` writes to PBIR changes (the golden outputs and probe
+replays are unchanged).
+
+- **`bp init [dir]`**: writes a starter set to edit. It holds guidelines with every core key
+  commented, seven layouts the guidelines find, and a page spec. It never overwrites a file, and
+  it suggests `git init` so changes can be undone. The files ship inside the package
+  (`blueprint/starter/`, byte-identical copies of `template/` and `guidelines/layouts/`), so an
+  installed `bp` has them, and the Windows exe too. Over MCP it is the `init` tool, which requires
+  a folder.
+- **`bp describe`'s model section**: each field's `data_type`, `sort_by` (a month column sorted
+  by its number), `summarize_by` and `format_string`, as the TMDL writes them, and the model's
+  relationships. A property the model doesn't set is an explicit `null`, never a missing key. It
+  is structure only, read fresh: no data, no counts.
+- **`bp describe --section NAME`** (repeatable): `spec`, `guidelines`, `types`, `layouts`, `model`,
+  `pages`. The full output of a real model is about 45 KB; one section is 0.5-23 KB.
+- **`bp check`**: a finding about the report's theme file says to run `bp theme`, because no
+  spec can change a theme. `bp theme` clears every such finding (tested).
+- **Where a spec ends**: `bp apply` notes when a visual summarises a column. That draws the plain
+  total; year-over-year, % of total, running totals and Top N need a measure in the model, which
+  Blueprint never creates. `bp describe` also notes a model with no visible measures.
+- The "layouts.search_path is empty" error now points to `bp init`.
+
 ## v0.11.1 (2026-11-19)
 
 Error handling only; no other behaviour change.

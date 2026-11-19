@@ -52,13 +52,16 @@ REQUIRED_IN_MCP = {"init": {"dir"}}
 
 INSTRUCTIONS = """\
 Blueprint builds and checks Power BI PBIP/PBIR report pages from YAML page specs and a
-guidelines file. Typical flow: `describe` (with `report`) to learn the visual types, slots,
-layouts and model fields a spec can use; write a page spec YAML file; `apply` it (`dry_run`
-first to see the planned writes); then `check` the report against the guidelines. Every tool
-runs the matching `bp` command and returns its exit code and output. Paths may be relative to
-the server's working directory; prefer absolute paths. `guidelines` defaults to
-$BLUEPRINT_GUIDELINES. If the report is open in Power BI Desktop, the user must accept
-'Apply external changes' after a write."""
+guidelines file. Typical flow: `init` on an empty folder writes starter guidelines, layouts and
+a page spec to edit. `describe` lists what a spec can use; ask for parts with `section`
+(`types` and `layouts`, then `model` with `report` for the fields), since the whole output is
+large. In the model section a null means "the model has none" (e.g. no sort-by column). Write
+or edit the page spec, `apply` it (`dry_run` first to see the planned writes), then `check` the
+report. A check finding about the theme can't be fixed in a spec: it says to run `theme`. Every
+tool runs the matching `bp` command and returns its exit code and output. Use absolute paths:
+the server's working directory is not necessarily yours. `guidelines` defaults to
+$BLUEPRINT_GUIDELINES. If the report is open in Power BI Desktop, the user must accept 'Apply
+external changes' after a write."""
 
 # The CLI writes to the process-wide sys.stdout/sys.stderr, and the server runs synchronous tools
 # in worker threads (mcp 2.3.0, func_metadata.call_fn: anyio.to_thread.run_sync), so calls are

@@ -10,7 +10,10 @@ spec** per page — and writes Power BI PBIR pages from them.
 | `layout.template.yaml` | One named arrangement of regions on the canvas. | **Copy it** to `layouts/<name>.yaml` — see the warning below. |
 | `page.template.yaml` | One page: which visuals, and what data goes in them. One per page. | **Copy it** per page, e.g. `overview.yaml`. |
 
-That's the whole folder: three files to copy, and this page. Reference
+That's the whole folder: three files to copy, and this page. `bp init <folder>` copies them
+for you, with the layout already named to match, the six shipped layouts beside it, and the
+page spec in `pages/` (so `bp apply pages` reads only specs), and works from an installed `bp`
+with no clone of this repository. Reference
 material lives in [`docs/`](../docs/) — you don't need it to get a page
 built, and the two worth knowing about are:
 

@@ -31,8 +31,11 @@ These are plain YAML files, not installs. Copilot can write them using the `desc
   absolute path in the `blueprint.guidelines` setting. `describe`, `inspect`, `check` and `fmt`
   also run without one, on Blueprint's defaults; `theme` needs guidelines that set a palette or
   typography.
-- **Layouts**, which `apply` places a page's visuals into. They are deliberately not bundled:
-  your guidelines point to them (`layouts.search_path`).
+- **Layouts**, which `apply` places a page's visuals into. Your guidelines point to them
+  (`layouts.search_path`).
+
+Ask Copilot to run the `init` tool on an empty folder: it writes a starter set (guidelines with
+every key commented, seven layouts and a page spec) to edit, and never overwrites a file.
 - **Page specs**, the YAML files `apply` builds pages from.
 
 Examples to start from are in the repository's
@@ -51,11 +54,12 @@ folders.
 
 ## What Copilot gets
 
-Seven tools, one per `bp` command. Each runs the command and returns its exit code and output:
+Eight tools, one per `bp` command. Each runs the command and returns its exit code and output:
 
 | Tool | What it does |
 |---|---|
-| `describe` | Everything a page spec can use: visual types and slots, layouts, guideline limits, and with `report`, the model's fields. Read-only. |
+| `init` | Write starter guidelines, layouts and a page spec into a folder, to edit. Never overwrites. |
+| `describe` | Everything a page spec can use: visual types and slots, layouts, guideline limits, and with `report`, the model's fields with their types, sort-by columns and format strings, and the relationships. `section` keeps only the parts you name. Read-only. |
 | `inspect` | The report's pages, visuals, IDs and positions. Read-only. |
 | `check` | Validate the report against the guidelines. Read-only. Exit 1 means findings. |
 | `apply` | Create or update pages from page spec files. `dry_run` shows the planned writes. |
