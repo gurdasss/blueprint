@@ -117,8 +117,10 @@ def test_describe_lists_a_hidden_tables_visible_measures(tmp_path):
     pbir.write_text(json.dumps({"version": "4.0", "datasetReference": {"byPath": {"path": "../M"}}}))
     from blueprint.pbir.reader import read_report
     m = _model(read_report(rd))
-    assert m["tables"] == {"Facts": {"columns": [], "measures": ["[Total]"], "hierarchies": {},
-                                     "hidden": ["Facts[Amount]", "[Helper]"]}}
+    facts = {k: v for k, v in m["tables"]["Facts"].items() if k != "fields"}
+    assert m["tables"].keys() == {"Facts"}
+    assert facts == {"columns": [], "measures": ["[Total]"], "hierarchies": {},
+                     "hidden": ["Facts[Amount]", "[Helper]"]}
     assert m["hidden_tables"] == ["LocalDateTable_1"]
 
 
@@ -145,3 +147,72 @@ def test_no_hint_when_nothing_is_close():
     model = semantic.SemanticModel(tables={"Sales": {"Country"}}, measures={"Total Amount": ["Sales"]})
     with pytest.raises(semantic.ModelError, match=r"^no measure \[Xyz\] in the semantic model$"):
         model.measure_table("Xyz")
+
+
+# The property and relationship shapes Microsoft's sample models write (see semantic.py).
+PROPS_TMDL = (
+    "﻿table Calendar\r\n"
+    "\tmeasure 'Sales LY' = ```\r\n\t\t\tCALCULATE([Sales],\r\n\t\t\t  SAMEPERIODLASTYEAR(Calendar[Date]))\r\n\t\t\t```\r\n"
+    "\t\tformatString: \\$#,0;(\\$#,0);\\$#,0\r\n\r\n"
+    "\tcolumn Month\r\n\t\tdataType: string\r\n\t\tsortByColumn: 'Month Number'\r\n"
+    "\t\tsummarizeBy: none\r\n\t\tlineageTag: x\r\n\r\n"
+    "\tcolumn 'Month Number'\r\n\t\tdataType: int64\r\n\t\tsummarizeBy: sum\r\n\t\tformatString: 0\r\n\r\n"
+    "\tcolumn Plain\r\n\r\n"
+    "\thierarchy H\r\n\t\tlevel Month\r\n\t\t\tcolumn: Month\r\n"
+    "\t\tdataType: notAProperty\r\n"
+)
+
+
+def test_member_properties_are_read_as_written():
+    props = semantic.parse_properties(PROPS_TMDL)
+    assert props["Month"] == {"dataType": "string", "sortByColumn": "Month Number", "summarizeBy": "none"}
+    assert props["Month Number"] == {"dataType": "int64", "summarizeBy": "sum", "formatString": "0"}
+    assert props["Sales LY"] == {"formatString": "\\$#,0;(\\$#,0);\\$#,0"}  # after a multi-line DAX block
+    assert props["Plain"] == {}  # a member that writes none: present, empty
+    assert "H" not in props  # a hierarchy's lines belong to it, not to the column before it
+
+
+REL_TMDL = (
+    "﻿relationship 0b1c2d3e-0000-4000-8000-000000000001\r\n"
+    "\tjoinOnDateBehavior: datePartOnly\r\n"
+    "\tfromColumn: Sales.'Order Date'\r\n\ttoColumn: Calendar.Date\r\n\r\n"
+    "relationship 0b1c2d3e-0000-4000-8000-000000000002\r\n"
+    "\tisActive: false\r\n"
+    "\tfromColumn: 'Sales Data'.ProductKey\r\n\ttoColumn: 'Bob''s Products'.'Product Key'\r\n"
+)
+
+
+def test_relationships_are_read_with_their_properties_as_written():
+    a, b = semantic.parse_relationships(REL_TMDL)
+    assert (a.from_table, a.from_column, a.to_table, a.to_column) == ("Sales", "Order Date", "Calendar", "Date")
+    assert a.properties == {"joinOnDateBehavior": "datePartOnly"}
+    assert (b.from_table, b.from_column, b.to_table, b.to_column) == (
+        "Sales Data", "ProductKey", "Bob's Products", "Product Key")
+    assert b.properties == {"isActive": "false"}  # as written: no defaults filled in
+    with pytest.raises(semantic.ModelError, match="no readable fromColumn/toColumn"):
+        semantic.parse_relationships("relationship r1\n\tfromColumn: Sales.Key\n")
+
+
+def test_load_reads_properties_and_relationships_fresh(tmp_path):
+    defn = tmp_path / "M" / "definition"
+    (defn / "tables").mkdir(parents=True)
+    (defn / "tables" / "Calendar.tmdl").write_text(PROPS_TMDL)
+    m = semantic.load(tmp_path / "M")
+    assert m.properties[("Calendar", "Month")]["sortByColumn"] == "Month Number"
+    assert m.relationships == []  # no relationships.tmdl: none
+    (defn / "relationships.tmdl").write_text(REL_TMDL)
+    assert len(semantic.load(tmp_path / "M").relationships) == 2  # read again, not cached
+
+
+def test_real_models_properties_resolve(real_report: Path):
+    """In each sample model every sortByColumn names a column of its own table and every
+    relationship joins two real columns, so the parsing reads what the TMDL means."""
+    from blueprint.pbir.reader import read_report
+    report = read_report(real_report)
+    pbir = report.source.documents.get(Path("definition.pbir"))
+    m = semantic.load(semantic.model_dir_for(report.root, pbir.data))
+    sorts = [(t, p["sortByColumn"]) for (t, _), p in m.properties.items() if "sortByColumn" in p]
+    assert sorts and all(col in m.tables[t] for t, col in sorts)
+    assert m.relationships
+    for r in m.relationships:
+        assert r.from_column in m.tables[r.from_table] and r.to_column in m.tables[r.to_table]

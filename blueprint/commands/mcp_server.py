@@ -23,7 +23,7 @@ import io
 import threading
 import traceback
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
@@ -31,6 +31,7 @@ from mcp.types import ToolAnnotations
 from pydantic import Field
 
 from blueprint import __version__, cli, slots
+from blueprint.commands import describe as describe_cmd
 
 # argparse dests that are deliberately not tool parameters, and why.
 EXCLUDED = {
@@ -145,6 +146,8 @@ def _writes(idempotent: bool) -> ToolAnnotations:
 
 Str = str | None
 Strs = list[str] | None
+# describe --section's choices, so the tool schema lists them as an enum
+Sections = list[Literal[describe_cmd.SECTIONS]] | None  # type: ignore[valid-type]
 
 
 def build_server() -> MCPServer:
@@ -165,6 +168,7 @@ def build_server() -> MCPServer:
         guidelines: Annotated[Str, _p("describe", "guidelines")] = None,
         overrides: Annotated[Strs, _p("describe", "overrides")] = None,
         visuals: Annotated[Strs, _p("describe", "visuals")] = None,
+        section: Annotated[Sections, _p("describe", "section")] = None,
     ) -> dict[str, Any]:
         return run_tool("describe", locals())
 

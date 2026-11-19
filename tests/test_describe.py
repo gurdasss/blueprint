@@ -42,9 +42,12 @@ def test_types_layouts_and_limits_without_a_report(capsys):
 def test_model_fields_are_written_in_spec_syntax(capsys, tmp_path: Path):
     shutil.copytree(ROOT / "fixtures" / "02-card-and-chart", tmp_path / "proj")
     d = _describe(capsys, "--report", str(tmp_path / "proj"))
-    assert d["model"] == {"available": True, "tables": {"Sales": {
+    sales = d["model"]["tables"]["Sales"]
+    assert {k: v for k, v in sales.items() if k != "fields"} == {
         "columns": ["Sales[Amount]", "Sales[Country]", "Sales[Region]"],
-        "measures": ["[Total Amount]"], "hierarchies": {}, "hidden": []}}, "hidden_tables": []}
+        "measures": ["[Total Amount]"], "hierarchies": {}, "hidden": []}
+    assert (d["model"]["available"], d["model"]["hidden_tables"]) == (True, [])
+    assert (d["model"]["relationships"], d["model"]["relationships_left_out"]) == ([], 0)
     for ref in [*d["model"]["tables"]["Sales"]["columns"], *d["model"]["tables"]["Sales"]["measures"]]:
         assert spec.parse_field(ref) is not None
     assert [(p["name"], p["spec"]) for p in d["pages"]] == [("Overview", None)]
@@ -111,3 +114,60 @@ def test_text_output(capsys, tmp_path: Path):
     assert "  standard-4-up (default): 1280x720; 1 header, 1 kpi-row, 2 main" in out
     assert "    measures: [Total Amount]" in out
     assert "  Overview  (1920x1080; not built by a spec)" in out
+
+
+def _model_report(tmp_path: Path) -> Path:
+    """A report whose model has a sorted month column, a measure, a hidden auto-date table and
+    relationships to both a visible table and the auto-date one."""
+    from tests.test_semantic import PROPS_TMDL
+    rd = make_report(tmp_path / "r", {"p": []})
+    defn = tmp_path / "r" / "M" / "definition"
+    (defn / "tables").mkdir(parents=True)
+    (defn / "tables" / "Calendar.tmdl").write_text(PROPS_TMDL)
+    (defn / "tables" / "Sales.tmdl").write_text("table Sales\n\tcolumn 'Order Date'\n\t\tdataType: dateTime\n"
+                                                "\tcolumn Date\n")
+    (defn / "tables" / "LocalDateTable_1.tmdl").write_text("table LocalDateTable_1\n\tisHidden\n\n\tcolumn Date\n")
+    (defn / "relationships.tmdl").write_text(
+        "relationship r1\n\tfromColumn: Sales.'Order Date'\n\ttoColumn: Calendar.Month\n\n"
+        "relationship r2\n\tjoinOnDateBehavior: datePartOnly\n"
+        "\tfromColumn: Sales.Date\n\ttoColumn: LocalDateTable_1.Date\n")
+    (rd / "definition.pbir").write_text(json.dumps(
+        {"version": "4.0", "datasetReference": {"byPath": {"path": "../M"}}}))
+    return rd
+
+
+def test_field_details_say_null_when_the_model_writes_nothing(capsys, tmp_path: Path):
+    """Every field has every key: null means "checked, there is none", so an agent doesn't
+    guess. A sorted column names its sort column in spec syntax (months show as names)."""
+    m = _describe(capsys, "--report", str(_model_report(tmp_path)), "--section", "model")["model"]
+    fields = m["tables"]["Calendar"]["fields"]
+    keys = {"kind", "hidden", "data_type", "sort_by", "summarize_by", "format_string"}
+    assert all(set(f) == keys for t in m["tables"].values() for f in t["fields"].values())
+    assert fields["Calendar[Month]"] == {"kind": "column", "hidden": False, "data_type": "string",
+                                         "sort_by": "Calendar[Month Number]", "summarize_by": "none",
+                                         "format_string": None}
+    assert fields["Calendar[Plain]"] == {"kind": "column", "hidden": False, "data_type": None,
+                                         "sort_by": None, "summarize_by": None, "format_string": None}
+    assert fields["[Sales LY]"]["kind"] == "measure"
+    assert fields["[Sales LY]"]["format_string"] == "\\$#,0;(\\$#,0);\\$#,0"
+    assert m["relationships"] == [{"from": "Sales[Order Date]", "to": "Calendar[Month]", "properties": {}}]
+    assert m["relationships_left_out"] == 1  # the one to the hidden auto-date table
+
+
+def test_section_keeps_only_the_named_parts(capsys, tmp_path: Path):
+    rd = str(_model_report(tmp_path))
+    assert list(_describe(capsys, "--section", "types")) == ["types"]
+    assert list(_describe(capsys, "--report", rd, "--section", "model", "--section", "pages")) == [
+        "model", "pages"]
+    assert list(_describe(capsys, "--report", rd)) == [
+        "spec", "guidelines", "types", "layouts", "model", "pages"]  # no --section: everything
+    assert main(["describe", "--guidelines", str(GUIDE), "--section", "layouts"]) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("Layouts") and "Visual types" not in out and "Guidelines:" not in out
+    assert main(["describe", "--report", rd, "--guidelines", str(GUIDE), "--section", "model"]) == 0
+    assert "Calendar[Month] sorts by Calendar[Month Number]" in capsys.readouterr().out
+
+
+def test_a_report_section_without_a_report_is_a_clear_error(capsys):
+    assert main(["describe", "--guidelines", str(GUIDE), "--section", "model"]) == 2
+    assert "--section model needs --report" in capsys.readouterr().err

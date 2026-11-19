@@ -19,6 +19,15 @@ Hierarchies built in the model (probe 16) are table members too, with their leve
     \thierarchy Geography
     \t\tlevel Country
     \t\t\tcolumn: Country
+
+A member's properties are lines two tabs in, ``key: value``. ``describe`` reports four of them
+as written (``FIELD_PROPERTIES``): ``dataType``, ``sortByColumn`` (a column of the same table,
+bare or quoted), ``summarizeBy`` and ``formatString`` (the raw string, backslashes included).
+``relationships.tmdl`` holds ``relationship <id>`` blocks with one-tab-in ``fromColumn:`` and
+``toColumn:`` (``Table.Column``, either part bare or quoted) and any other properties. All of
+these shapes were read from Microsoft's three sample models. None of them has a dynamic format
+string (``formatStringDefinition``), so that shape is unverified and not read: a measure that
+uses one shows ``format_string: null``.
 """
 
 from __future__ import annotations
@@ -34,6 +43,15 @@ _TABLE = re.compile(rf"^table {_NAME}\s*$")
 _MEMBER = re.compile(rf"^\t(?P<kind>measure|column) {_NAME}(?:\s*=.*)?\s*$")
 _HIERARCHY = re.compile(rf"^\thierarchy {_NAME}\s*$")
 _LEVEL = re.compile(rf"^\t\tlevel {_NAME}\s*$")
+_PROPERTY = re.compile(r"^\t\t(?P<key>[A-Za-z]+):\s*(?P<value>.*?)\s*$")
+_RELATIONSHIP = re.compile(r"^relationship (?P<id>\S+)\s*$")
+_REL_PROPERTY = re.compile(r"^\t(?P<key>[A-Za-z]+):\s*(?P<value>.*?)\s*$")
+# Table.Column, each part bare or single-quoted ('' for a literal quote).
+_QUALIFIED = re.compile(r"^(?:'(?P<tq>(?:[^']|'')+)'|(?P<tb>[^.']+))\.(?:'(?P<cq>(?:[^']|'')+)'|(?P<cb>.+))$")
+
+# TMDL member properties describe reports, as written; a member that doesn't write one gets None.
+FIELD_PROPERTIES = {"dataType": "data_type", "sortByColumn": "sort_by", "summarizeBy": "summarize_by",
+                    "formatString": "format_string"}
 
 
 class ModelError(Exception):
@@ -49,6 +67,17 @@ def _did_you_mean(name: str, candidates: Iterable[str], show: Callable[[str], st
     return f" (did you mean {' or '.join(show(c) for c in close)}?)" if close else ""
 
 
+@dataclass(frozen=True)
+class Relationship:
+    """One ``relationship`` block: its two columns, and every other property as written."""
+    id: str
+    from_table: str
+    from_column: str
+    to_table: str
+    to_column: str
+    properties: dict[str, str]
+
+
 @dataclass
 class SemanticModel:
     tables: dict[str, set[str]] = field(default_factory=dict)  # table -> columns
@@ -56,6 +85,9 @@ class SemanticModel:
     hierarchies: dict[tuple[str, str], tuple[str, ...]] = field(default_factory=dict)  # (table, name) -> levels
     hidden_tables: set[str] = field(default_factory=set)  # `isHidden` tables (e.g. Desktop's auto-date ones)
     hidden: set[tuple[str, str]] = field(default_factory=set)  # (table, column or measure) marked `isHidden`
+    # (table, column or measure) -> the FIELD_PROPERTIES it writes, by TMDL key, values as written
+    properties: dict[tuple[str, str], dict[str, str]] = field(default_factory=dict)
+    relationships: list[Relationship] = field(default_factory=list)
 
     def measure_table(self, name: str) -> str:
         homes = self.measures.get(name, [])
@@ -130,6 +162,73 @@ def parse_hidden(text: str) -> tuple[bool, set[str]]:
     return table_hidden, hidden
 
 
+def _unquote(name: str) -> str:
+    """A TMDL name as written in a property value: bare, or single-quoted with '' for '."""
+    return name[1:-1].replace("''", "'") if len(name) >= 2 and name[0] == name[-1] == "'" else name
+
+
+def parse_properties(text: str) -> dict[str, dict[str, str]]:
+    """Member name -> the FIELD_PROPERTIES it writes (TMDL key -> value as written, names
+    unquoted), from one table file. Only property lines directly under a column or measure count."""
+    out: dict[str, dict[str, str]] = {}
+    member = None
+    for line in text.replace("\r\n", "\n").split("\n"):
+        m = _MEMBER.match(line)
+        if m:
+            member = _name(m)
+            out.setdefault(member, {})
+            continue
+        if line.startswith("\t") and not line.startswith("\t\t") and line.strip():
+            member = None  # another kind of member (hierarchy, partition, annotation)
+            continue
+        p = _PROPERTY.match(line)
+        if member is not None and p and p["key"] in FIELD_PROPERTIES:
+            value = p["value"]
+            out[member][p["key"]] = _unquote(value) if p["key"] == "sortByColumn" else value
+    return out
+
+
+def _qualified(value: str) -> tuple[str, str] | None:
+    m = _QUALIFIED.match(value.strip())
+    if not m:
+        return None
+    table = m["tq"].replace("''", "'") if m["tq"] is not None else m["tb"]
+    column = m["cq"].replace("''", "'") if m["cq"] is not None else m["cb"]
+    return table, column
+
+
+def parse_relationships(text: str, source: str = "relationships.tmdl") -> list[Relationship]:
+    """The ``relationship`` blocks of ``relationships.tmdl``, in file order."""
+    out: list[Relationship] = []
+    current: dict[str, str] | None = None
+    rel_id = ""
+
+    def close() -> None:
+        if current is None:
+            return
+        ends = _qualified(current.pop("fromColumn", "")), _qualified(current.pop("toColumn", ""))
+        if None in ends:
+            raise ModelError(f"{source}: relationship {rel_id} has no readable fromColumn/toColumn")
+        (ft, fc), (tt, tc) = ends
+        out.append(Relationship(rel_id, ft, fc, tt, tc, dict(current)))
+
+    for line in text.replace("\r\n", "\n").split("\n"):
+        r = _RELATIONSHIP.match(line.lstrip("\ufeff"))
+        if r:
+            close()
+            current, rel_id = {}, r["id"]
+            continue
+        if line and not line.startswith("\t"):
+            close()
+            current = None
+            continue
+        p = _REL_PROPERTY.match(line)
+        if current is not None and p:
+            current[p["key"]] = p["value"]
+    close()
+    return out
+
+
 def parse_hierarchies(text: str) -> dict[str, tuple[str, ...]]:
     """Hierarchy name -> its levels in order, from one ``tables/<name>.tmdl`` file (probe 16)."""
     out: dict[str, list[str]] = {}
@@ -170,6 +269,15 @@ def load(model_dir: Path) -> SemanticModel:
         model.hidden |= {(table, name) for name in hidden}
         for m in sorted(measures):
             model.measures.setdefault(m, []).append(table)
+        for name, props in parse_properties(text).items():
+            model.properties[(table, name)] = props
+    rel_file = model_dir / "definition" / "relationships.tmdl"
+    if rel_file.is_file():
+        try:
+            rel_text = rel_file.read_text(encoding="utf-8-sig")
+        except (OSError, UnicodeDecodeError) as exc:
+            raise ModelError(f"{rel_file.name}: can't read the model file ({exc})") from exc
+        model.relationships = parse_relationships(rel_text)
     return model
 
 

@@ -75,6 +75,9 @@ def build_parser() -> argparse.ArgumentParser:
                                         "guideline limits and, with --report, model fields (read-only)")
     p.add_argument("--report", type=Path, help=REPORT_HELP + "; adds its model fields and pages")
     _guideline_flags(p)
+    p.add_argument("--section", action="append", choices=describe_cmd.SECTIONS, metavar="NAME",
+                   help="only this part (repeatable): " + ", ".join(describe_cmd.SECTIONS)
+                        + " (model and pages need --report)")
     p.add_argument("--json", action="store_true", help="machine-readable output")
     p.set_defaults(func=describe_cmd.run)
 
@@ -144,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
         return args.func(args)
     except (ReportFormatError, GuidelinesError, WriteError, SpecError, LayoutError, ModelError,
             RegistryError, ThemeError, ContractError, apply_cmd.ApplyError,
-            init_cmd.InitError) as exc:
+            init_cmd.InitError, describe_cmd.DescribeError) as exc:
         print(f"bp: error: {exc}", file=sys.stderr)
         return 2
     except OSError as exc:  # e.g. permission denied, read-only folder, disk full
