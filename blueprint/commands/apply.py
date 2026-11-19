@@ -236,6 +236,14 @@ def _gap_warnings(page_spec: spec.PageSpec, layout: layouts.Layout,
             f"the page; {hint}")]
 
 
+# Said when a spec summarises a column in a visual: the page is right, but this is where what a
+# spec can express ends, and an agent should hear it here rather than find out from the result.
+SUMMARISED_COLUMN = ("a column summarised in the visual. That draws the plain total; a spec can't "
+                     "ask for year-over-year, % of total, running totals or a Top N filter. For "
+                     "those, bind a model measure that computes it: Blueprint binds measures but "
+                     "never creates them (the Power BI Modeling MCP can)")
+
+
 def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
     report = read_report(args.report)
     rules = guidelines.load(args.guidelines, report.root, guidelines.overrides_from(getattr(args, "overrides", None)),
@@ -406,6 +414,11 @@ def build_plan(args: argparse.Namespace, spec_path: Path) -> Plan:
         if sid not in ignored:
             plan.warnings.append(f"{sid}: Blueprint visual {v.name} is no longer in the spec; left "
                                  "in place (delete it in Desktop if it should go)")
+
+    summarised = list(dict.fromkeys(f"{vs.id} ({ref})" for vs in page_spec.visuals if not vs.ignore
+                                    for refs in vs.slots.values() for ref in refs if ref.aggregate))
+    if summarised:
+        plan.notes.append(f"{', '.join(summarised)}: {SUMMARISED_COLUMN}")
 
     plan.writes.extend(writer.plan_writes(report, force_schema=args.force_schema).writes)
     return plan

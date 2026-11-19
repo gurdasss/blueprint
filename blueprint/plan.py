@@ -24,6 +24,7 @@ class Plan:
     root: Path
     writes: list[FileWrite] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)  # not problems: limits worth knowing
 
     @property
     def empty(self) -> bool:
@@ -40,4 +41,8 @@ class Plan:
             lines.append("")
             lines.append("Warnings:")
             lines.extend(f"  - {w}" for w in self.warnings)
+        if self.notes:
+            lines.append("")
+            lines.append("Notes:")
+            lines.extend(f"  - {n}" for n in self.notes)
         return "\n".join(lines)

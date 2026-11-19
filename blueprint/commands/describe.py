@@ -59,7 +59,9 @@ SPEC_SYNTAX = {
         "aggregate": "optional; summarise a column in this visual: "
                      + ", ".join(sorted(spec.AGGREGATIONS))
                      + ". `count` counts non-null values and `distinctcount` distinct ones "
-                       "(probe 29). Only where the slot takes a measure",
+                       "(probe 29). Only where the slot takes a measure. It gives the plain total: "
+                       "for year-over-year, % of total, running totals or Top N, bind a model "
+                       "measure that computes it (Blueprint never creates measures)",
         "format": "optional; a Power BI format string scoped to this visual, e.g. \"#,0.00\" or "
                   "'\"$\" #,0.00;(\"$\" #,0.00);\"$\" #,0.00' (probe 29). Blueprint writes the "
                   "string as given: it never invents a currency symbol",
@@ -215,7 +217,13 @@ def _model(report: Report) -> dict[str, Any]:
         }
     shown = set(tables)
     rels = [r for r in model.relationships if r.from_table in shown and r.to_table in shown]
-    return {"available": True, "tables": tables, "hidden_tables": left_out,
+    notes = []
+    if not any(t["measures"] for t in tables.values()):
+        notes.append("the model has no visible measures: visuals can only summarise columns "
+                     "(slot `aggregate:`), so year-over-year, % of total, running totals and Top N "
+                     "are out of reach until the model has measures for them (Blueprint never "
+                     "creates measures; the Power BI Modeling MCP can)")
+    return {"available": True, "tables": tables, "hidden_tables": left_out, "notes": notes,
             "relationships": [{"from": f"{_quote(r.from_table)}[{r.from_column}]",
                                "to": f"{_quote(r.to_table)}[{r.to_column}]",
                                "properties": r.properties} for r in rels],
@@ -329,6 +337,8 @@ def _text_model(m: dict[str, Any]) -> list[str]:
     if m.get("hidden_tables"):
         lines.append(f"  ({len(m['hidden_tables'])} hidden table(s) with nothing visible, not listed: "
                      f"{', '.join(m['hidden_tables'])})")
+    for note in m.get("notes", []):
+        lines.append(f"  note: {note}")
     if m.get("relationships"):
         lines.append("  relationships:")
         lines += [f"    {r['from']} -> {r['to']}" for r in m["relationships"]]
