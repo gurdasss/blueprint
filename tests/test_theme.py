@@ -9,7 +9,7 @@ from blueprint.cli import main
 from blueprint.model import TextClass
 from blueprint.pbir import jsonfmt, theme
 from blueprint.pbir.reader import read_report
-from blueprint.validate import check_report
+from blueprint.validate import THEME_FIX, THEME_FIX_REPLACE, check_report
 
 ROOT = Path(__file__).resolve().parent.parent
 GUIDE = ROOT / "guidelines" / "example.yaml"
@@ -151,7 +151,7 @@ def test_base_visual_styles_title_size_outranks_text_classes(tmp_path: Path):
               package="RegisteredResources", folder="t")
     rules = _rules(tmp_path, "typography: {visual_title: {font: Segoe UI Semibold, size: 18}}\n")
     found = [f.message for f in check_report(read_report(rd), rules).findings if f.rule == "typography"]
-    assert found == ["theme 'C' visual_title text: size 15pt (allowed: 18)"]  # the false pass, now caught
+    assert found == ["theme 'C' visual_title text: size 15pt (allowed: 18)" + THEME_FIX_REPLACE]  # the false pass, now caught
 
     # Writing the size at the visualStyles level too (what bp theme now does) fixes it.
     add_theme(rd, "custom", "C2", {"textClasses": {"title": {"fontSize": 18, "fontFace": "Segoe UI Semibold"}},
@@ -207,7 +207,7 @@ def test_theme_then_check_passes_the_card_label(tmp_path: Path, card_chart_fixtu
     before = check_report(read_report(report), rules).findings
     assert [f.message for f in before if f.rule == "typography"] == [
         ("theme 'Fluent2-CY26SU10' card_label text: font 'Segoe UI' (allowed: Arial); "
-         "size 12pt (allowed: 14)")]
+         "size 12pt (allowed: 14)" + THEME_FIX)]
     assert main(["theme", "--report", str(report), "--guidelines", str(guide)]) == 0
     after = check_report(read_report(report), rules).findings
     assert [f for f in after if f.rule == "typography"] == []
@@ -299,7 +299,7 @@ def test_theme_then_check_passes_sentiment_and_a_wrong_one_is_found(report: Path
     main(["check", "--report", str(report), "--guidelines", str(g), "--json"])
     msgs = [f["message"] for f in json.loads(capsys.readouterr().out)["findings"] if f["rule"] == "palette"]
     assert [m for m in msgs if "sentiment" in m] == [
-        "theme 'blueprint-theme.json' sentiment colour bad is #8000FF, palette says #C2452D"]
+        "theme 'blueprint-theme.json' sentiment colour bad is #8000FF, palette says #C2452D" + THEME_FIX]
 
 
 def test_check_reports_a_sentiment_colour_the_theme_never_sets(report: Path, tmp_path: Path, capsys):
@@ -382,4 +382,4 @@ def test_theme_then_check_passes_structural_and_a_wrong_one_names_both_keys(repo
     g.write_text("name: S\npalette: {categorical: ['#4E79A7'], third_level: '#B6FF3B'}\n")
     assert structural_findings(g) == [
         ("theme 'blueprint-theme.json' structural colour third_level (backgroundLight) is #4639FF, "
-         "palette says #B6FF3B")]
+         "palette says #B6FF3B" + THEME_FIX)]

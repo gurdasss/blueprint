@@ -4,7 +4,7 @@ import pytest
 
 from blueprint import guidelines
 from blueprint.pbir.reader import IGNORE_ANNOTATION, read_report
-from blueprint.validate import check_report
+from blueprint.validate import THEME_FIX, THEME_FIX_REPLACE, check_report
 from tests.builders import add_theme, hex_color, make_report, theme_color, visual, write
 
 PALETTE = """
@@ -77,8 +77,9 @@ def test_theme_mismatch_and_missing(tmp_path: Path):
               folder="BaseThemes")
     found, _ = _palette_findings(tmp_path, rd)
     assert [f.message for f in found] == [
-        "theme 'Base1' data colours differ from palette.categorical at theme has only 1 data colours, palette has 2",
-        "theme 'Base1' background is #000000, palette says #FFFFFF",
+        "theme 'Base1' data colours differ from palette.categorical at theme has only 1 data colours, palette has 2"
+        + THEME_FIX,
+        "theme 'Base1' background is #000000, palette says #FFFFFF" + THEME_FIX,
     ]
     rd2 = make_report(tmp_path / "r2", {"p": []})
     add_theme(rd2, "custom", "Concourse", None, package="RegisteredResources", folder="themes")
@@ -92,7 +93,8 @@ def test_custom_theme_overrides_base_field_by_field(tmp_path: Path):
     add_theme(rd, "base", "Base1", GOOD_THEME, folder="BaseThemes")
     add_theme(rd, "custom", "OnlyText", {"foreground": "#F5F5F5"})  # like Dark's partial textClasses
     found, _ = _palette_findings(tmp_path, rd)
-    assert [f.message for f in found] == ["theme 'OnlyText' foreground is #F5F5F5, palette says #333333"]
+    assert [f.message for f in found] == ["theme 'OnlyText' foreground is #F5F5F5, palette says #333333"
+                                          + THEME_FIX_REPLACE]  # a custom theme of its own
 
 
 def test_unreadable_theme_notes_unchecked_refs_and_expressions(tmp_path: Path):

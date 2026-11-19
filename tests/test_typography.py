@@ -6,7 +6,7 @@ from blueprint import guidelines
 from blueprint.model import FontUse, TextClass
 from blueprint.pbir import formatting
 from blueprint.pbir.reader import IGNORE_ANNOTATION, read_report
-from blueprint.validate import check_report
+from blueprint.validate import THEME_FIX_REPLACE, check_report
 from tests.builders import add_theme, make_report, visual
 
 STACK = "'''Segoe UI Semibold'', wf_segoe-ui_semibold, helvetica, arial, sans-serif'"
@@ -178,13 +178,14 @@ def test_card_label_theme_default_is_visual_style_over_text_class(tmp_path: Path
                                                               "textClass": "label"}]}}}}
     body = "extensions:\n  typography:\n    card_label: {font: Arial, size: 14}\n"
     found, _ = _typo(tmp_path, [], body, theme=theme)
-    assert found == [(None, "theme 'T' card_label text: font 'Segoe UI' (allowed: Arial); size 12pt (allowed: 14)")]
+    assert found == [(None, "theme 'T' card_label text: font 'Segoe UI' (allowed: Arial); size 12pt (allowed: 14)"
+                      + THEME_FIX_REPLACE)]
 
 
 def test_theme_text_class_checked(tmp_path: Path):
     found, _ = _typo(tmp_path, [], theme={"textClasses": {"title": {"fontFace": "DIN", "fontSize": 16}}})
     assert found == [(None, ("theme 'T' visual_title text: font 'DIN' (allowed: Segoe UI Semibold); "
-                             "size 16pt (allowed: 12, 14)"))]
+                             "size 16pt (allowed: 12, 14)" + THEME_FIX_REPLACE))]
 
 
 def test_heading_token_is_noted_not_flagged(tmp_path: Path):

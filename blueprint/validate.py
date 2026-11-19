@@ -236,7 +236,7 @@ def _check_palette(report: Report, rules: Guidelines, c: _Collector) -> None:
                              "theme colours can't be checked")
     theme = effective_theme(report.themes)
     if theme is not None:
-        _check_theme(theme, pal, c)
+        _check_theme(theme, pal, c, _theme_fix(report))
 
     allowed = pal.allowed
     theme_refs = expressions = 0
@@ -270,7 +270,26 @@ def _check_palette(report: Report, rules: Guidelines, c: _Collector) -> None:
                               "(e.g. conditional formatting)")
 
 
-def _check_theme(theme: Theme, pal, c: _Collector) -> None:
+# Appended to every finding about the report's theme file itself. `bp theme` writes the theme
+# from the guidelines and clears each of them (tests/test_validate_theme_fix.py checks that it
+# does). A page spec can't change a theme, so without this an agent told to fix check's errors
+# by editing specs would loop. Findings about colours or fonts set on a visual don't get it.
+THEME_FIX = "; a spec can't change the theme: run `bp theme` to write one from the guidelines"
+# The same, when the report already uses a custom theme that isn't Blueprint's: `bp theme`
+# refuses to switch away from it without --replace-theme (pbir/theme.py with_theme), so the
+# hint says so up front instead of letting the agent learn it from a refusal.
+THEME_FIX_REPLACE = ("; a spec can't change the theme: run `bp theme --replace-theme` to write one "
+                     "from the guidelines (the report uses its own custom theme; its file is kept)")
+
+
+def _theme_fix(report: Report) -> str:
+    """The hint for a theme finding, by the rule `bp theme` itself uses to refuse."""
+    from blueprint.pbir.theme import FILE_NAME
+    custom = [t for t in report.themes if t.layer == "custom" and t.name != FILE_NAME]
+    return THEME_FIX_REPLACE if custom else THEME_FIX
+
+
+def _check_theme(theme: Theme, pal, c: _Collector, fix: str = THEME_FIX) -> None:
     want = pal.categorical
     have = theme.data_colors[:len(want)]
     diffs = [f"{i + 1}: {h} (palette {w})" for i, (h, w) in enumerate(zip(have, want, strict=False))
@@ -279,24 +298,24 @@ def _check_theme(theme: Theme, pal, c: _Collector) -> None:
         diffs.append(f"theme has only {len(have)} data colours, palette has {len(want)}")
     if diffs:
         c.add("palette", f"theme {theme.name!r} data colours differ from palette.categorical at "
-                         + "; ".join(diffs))
+                         + "; ".join(diffs) + fix)
     for label, got, expected in (("background", theme.background, pal.background),
                                  ("foreground", theme.foreground, pal.text)):
         if expected and got != expected:
-            c.add("palette", f"theme {theme.name!r} {label} is {got}, palette says {expected}")
+            c.add("palette", f"theme {theme.name!r} {label} is {got}, palette says {expected}" + fix)
     for kind, wanted, have in (("sentiment", pal.sentiment, theme.sentiment),
                                ("divergent", pal.divergent, theme.divergent)):
         for key, expected in wanted.items():
             got = have.get(key)
             if got != expected:
                 c.add("palette", f"theme {theme.name!r} {kind} colour {key} is "
-                                 f"{got or 'not set'}, palette says {expected}")
+                                 f"{got or 'not set'}, palette says {expected}" + fix)
     for key, theme_key in STRUCTURAL.items():  # findings name the client's key, then the theme's
         expected = getattr(pal, key)
         got = theme.structural.get(theme_key)
         if expected and got != expected:
             c.add("palette", f"theme {theme.name!r} structural colour {key} ({theme_key}) is "
-                             f"{got or 'not set'}, palette says {expected}")
+                             f"{got or 'not set'}, palette says {expected}" + fix)
 
 
 # --- typography --------------------------------------------------------------------------
@@ -351,7 +370,8 @@ def _check_typography(report: Report, rules: Guidelines, c: _Collector) -> None:
                 problems = _font_problems(font, roles[role])
                 if problems:
                     c.add("typography",
-                          f"theme {theme.name!r} {ROLE_LABEL[role]} text: " + "; ".join(problems))
+                          f"theme {theme.name!r} {ROLE_LABEL[role]} text: " + "; ".join(problems)
+                          + _theme_fix(report))
 
     unresolved: set[str] = set()
     for page in report.pages:

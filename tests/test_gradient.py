@@ -15,6 +15,7 @@ import pytest
 from blueprint import guidelines
 from blueprint.cli import main
 from blueprint.pbir import jsonfmt, render, theme
+from blueprint.validate import THEME_FIX
 
 ROOT = Path(__file__).resolve().parent.parent
 GUIDE = ROOT / "guidelines" / "example.yaml"
@@ -215,4 +216,5 @@ def test_check_compares_the_themes_divergent_colours_with_the_guidelines(report:
     assert palette_findings(g) == []
     g.write_text("name: D\npalette: {categorical: ['#4E79A7', '#F28E2B'], minimum: '#FF00C8'}\n")
     assert palette_findings(g) == [
-        "theme 'blueprint-theme.json' divergent colour minimum is #6A00FF, palette says #FF00C8"]
+        "theme 'blueprint-theme.json' divergent colour minimum is #6A00FF, palette says #FF00C8"
+        + THEME_FIX]
