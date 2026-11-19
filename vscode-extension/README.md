@@ -9,10 +9,45 @@ are available to Copilot.
 
 ## Requirements
 
-- Windows (x64). Power BI Desktop is Windows-only, and so is the bundled engine.
-- VS Code 1.101 or later, with GitHub Copilot (agent mode, which uses MCP tools).
-- A Power BI project saved as **PBIP** with the **PBIR** report format, with its TMDL semantic
-  model next to it. Power BI Desktop is only needed to look at the result.
+A machine with only **VS Code, GitHub Copilot and Power BI Desktop** is enough: the extension
+carries the engine with its own interpreter and never uses a Python on the machine.
+
+- **Windows x64.** The extension is published for `win32-x64` only; Windows on ARM gets no
+  build. Power BI Desktop is Windows-only too.
+- **VS Code 1.101 or later**, with **GitHub Copilot** in agent mode (which uses MCP tools).
+- **A local folder.** Open the project folder in a normal window. In a Remote-WSL, SSH or Dev
+  Container window the extension runs on the remote (Linux) side and registers no server (see
+  Limitations).
+- **A Power BI project saved as PBIP, in the PBIR report format** (a `definition/` folder), with
+  its TMDL semantic model next to it. A `.pbix` file isn't read, and a report in the older
+  PBIR-Legacy format (a single `report.json`) is refused: open and save it in a recent Power BI
+  Desktop to convert it. Desktop is only needed to look at the result.
+
+### Files you provide
+
+These are plain YAML files, not installs. Copilot can write them using the `describe` tool.
+
+- **Guidelines** (your standards: canvas size, spacing and grid, page rules, palette, typography, layouts). Set its
+  absolute path in the `blueprint.guidelines` setting. `describe`, `inspect`, `check` and `fmt`
+  also run without one, on Blueprint's defaults; `theme` needs guidelines that set a palette or
+  typography.
+- **Layouts**, which `apply` places a page's visuals into. They are deliberately not bundled:
+  your guidelines point to them (`layouts.search_path`).
+- **Page specs**, the YAML files `apply` builds pages from.
+
+Examples to start from are in the repository's
+[`guidelines/`](https://github.com/gurdasss/blueprint/tree/main/guidelines) (with
+`guidelines/layouts/`) and [`template/`](https://github.com/gurdasss/blueprint/tree/main/template)
+folders.
+
+### Good to know
+
+- **Absolute paths.** The server's working directory is chosen by the runtime that starts it,
+  so give tools absolute paths (see Settings).
+- **First start takes a few seconds.** The engine unpacks itself into `%TEMP%` each time it
+  starts: about 2-4 s, once per session.
+- **No `bp` in the terminal.** The engine isn't added to `PATH`; it is used through MCP. To use
+  the same engine from another client, see below.
 
 ## What Copilot gets
 

@@ -69,7 +69,9 @@ Blueprint handles **report layout only**. It is designed to sit alongside, not r
 | Live reload of a running Power BI Desktop instance | Power BI Desktop Bridge |
 
 An AI agent driving this stack calls the Modeling MCP for the model and `bp` for the
-report. Neither one writes PBIR JSON by hand.
+report: as a CLI if it can run commands, or as an MCP server (`bp mcp`, or the VS Code
+extension, which needs no Python) if it can only call tools. Neither one writes PBIR JSON by
+hand.
 
 ---
 
@@ -136,10 +138,17 @@ Layouts and guidelines are files you write (the repository ships examples under
 `guidelines/`, and a starting point under `template/`).
 
 For agents, add the MCP server (`bp mcp`, see [Commands](#commands)) with
-`pip install "blueprint-pbi[mcp]"`. **On Windows with VS Code you don't need Python at all**:
-the [Blueprint for Power BI](https://marketplace.visualstudio.com/items?itemName=gurdasss.blueprint-pbi)
-extension bundles the engine as a standalone `bp.exe` and registers it as an MCP server for
-Copilot; its command *Blueprint: Set Up for Other MCP Clients* gives other clients the same exe.
+`pip install "blueprint-pbi[mcp]"`.
+
+**On Windows with VS Code you don't need Python at all.** A machine with only VS Code, GitHub
+Copilot and Power BI Desktop is enough: the
+[Blueprint for Power BI](https://marketplace.visualstudio.com/items?itemName=gurdasss.blueprint-pbi)
+extension bundles the engine as a standalone `bp.exe` (with its own interpreter) and registers
+it as an MCP server for Copilot agent mode. Its command *Blueprint: Set Up for Other MCP
+Clients* gives other clients the same exe. It needs Windows x64, VS Code 1.101 or later, a local
+(not Remote-WSL) folder, and a project saved as PBIP in the PBIR format. Guidelines, layouts
+and page specs are files you provide either way. The full list is in the extension's
+[Requirements](vscode-extension/README.md#requirements).
 
 To work on Blueprint itself, or to run the fixtures and probe replays:
 
@@ -705,7 +714,8 @@ blueprint/
 │   ├── cli.py                  # argparse entry points; one module per command in commands/
 │   ├── defaults.yaml           # built-in guideline defaults (layer 1)
 │   │
-│   ├── commands/               # inspect, check, fmt, apply, describe, manifest, theme
+│   ├── commands/               # inspect, check, fmt, apply, describe, manifest, theme,
+│   │                           # and mcp_server.py (bp mcp: each command as an MCP tool)
 │   │
 │   ├── pbir/                   # everything that knows the on-disk format
 │   │   ├── reader.py           # report dir -> in-memory model
@@ -753,6 +763,8 @@ blueprint/
 │   └── plan.md                 # history: how the v0.6 template rewrite was planned
 │
 ├── scripts/                    # probe builders (probe_*.py), demo.sh, desktop.sh, ci_check.sh
+├── packaging/windows/          # the standalone bp.exe (PyInstaller) and its no-Python gate
+├── vscode-extension/           # the VS Code extension: carries bp.exe, registers `bp.exe mcp`
 ├── unverified-probes/          # probes written but never opened in Desktop: not evidence
 ├── template/                   # the three files a client copies, and a README to start from
 │
@@ -921,6 +933,12 @@ field. Verified as candidates in probes 37-39 and accepted from `bp apply` in pr
 guidelines, written to the theme; a table column's conditional-format `gradient: 2|3` built from
 the divergent colours. Verified as candidates in probes 42, 44 and 46 and accepted from Blueprint's
 own output in probes 43, 45 and 49 (done).
+
+**v0.11 — Blueprint as an MCP server.** `bp mcp` (the optional `[mcp]` extra) serves every
+command as an MCP tool, returning exactly what the CLI prints, for clients that can call tools
+but not run commands. The VS Code extension
+[Blueprint for Power BI](https://marketplace.visualstudio.com/items?itemName=gurdasss.blueprint-pbi)
+bundles it as a standalone `bp.exe`, so Windows needs no Python. No change to the core (done).
 
 **Nothing is queued, and that is a decision.** A survey of the three sample reports (78 visuals,
 2026-11-13) closed the backlog rather than ranking it. Blueprint builds **91%** of the visuals in
