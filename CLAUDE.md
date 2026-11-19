@@ -14,6 +14,8 @@ Blueprint (`bp` CLI) is a pre-alpha Python tool that generates and aligns Power 
 
 **v0.11.1 (2026-11-19): error handling only.** A broken custom contract (unknown parent, invalid YAML, not UTF-8) or a `.pbip` with invalid JSON is now `bp: error: ...` with exit 2, not a traceback with exit 1 (`tests/test_robustness.py`). Extension 0.1.1 bundles it and replaces the `python` Marketplace tag, which `vsce` derives from words in `description`, with explicit `keywords`.
 
+**v0.12.0 (2026-11-19): tell the agent more, earlier.** It adds `bp init` (a starter set copied out of `blueprint/starter/`, with the page spec in `pages/`), `describe`'s field details with explicit nulls, `describe --section`, the `bp theme` / `--replace-theme` hint on theme findings, and `Plan.notes` naming where a spec ends (a model measure is needed). What `apply` writes to PBIR is unchanged. Extension 0.1.2 bundles it and finally ships the README with the new-machine requirements.
+
 **`vscode-extension/README.md` is the extension's Marketplace page**, and it holds the user-facing requirements (Windows x64, VS Code 1.101 or later, a local folder, PBIP/PBIR, and the files the user provides). Edits reach the Marketplace only with the next `ext-v*` release, so bump `vscode-extension/package.json` and its CHANGELOG for that. Keep the main README's Install paragraph pointing at it rather than duplicating it.
 
 ## Commands
