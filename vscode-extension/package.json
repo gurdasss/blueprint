@@ -2,7 +2,7 @@
   "name": "blueprint-pbi",
   "displayName": "Blueprint for Power BI",
   "description": "Build and check Power BI PBIP report pages from YAML specs, as MCP tools for Copilot. Bundles the Blueprint engine as a standalone program: nothing else to install.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "gurdasss",
   "license": "MIT",
   "repository": {
